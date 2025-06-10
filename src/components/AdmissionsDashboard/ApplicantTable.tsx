@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Table, Input, Select, Button, Tag, Space, DatePicker, Tooltip } from 'antd';
+import { Table, Input, Select, Button, Tag, Space, DatePicker, Tooltip, Row, Col } from 'antd';
 import { Applicant, ApplicationStatus } from './types'; // Adjust path as needed
 import { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { FilterValue, SorterResult } from 'antd/es/table/interface';

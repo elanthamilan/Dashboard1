@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Tabs, Descriptions, Tag, Typography, List, Avatar, Empty, Card, Row, Col } from 'antd';
+import { Modal, Tabs, Descriptions, Tag, Typography, List, Avatar, Empty, Card, Row, Col, Button } from 'antd';
 import { Applicant, ApplicationStatus } from './types'; // Adjust path as needed
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';

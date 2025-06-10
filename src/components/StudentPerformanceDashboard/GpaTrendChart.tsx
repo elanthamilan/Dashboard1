@@ -77,7 +77,6 @@ const GpaTrendChart: React.FC<GpaTrendChartProps> = ({ studentAcademicRecord, lo
           axisTop={null}
           axisRight={null}
           axisBottom={{
-            orient: 'bottom',
             tickSize: 5,
             tickPadding: 5,
             tickRotation: -30, // Rotate term names if they overlap

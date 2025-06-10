@@ -114,7 +114,6 @@ const WeeklyAttendanceTrendChart: React.FC<WeeklyAttendanceTrendChartProps> = ({
           axisTop={null}
           axisRight={null}
           axisBottom={{
-            orient: 'bottom',
             tickSize: 5,
             tickPadding: 5,
             tickRotation: 0,
