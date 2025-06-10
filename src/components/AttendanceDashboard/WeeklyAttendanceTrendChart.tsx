@@ -117,7 +117,7 @@ const WeeklyAttendanceTrendChart: React.FC<WeeklyAttendanceTrendChartProps> = ({
             stacked: false,
             reverse: false,
           }}
-          yFormat=" >-.1f%" // Format y-axis values as percentages
+          yFormat=".1f" // Format y-axis values as numbers with 1 decimal place
           axisTop={null}
           axisRight={null}
           axisBottom={{
