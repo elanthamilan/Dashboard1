@@ -38,7 +38,7 @@ const StudentGradeDistributionChart: React.FC<StudentGradeDistributionChartProps
         // gradeLabel: t(`grades.${grade}`, grade), // For translated grade labels if needed on axis
         [valueKey]: gradeCounts[grade],
       }))
-      .filter(d => d[valueKey] > 0); // Only show grades the student actually has
+      .filter(d => Number(d[valueKey]) > 0); // Only show grades the student actually has
       // Or, to show all grades on X-axis even if count is 0:
       // .map(grade => ({ grade: grade, [valueKey]: gradeCounts[grade] }));
 

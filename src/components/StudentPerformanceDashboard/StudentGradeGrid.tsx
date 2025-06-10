@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Table, Form, Input, Select, InputNumber, Button, Popconfirm, Typography, Tag, Tooltip } from 'antd';
-import { ColumnsType } from 'antd/es/table';
+import { Table, Form, Input, Select, InputNumber, Button, Popconfirm, Typography, Tag, Tooltip, Card } from 'antd';
+import { ColumnType, ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
 import { StudentAcademicRecord, Term, CourseEnrollment, Grade } from './types'; // Adjust path
 import { CheckOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
@@ -148,7 +148,14 @@ const StudentGradeGrid: React.FC<StudentGradeGridProps> = ({ studentAcademicReco
   }, [studentAcademicRecord]);
 
 
-  const columns: ColumnsType<CourseEnrollmentDisplayItem> = [
+  // Custom column type to include 'editable'
+  interface EditableColumnType<T> extends ColumnType<T> {
+    editable?: boolean;
+    // Align with AntD's DataIndex more closely for compatibility, allowing string keys or string arrays for paths.
+    dataIndex?: (keyof T & string) | string[];
+  }
+
+  const columns: EditableColumnType<CourseEnrollmentDisplayItem>[] = [
     { title: t('studentGradeGrid.columns.term', 'Term'), dataIndex: 'termName', key: 'termName', width: 150, fixed: 'left', ellipsis: true },
     { title: t('studentGradeGrid.columns.courseCode', 'Course Code'), dataIndex: 'courseCode', key: 'courseCode', width: 120, ellipsis: true },
     { title: t('studentGradeGrid.columns.courseName', 'Course Name'), dataIndex: 'courseName', key: 'courseName', width: 200, ellipsis: true },
@@ -198,20 +205,30 @@ const StudentGradeGrid: React.FC<StudentGradeGridProps> = ({ studentAcademicReco
   ];
 
   const mergedColumns = columns.map(col => {
-    if (! (col as any).editable) { // Type assertion for 'editable'
+    if (!col.editable) {
       return col;
     }
+    // Helper to stringify dataIndex for consumption by EditableCell which expects a string path
+    const getDataIndexPathString = (dataIndex: EditableColumnType<CourseEnrollmentDisplayItem>['dataIndex']): keyof CourseEnrollmentDisplayItem | 'grade.letterGrade' | 'grade.numericalScore' => {
+        if (Array.isArray(dataIndex)) {
+            return dataIndex.join('.') as 'grade.letterGrade' | 'grade.numericalScore'; // Assuming specific nested paths
+        }
+        return dataIndex as keyof CourseEnrollmentDisplayItem;
+    };
+
+    const currentDataIndexStr = getDataIndexPathString(col.dataIndex);
+
     return {
       ...col,
       onCell: (record: CourseEnrollmentDisplayItem) => ({
         record,
-        inputType: col.dataIndex === 'grade.numericalScore' || (Array.isArray(col.dataIndex) && col.dataIndex.includes('numericalScore')) ? 'number'
-                   : col.dataIndex === 'grade.letterGrade' || (Array.isArray(col.dataIndex) && col.dataIndex.includes('letterGrade')) ? 'select'
+        inputType: currentDataIndexStr === 'grade.numericalScore' ? 'number'
+                   : currentDataIndexStr === 'grade.letterGrade' ? 'select'
                    : 'text',
-        dataIndex: Array.isArray(col.dataIndex) ? col.dataIndex.join('.') as keyof CourseEnrollmentDisplayItem : col.dataIndex as keyof CourseEnrollmentDisplayItem,
+        dataIndex: currentDataIndexStr,
         title: col.title,
         editing: isEditing(record),
-        selectOptions: col.dataIndex === 'grade.letterGrade' || (Array.isArray(col.dataIndex) && col.dataIndex.includes('letterGrade')) ? letterGradeOptions : undefined,
+        selectOptions: currentDataIndexStr === 'grade.letterGrade' ? letterGradeOptions : undefined,
       }),
     };
   });
@@ -222,7 +239,7 @@ const StudentGradeGrid: React.FC<StudentGradeGridProps> = ({ studentAcademicReco
       <Form form={form} component={false}>
         <Table
           components={{ body: { cell: EditableCell } }}
-          columns={mergedColumns as ColumnsType<CourseEnrollmentDisplayItem>} // Cast after mapping
+          columns={mergedColumns as ColumnsType<CourseEnrollmentDisplayItem>}
           dataSource={dataSource}
           loading={loading}
           rowKey="key"

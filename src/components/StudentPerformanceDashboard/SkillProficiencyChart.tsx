@@ -97,7 +97,7 @@ const SkillProficiencyChart: React.FC<SkillProficiencyChartProps> = ({ studentAc
               ],
             },
           ]}
-           tooltip={({ index, value, color }) => ( // Custom tooltip
+           tooltip={({ index, value, color }: { index: string; value: number; color: string }) => ( // Custom tooltip
               <div style={{ padding: '5px 10px', color, background: 'white', border: '1px solid #ccc', borderRadius: '3px' }}>
                   <strong>{index}:</strong> {value}%
               </div>

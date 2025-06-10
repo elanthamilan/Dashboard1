@@ -28,7 +28,7 @@ const AbsenceReasonChart: React.FC<AbsenceReasonChartProps> = ({ records, loadin
         reason: t(`attendanceReasons.${reason.replace(/\s+/g, '')}`, reason), // Translate reason, remove spaces for key
         [t('attendanceDashboard.charts.absenceCount', 'Absences')]: count, // Use a translated key for the value
       }))
-      .sort((a,b) => b[t('attendanceDashboard.charts.absenceCount', 'Absences')] - a[t('attendanceDashboard.charts.absenceCount', 'Absences')]); // Sort by count descending
+      .sort((a,b) => Number(b[t('attendanceDashboard.charts.absenceCount', 'Absences')]) - Number(a[t('attendanceDashboard.charts.absenceCount', 'Absences')])); // Sort by count descending
   }, [records, t]);
 
   // The key for the values (e.g., 'Absences') needs to be consistent and known for the `keys` prop of ResponsiveBar

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'; // Added useMemo
-import { ResponsiveCalendar, CalendarDatum } from '@nivo/calendar';
+import { ResponsiveCalendar, CalendarDatum, CalendarTooltipProps } from '@nivo/calendar';
 import { Card, Typography, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AttendanceRecord, AttendanceStatus } from './types'; // Adjust path
@@ -29,8 +29,16 @@ const AttendanceCalendarHeatmap: React.FC<AttendanceCalendarHeatmapProps> = ({ r
   const { t } = useTranslation();
   const currentYear = year || dayjs().year();
 
+  // Define the custom datum type
+  interface CustomCalendarDatum extends CalendarDatum {
+    present: number;
+    absent: number;
+    late: number;
+    excused: number;
+  }
+
   // Process records for the Nivo Calendar
-  const calendarData = useMemo(() => {
+  const calendarData = useMemo((): CustomCalendarDatum[] => { // Ensure this returns CustomCalendarDatum[]
     const dailyData: { [date: string]: { value: number; statuses: { [key in AttendanceStatus]?: number } } } = {};
 
     records.forEach(record => {
@@ -78,7 +86,7 @@ const AttendanceCalendarHeatmap: React.FC<AttendanceCalendarHeatmapProps> = ({ r
     <Card title={t('attendanceDashboard.calendar.title', 'Attendance Calendar')} style={{ minHeight: 300 /* Approx height */ }}>
       <div style={{ height: 250 /* Adjust height for calendar */ }}>
         <ResponsiveCalendar
-          data={yearSpecificCalendarData}
+          data={yearSpecificCalendarData as CustomCalendarDatum[]} // Cast data to CustomCalendarDatum[]
           from={fromDate}
           to={toDate}
           emptyColor="#eeeeee"
@@ -105,16 +113,15 @@ const AttendanceCalendarHeatmap: React.FC<AttendanceCalendarHeatmapProps> = ({ r
               itemDirection: 'right-to-left',
             },
           ]}
-          tooltip={({ day, value, color, data }) => {
-            const typedData = data as any; // Cast to access custom properties
+          tooltip={({ day, value, color, data }: { day: string; value: number; color: string; data: CustomCalendarDatum }) => {
             return (
               <div style={{ padding: '5px 10px', background: 'white', border: '1px solid #ccc', borderRadius: '3px' }}>
                 <strong>{dayjs(day).format('MMMM D, YYYY')}</strong><br />
                 {t('attendanceDashboard.calendar.tooltip.totalRecords', 'Total Records')}: {value}<br />
-                {typedData.present > 0 && <>{t('attendanceDashboard.calendar.tooltip.present', 'Present')}: {typedData.present}<br /></>}
-                {typedData.absent > 0 && <>{t('attendanceDashboard.calendar.tooltip.absent', 'Absent')}: {typedData.absent}<br /></>}
-                {typedData.late > 0 && <>{t('attendanceDashboard.calendar.tooltip.late', 'Late')}: {typedData.late}<br /></>}
-                {typedData.excused > 0 && <>{t('attendanceDashboard.calendar.tooltip.excused', 'Excused')}: {typedData.excused}<br /></>}
+                {data.present > 0 && <>{t('attendanceDashboard.calendar.tooltip.present', 'Present')}: {data.present}<br /></>}
+                {data.absent > 0 && <>{t('attendanceDashboard.calendar.tooltip.absent', 'Absent')}: {data.absent}<br /></>}
+                {data.late > 0 && <>{t('attendanceDashboard.calendar.tooltip.late', 'Late')}: {data.late}<br /></>}
+                {data.excused > 0 && <>{t('attendanceDashboard.calendar.tooltip.excused', 'Excused')}: {data.excused}<br /></>}
               </div>
             );
           }}

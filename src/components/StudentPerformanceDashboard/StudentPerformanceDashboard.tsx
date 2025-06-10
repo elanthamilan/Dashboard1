@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, Row, Col, Card, Typography, Spin, Select, Button, Statistic } from 'antd'; // Import Statistic
+import { Layout, Row, Col, Card, Typography, Spin, Select, Button, Statistic, message } from 'antd'; // Import Statistic, message
 import { useTranslation } from 'react-i18next';
 import { Student } from '../../components/AttendanceDashboard/types';
 import { StudentAcademicRecord } from './types';
@@ -16,7 +16,7 @@ import StudentGradeDistributionChart from './StudentGradeDistributionChart'; // 
 import DegreeCompletionProgress from './DegreeCompletionProgress'; // Import the new component
 import StudentGradeGrid from './StudentGradeGrid'; // Import the new component
 import { Grade } from './types'; // For handleGradeUpdate
-import { message } from 'antd'; // For feedback
+// message is already imported via the antd import above if Typography is also there. If not, ensure it's imported.
 
 
 // KpiCard component using Ant Design Statistic
@@ -36,7 +36,28 @@ const MOCK_STUDENT_COUNT = 50;
 
 const StudentPerformanceDashboard: React.FC = () => {
   const { t } = useTranslation();
+
+  // State hooks for potentially missing variables
+  const [selectedStudentRecord, setSelectedStudentRecord] = useState<StudentAcademicRecord | null>(null);
+  const [loading, setLoading] = useState<boolean>(true); // Assuming initial load
+  const [loadingStudentData, setLoadingStudentData] = useState<boolean>(false);
+  const [academicRecords, setAcademicRecords] = useState<StudentAcademicRecord[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  // allStudents is already defined below
+  // studentKpiData is already defined below with useMemo
+
   const [allStudents, setAllStudents] = useState<Student[]>([]);
+
+  // Placeholder for handleStudentChange
+  const handleStudentChange = (studentId: string) => {
+    console.log("Selected student ID:", studentId);
+    setSelectedStudentId(studentId);
+    // In a real app, you would then fetch/filter data for this student
+    // For now, this just updates the ID. Data loading logic would follow.
+    const record = academicRecords.find(r => r.studentId === studentId);
+    setSelectedStudentRecord(record || null);
+  };
+
   const studentKpiData = useMemo(() => {
     if (!selectedStudentRecord) {
       return {
@@ -49,8 +70,8 @@ const StudentPerformanceDashboard: React.FC = () => {
     }
 
     let coursesPassedCount = 0;
-    selectedStudentRecord.terms.forEach(term => {
-        term.courses.forEach(course => {
+    selectedStudentRecord.terms.forEach((term: any) => { // Added any type
+        term.courses.forEach((course: any) => { // Added any type
             if(course.grade && (course.grade.letterGrade.startsWith('A') || course.grade.letterGrade.startsWith('B') || course.grade.letterGrade.startsWith('C') || course.grade.letterGrade === 'P')) {
                 coursesPassedCount++;
             }
@@ -66,12 +87,12 @@ const StudentPerformanceDashboard: React.FC = () => {
   }, [selectedStudentRecord]);
 
   const handleGradeUpdate = (studentId: string, termId: string, courseId: string, updatedGradeDetails: Partial<Grade>, comments?: string) => {
-    setAcademicRecords(prevRecords => {
-        return prevRecords.map(studentRecord => {
+    setAcademicRecords((prevRecords: StudentAcademicRecord[]) => { // Added type for prevRecords
+        return prevRecords.map((studentRecord: StudentAcademicRecord) => { // Added type for studentRecord
             if (studentRecord.studentId === studentId) {
-                const updatedTerms = studentRecord.terms.map(term => {
+                const updatedTerms = studentRecord.terms.map((term: any) => { // Added any type
                     if (term.termId === termId) {
-                        const updatedCourses = term.courses.map(course => {
+                        const updatedCourses = term.courses.map((course: any) => { // Added any type
                             if (course.courseId === courseId) {
                                 const newGrade = { ...course.grade, ...updatedGradeDetails } as Grade;
                                 // Recalculate term GPA (simplified, assumes all courses in term count)
@@ -116,7 +137,7 @@ const StudentPerformanceDashboard: React.FC = () => {
             showSearch
             style={{ width: '100%' }}
             placeholder={t('studentPerformanceDashboard.selectStudentPlaceholder')}
-            value={selectedStudentId}
+            value={selectedStudentId || undefined} // Ensure undefined for AntD Select if null
             onChange={handleStudentChange}
             optionFilterProp="children"
             filterOption={(input, option) => (option?.children as unknown as string ?? '').toLowerCase().includes(input.toLowerCase())}
