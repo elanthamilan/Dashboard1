@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Typography, Spin, Empty, Button, Breadcrumb } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
-import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary } from '../../types/hierarchy';
+import { Institution, AcademicYear, Degree, Program, Semester } from '../../types/hierarchy';
 import { generateMockInstitutions } from '../../utils/mockData/academics/generateMockAcademicData';
 import InstitutionDisplay from './InstitutionDisplay';
 import AcademicYearList from './AcademicYearList';
@@ -10,7 +10,7 @@ import DegreeList from './DegreeList';
 import ProgramList from './ProgramList';
 import SemesterList from './SemesterList';
 import StudentSummaryList from './StudentSummaryList';
-import ComparisonModal from './ComparisonModal';
+import ComparisonModal, { ComparisonItem, ComparisonItemType } from './ComparisonModal'; // Updated import
 
 const { Title } = Typography;
 
@@ -27,7 +27,8 @@ const PrincipalViewDashboard: React.FC = () => {
   const [viewLevel, setViewLevel] = useState<ViewLevel>('institution');
 
   const [comparisonModalVisible, setComparisonModalVisible] = useState<boolean>(false);
-  const [programsToCompare, setProgramsToCompare] = useState<Program[]>([]);
+  // Updated state for comparison items
+  const [itemsToCompare, setItemsToCompare] = useState<ComparisonItem[]>([]);
 
 
   useEffect(() => {
@@ -99,17 +100,84 @@ const PrincipalViewDashboard: React.FC = () => {
     }
   };
 
-  const handleOpenComparisonModal = (programIds: string[]) => {
+  // Renamed and updated for generic items (specifically Programs)
+  const handleOpenProgramComparisonModal = (programIds: string[]) => {
     if (selectedDegree) {
-      const selected = selectedDegree.programs.filter(p => programIds.includes(p.programId));
-      setProgramsToCompare(selected);
+      const selectedPrograms = selectedDegree.programs.filter(p => programIds.includes(p.programId));
+      const comparisonItems: ComparisonItem[] = selectedPrograms.map(p => ({
+        id: p.programId,
+        name: p.programName,
+        type: 'Program',
+        totalStudents: p.totalStudents,
+        averageGPA: p.averageProgramGPA,
+        attendancePercentage: p.avgAttendancePercentage,
+        totalAbsences: p.totalProgramAbsences,
+        feesPaidPercentage: p.avgFeesPaidPercentage,
+        studentsWithOverdueFees: p.totalStudentsWithOverdueFees,
+        applicants: p.applicants,
+        acceptanceRate: p.acceptanceRate,
+        enrolledCount: p.enrolledCount,
+        atRiskStudents: p.atRiskStudents,
+        requiredCredits: p.requiredCredits,
+        graduationRate: p.graduationRate,
+      }));
+      setItemsToCompare(comparisonItems);
       setComparisonModalVisible(true);
     }
   };
 
+  // New handler for Academic Year comparison
+  const handleOpenAcademicYearComparisonModal = (academicYearIds: string[]) => {
+    if (selectedInstitution) {
+      const selectedAcademicYears = selectedInstitution.academicYears.filter(ay => academicYearIds.includes(ay.yearId));
+      const comparisonItems: ComparisonItem[] = selectedAcademicYears.map(ay => ({
+        id: ay.yearId,
+        name: ay.yearName,
+        type: 'AcademicYear',
+        totalStudents: ay.totalStudents,
+        averageGPA: ay.overallAverageGPA,
+        attendancePercentage: ay.annualAttendancePercentage,
+        totalAbsences: ay.totalAnnualAbsences,
+        feesPaidPercentage: ay.annualFeesPaidPercentage,
+        studentsWithOverdueFees: ay.totalStudentsWithOverdueFeesInYear,
+        applicants: ay.totalAnnualApplicants,
+        acceptanceRate: ay.avgAnnualAcceptanceRate,
+        enrolledCount: ay.totalAnnualEnrolledCount,
+        atRiskStudents: ay.totalAnnualAtRiskStudents,
+      }));
+      setItemsToCompare(comparisonItems);
+      setComparisonModalVisible(true);
+    }
+  };
+
+  // New handler for Degree comparison
+  const handleOpenDegreeComparisonModal = (degreeIds: string[]) => {
+    if (selectedAcademicYear) {
+      const selectedDegrees = selectedAcademicYear.degrees.filter(d => degreeIds.includes(d.degreeId));
+      const comparisonItems: ComparisonItem[] = selectedDegrees.map(d => ({
+        id: d.degreeId,
+        name: d.degreeName,
+        type: 'Degree',
+        totalStudents: d.totalStudents,
+        averageGPA: d.averageDegreeGPA,
+        attendancePercentage: d.avgAttendancePercentage,
+        totalAbsences: d.totalDegreeAbsences,
+        feesPaidPercentage: d.avgFeesPaidPercentage,
+        studentsWithOverdueFees: d.totalStudentsWithOverdueFeesInDegree,
+        applicants: d.totalApplicants,
+        acceptanceRate: d.avgAcceptanceRate,
+        enrolledCount: d.totalEnrolledCount,
+        atRiskStudents: d.totalAtRiskStudents,
+      }));
+      setItemsToCompare(comparisonItems);
+      setComparisonModalVisible(true);
+    }
+  };
+
+
   const handleCloseComparisonModal = () => {
     setComparisonModalVisible(false);
-    setProgramsToCompare([]);
+    setItemsToCompare([]); // Use updated setter
   };
 
   const breadcrumbItems = useMemo(() => {
@@ -178,19 +246,31 @@ const PrincipalViewDashboard: React.FC = () => {
     }
   } else if (selectedInstitution && viewLevel === 'academic_year') {
     currentDisplayTitle = selectedInstitution.institutionName;
-    content = <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} />;
+    content = (
+      <AcademicYearList
+        academicYears={selectedInstitution.academicYears}
+        onSelectAcademicYear={handleSelectAcademicYear}
+        onCompareAcademicYears={handleOpenAcademicYearComparisonModal} // Pass new handler
+      />
+    );
   } else if (selectedAcademicYear && viewLevel === 'degree') {
     currentDisplayTitle = selectedAcademicYear.yearName;
-    content = <DegreeList degrees={selectedAcademicYear.degrees} onSelectDegree={handleSelectDegree} />;
+    content = (
+      <DegreeList
+        degrees={selectedAcademicYear.degrees}
+        onSelectDegree={handleSelectDegree}
+        onCompareDegrees={handleOpenDegreeComparisonModal} // Pass new handler
+      />
+    );
   } else if (selectedDegree && viewLevel === 'program') {
     currentDisplayTitle = selectedDegree.degreeName;
     content = (
       <ProgramList
         programs={selectedDegree.programs}
         onSelectProgram={handleSelectProgram}
-        onComparePrograms={handleOpenComparisonModal}
-        degreeName={selectedDegree.degreeName} // Pass degree name
-        academicYearName={selectedAcademicYear?.yearName} // Pass academic year name
+        onComparePrograms={handleOpenProgramComparisonModal} // Ensure this uses the updated handler
+        degreeName={selectedDegree.degreeName}
+        academicYearName={selectedAcademicYear?.yearName}
       />
     );
   } else if (selectedProgram && viewLevel === 'semester') {
@@ -215,11 +295,11 @@ const PrincipalViewDashboard: React.FC = () => {
       )}
       {content}
 
-      {programsToCompare.length > 0 && (
+      {/* Update ComparisonModal invocation */}
+      {itemsToCompare.length > 0 && (
         <ComparisonModal
-          visible={comparisonModalVisible} // Antd v4/v5: 'open' is preferred for v5
-          // open={comparisonModalVisible} // Use this if Antd version is 5+
-          programs={programsToCompare}
+          open={comparisonModalVisible}
+          items={itemsToCompare}
           onClose={handleCloseComparisonModal}
         />
       )}

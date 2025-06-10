@@ -1,6 +1,6 @@
 // src/components/PrincipalView/DegreeList.tsx
-import React from 'react';
-import { List, Card, Statistic, Button, Row, Col, Typography } from 'antd';
+import React, { useState } from 'react';
+import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox } from 'antd';
 import { Degree } from '../../types/hierarchy'; // Adjust path
 
 const { Title } = Typography;
@@ -8,22 +8,53 @@ const { Title } = Typography;
 interface DegreeListProps {
   degrees: Degree[];
   onSelectDegree: (degreeId: string) => void;
+  onCompareDegrees: (selectedDegreeIds: string[]) => void; // New prop
 }
 
-const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree }) => {
+const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onCompareDegrees }) => {
+  const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+
   if (!degrees || degrees.length === 0) {
     return <p>No degrees available for this academic year.</p>;
   }
 
+  const handleCheckboxChange = (degreeId: string, checked: boolean) => {
+    setSelectedForComparison(prev =>
+      checked ? [...prev, degreeId] : prev.filter(id => id !== degreeId)
+    );
+  };
+
+  const handleCompareClick = () => {
+    onCompareDegrees(selectedForComparison);
+  };
+
+  const canCompare = selectedForComparison.length >= 2 && selectedForComparison.length <= 3;
+
   return (
     <div style={{ marginTop: '24px' }}>
       <Title level={4} style={{ marginBottom: '16px' }}>Degrees</Title>
+
+      <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
+        <Col>
+          <Button onClick={handleCompareClick} type="primary" disabled={!canCompare} ghost>
+            Compare Selected ({selectedForComparison.length})
+          </Button>
+        </Col>
+        {/* Optional: <Col><Button>Generate Report</Button></Col> if needed later */}
+      </Row>
+
       <List
         grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl: 3, xxl: 3 }}
         dataSource={degrees}
         renderItem={degree => (
           <List.Item>
-            <Card title={degree.degreeName}>
+            <Card
+              title={degree.degreeName}
+              extra={<Checkbox
+                       checked={selectedForComparison.includes(degree.degreeId)}
+                       onChange={(e) => handleCheckboxChange(degree.degreeId, e.target.checked)}
+                     />}
+            >
               <Row gutter={16}>
                 <Col span={12}>
                   <Statistic title="Total Students" value={degree.totalStudents} />
@@ -35,7 +66,7 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree }) => {
 
               {/* Attendance & Billing KPIs */}
               <Row gutter={16} style={{ marginTop: '10px' }}>
-                <Col span={12}>
+                <Col span={6}>
                   <Statistic
                     title="Avg. Attendance"
                     value={degree.avgAttendancePercentage !== undefined ? degree.avgAttendancePercentage.toFixed(1) : undefined}
@@ -43,12 +74,24 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree }) => {
                     formatter={degree.avgAttendancePercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
                   />
                 </Col>
-                <Col span={12}>
+                <Col span={6}>
+                  <Statistic
+                    title="Total Absences"
+                    value={degree.totalDegreeAbsences ?? 'N/A'}
+                  />
+                </Col>
+                <Col span={6}>
                   <Statistic
                     title="Avg. Fees Paid"
                     value={degree.avgFeesPaidPercentage !== undefined ? degree.avgFeesPaidPercentage.toFixed(1) : undefined}
                     suffix={degree.avgFeesPaidPercentage !== undefined ? "%" : undefined}
                     formatter={degree.avgFeesPaidPercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={6}>
+                  <Statistic
+                    title="Students w/ Overdue Fees"
+                    value={degree.totalStudentsWithOverdueFeesInDegree ?? 'N/A'}
                   />
                 </Col>
               </Row>

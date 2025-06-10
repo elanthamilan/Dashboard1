@@ -530,29 +530,29 @@ export const generateMockDegree = (
     const overallGradeDistribution: { [key: string]: number } = {};
     let totalAtRiskInDegree = 0;
     let sumOfProgramGpas = 0;
-    let programsWithGpas = 0;
+    let totalStudentsForGpaCalculation = 0;
 
     generatedPrograms.forEach(prog => {
         totalStudentsInDegree += prog.totalStudents || 0;
         if (prog.averageProgramGPA !== undefined && prog.totalStudents) {
             sumOfProgramGpas += prog.averageProgramGPA * prog.totalStudents;
-            programsWithGpas += prog.totalStudents;
+            totalStudentsForGpaCalculation += prog.totalStudents;
         }
         // Aggregate new KPIs
         if(prog.avgAttendancePercentage !== undefined && prog.totalStudents) {
             sumOfProgramAttendance += prog.avgAttendancePercentage * prog.totalStudents; // Weight by students
-            programsWithAttendance += prog.totalStudents;
+            totalStudentsForAttendanceCalculation += prog.totalStudents;
         }
         totalDegreeAbsences += prog.totalProgramAbsences || 0;
         if(prog.avgFeesPaidPercentage !== undefined && prog.totalStudents) {
             sumOfProgramFeesPaid += prog.avgFeesPaidPercentage * prog.totalStudents; // Weight by students
-            programsWithFees += prog.totalStudents;
+            totalStudentsForFeesCalculation += prog.totalStudents;
         }
         totalStudentsWithOverdueFeesInDegree += prog.totalStudentsWithOverdueFees || 0;
         totalDegreeApplicants += prog.applicants || 0;
         if(prog.acceptanceRate !== undefined && prog.applicants) { // Weight by applicants for acceptance rate
             sumOfProgramAcceptanceRates += prog.acceptanceRate * prog.applicants;
-            programsWithAdmissions += prog.applicants;
+            totalApplicantsForAcceptanceRateCalculation += prog.applicants;
         }
         totalDegreeEnrolled += prog.enrolledCount || 0;
         if(prog.gradeDistribution) {
@@ -563,10 +563,10 @@ export const generateMockDegree = (
         totalAtRiskInDegree += prog.atRiskStudents || 0;
     });
 
-    const averageDegreeGPA = programsWithGpas > 0 ? parseFloat((sumOfProgramGpas / programsWithGpas).toFixed(2)) : undefined;
-    const avgDegreeAttendance = programsWithAttendance > 0 ? parseFloat((sumOfProgramAttendance / programsWithAttendance).toFixed(2)) : undefined;
-    const avgDegreeFeesPaid = programsWithFees > 0 ? parseFloat((sumOfProgramFeesPaid / programsWithFees).toFixed(2)) : undefined;
-    const avgDegreeAcceptanceRate = programsWithAdmissions > 0 ? parseFloat((sumOfProgramAcceptanceRates / programsWithAdmissions).toFixed(2)) : undefined;
+    const averageDegreeGPA = totalStudentsForGpaCalculation > 0 ? parseFloat((sumOfProgramGpas / totalStudentsForGpaCalculation).toFixed(2)) : undefined;
+    const avgDegreeAttendance = totalStudentsForAttendanceCalculation > 0 ? parseFloat((sumOfProgramAttendance / totalStudentsForAttendanceCalculation).toFixed(2)) : undefined;
+    const avgDegreeFeesPaid = totalStudentsForFeesCalculation > 0 ? parseFloat((sumOfProgramFeesPaid / totalStudentsForFeesCalculation).toFixed(2)) : undefined;
+    const avgDegreeAcceptanceRate = totalApplicantsForAcceptanceRateCalculation > 0 ? parseFloat((sumOfProgramAcceptanceRates / totalApplicantsForAcceptanceRateCalculation).toFixed(2)) : undefined;
 
     return {
         degreeId,
@@ -764,7 +764,7 @@ export const generateMockInstitutions = (
         const startDate = dayjs(`${startYear}-08-15`).toISOString();
         const endDate = dayjs(`${endYear}-05-31`).toISOString();
 
-        academicYears.push(
+        academicYearsData.push(
             generateMockAcademicYear(
                 yearId,
                 yearName,
@@ -800,7 +800,7 @@ export const generateMockInstitutions = (
     let sumOfAnnualGpas = 0;
     let totalStudentsForGpa = 0; // Sum of students from years that have GPA data
 
-    academicYears.forEach(ay => {
+    academicYearsData.forEach(ay => {
         if(ay.annualAttendancePercentage !== undefined && ay.totalStudents) {
             weightedSumInstAttendance += ay.annualAttendancePercentage * ay.totalStudents;
             totalStudentsForInstAttendance += ay.totalStudents;
