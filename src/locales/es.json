@@ -1,0 +1,35 @@
+{
+  "appTitle": "Sistema de Información Estudiantil",
+  "nav": {
+    "home": "Inicio",
+    "admissions": "Admisiones",
+    "attendance": "Asistencia",
+    "billing": "Facturación",
+    "performance": "Rendimiento"
+  },
+  "header": {
+    "personaSwitcher": "Cambiar Persona",
+    "notifications": "Notificaciones",
+    "profileSettings": "Perfil y Configuración",
+    "helpSupport": "Ayuda/Soporte",
+    "language": "Idioma"
+  },
+  "admissionsDashboard": {
+    "title": "Tablero de Admisiones"
+  },
+  "attendanceDashboard": {
+    "title": "Tablero de Asistencia"
+  },
+  "billingDashboard": {
+    "title": "Tablero de Facturación"
+  },
+  "studentPerformanceDashboard": {
+    "title": "Tablero de Rendimiento Estudiantil"
+  },
+  "homePage": {
+    "title": "Bienvenido al SIS"
+  },
+  "notFound": {
+    "title": "Página No Encontrada"
+  }
+}

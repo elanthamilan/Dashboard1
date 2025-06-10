@@ -1,0 +1,35 @@
+{
+  "appTitle": "Student Information System",
+  "nav": {
+    "home": "Home",
+    "admissions": "Admissions",
+    "attendance": "Attendance",
+    "billing": "Billing",
+    "performance": "Performance"
+  },
+  "header": {
+    "personaSwitcher": "Switch Persona",
+    "notifications": "Notifications",
+    "profileSettings": "Profile & Settings",
+    "helpSupport": "Help/Support",
+    "language": "Language"
+  },
+  "admissionsDashboard": {
+    "title": "Admissions Dashboard"
+  },
+  "attendanceDashboard": {
+    "title": "Attendance Dashboard"
+  },
+  "billingDashboard": {
+    "title": "Billing Dashboard"
+  },
+  "studentPerformanceDashboard": {
+    "title": "Student Performance Dashboard"
+  },
+  "homePage": {
+    "title": "Welcome to SIS"
+  },
+  "notFound": {
+    "title": "Page Not Found"
+  }
+}
