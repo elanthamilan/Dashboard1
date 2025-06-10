@@ -15,7 +15,131 @@
     "language": "Idioma"
   },
   "admissionsDashboard": {
-    "title": "Tablero de Admisiones"
+    "title": "Tablero de Admisiones",
+    "kpi": {
+      "totalApplicants": "Total de Solicitantes",
+      "shortlisted": "Preseleccionados",
+      "offersMade": "Ofertas Realizadas",
+      "conversionRate": "Tasa de Conversión"
+    },
+    "funnel": {
+      "title": "Embudo de Solicitantes",
+      "applied": "Solicitudes",
+      "shortlisted": "Preseleccionados",
+      "interview": "Entrevista",
+      "offered": "Ofertas",
+      "accepted": "Aceptados",
+      "confirmed": "Confirmados"
+    },
+    "deadlines": {
+      "title": "Fechas Clave",
+      "applicationClose": "Cierre de Solicitudes",
+      "applicationCloseDesc": "Último día para enviar solicitudes.",
+      "interviewPeriodStart": "Inicio Período de Entrevistas",
+      "interviewPeriodEnd": "Fin Período de Entrevistas",
+      "offerRelease": "Publicación de Ofertas",
+      "offerReleaseDesc": "Se comunicarán las decisiones.",
+      "orientationDay": "Día de Orientación"
+    },
+    "actions": {
+        "newApplication": "Nueva Solicitud"
+    },
+    "messages": {
+        "applicationAdded": "¡Nueva solicitud agregada exitosamente!"
+    }
+  },
+  "newApplicationForm": {
+    "title": "Nueva Solicitud",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo Electrónico",
+    "phoneNumber": "Número de Teléfono (Opcional)",
+    "dateOfBirth": "Fecha de Nacimiento",
+    "program": "Programa",
+    "selectProgramPlaceholder": "Seleccione un programa"
+  },
+  "admissionsTable": {
+    "columns": {
+      "applicantId": "ID Solicitante",
+      "name": "Nombre",
+      "program": "Programa",
+      "status": "Estado",
+      "applicationDate": "Fecha de Solicitud",
+      "actions": "Acciones"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar por Nombre, Programa, ID...",
+      "statusPlaceholder": "Filtrar por Estado",
+      "dateRangePlaceholder": "Filtrar por Fecha de Solicitud",
+      "advancedFilters": "Filtros"
+    },
+    "actions": {
+        "viewDetails": "Ver Detalles"
+    }
+  },
+  "applicationStatus": {
+    "Applied": "Solicitado",
+    "Shortlisted": "Preseleccionado",
+    "Interview Scheduled": "Entrevista Programada",
+    "Offered": "Ofrecido",
+    "Accepted": "Aceptado",
+    "Rejected": "Rechazado",
+    "Waitlisted": "En Lista de Espera",
+    "Enrollment Confirmed": "Matrícula Confirmada",
+    "Application Withdrawn": "Solicitud Retirada"
+  },
+  "applicantDetailModal": {
+    "title": "Detalles del Solicitante",
+    "tabs": {
+      "personal": "Personal",
+      "documents": "Documentos",
+      "interview": "Entrevista",
+      "visa": "Visa",
+      "statusActions": "Estado y Acciones"
+    },
+    "personal": {
+      "fullName": "Nombre Completo",
+      "email": "Correo Electrónico",
+      "phone": "Teléfono",
+      "dob": "Fecha de Nacimiento",
+      "gender": "Género",
+      "nationality": "Nacionalidad",
+      "address": "Dirección",
+      "program": "Programa Solicitado",
+      "applicationDate": "Fecha de Solicitud",
+      "prevInstitution": "Institución Anterior",
+      "prevDegree": "Título Anterior/GPA",
+      "feeStatus": "Tasa de Solicitud",
+      "feePaid": "Pagada",
+      "feeUnpaid": "No Pagada"
+    },
+    "documents": {
+      "type": "Tipo",
+      "uploaded": "Subido",
+      "noDocuments": "No hay documentos subidos.",
+      "uploadButton": "Subir Documento (Simulacro)"
+    },
+    "interview": {
+      "date": "Fecha y Hora",
+      "interviewer": "Entrevistador(a)",
+      "notes": "Notas",
+      "feedback": "Comentarios",
+      "noInterview": "No hay entrevista programada o detalles disponibles."
+    },
+    "visa": {
+        "type": "Tipo de Visa",
+        "status": "Estado de Solicitud",
+        "issueDate": "Fecha de Emisión",
+        "expiryDate": "Fecha de Caducidad",
+        "noDetails": "No hay detalles de visa disponibles."
+    },
+    "statusActions": {
+        "currentStatus": "Estado Actual",
+        "changeStatusTitle": "Cambiar Estado del Solicitante (Simulacro)",
+        "changeStatusDesc": "Esta sección permitiría a usuarios autorizados cambiar el estado del solicitante, activando flujos de trabajo.",
+        "acceptButton": "Marcar como Aceptado (Simulacro)",
+        "rejectButton": "Marcar como Rechazado (Simulacro)"
+    }
   },
   "attendanceDashboard": {
     "title": "Tablero de Asistencia"
@@ -31,5 +155,22 @@
   },
   "notFound": {
     "title": "Página No Encontrada"
+  },
+  "common": {
+    "noData": "No hay datos disponibles.",
+    "status": {
+      "today": "Hoy",
+      "soon": "Pronto"
+    },
+    "notProvided": "N/D",
+    "actions": {
+        "download": "Descargar",
+        "cancel": "Cancelar",
+        "submit": "Enviar Solicitud"
+    },
+    "validations": {
+      "requiredField": "Este campo es obligatorio",
+      "invalidEmail": "Por favor ingrese un correo electrónico válido"
+    }
   }
 }

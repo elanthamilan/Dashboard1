@@ -15,7 +15,131 @@
     "language": "Language"
   },
   "admissionsDashboard": {
-    "title": "Admissions Dashboard"
+    "title": "Admissions Dashboard",
+    "kpi": {
+      "totalApplicants": "Total Applicants",
+      "shortlisted": "Shortlisted",
+      "offersMade": "Offers Made",
+      "conversionRate": "Conversion Rate"
+    },
+    "funnel": {
+      "title": "Applicant Funnel",
+      "applied": "Applied",
+      "shortlisted": "Shortlisted",
+      "interview": "Interview",
+      "offered": "Offered",
+      "accepted": "Accepted",
+      "confirmed": "Confirmed"
+    },
+    "deadlines": {
+      "title": "Key Deadlines",
+      "applicationClose": "Application Closing Date",
+      "applicationCloseDesc": "Last day to submit applications.",
+      "interviewPeriodStart": "Interview Period Starts",
+      "interviewPeriodEnd": "Interview Period Ends",
+      "offerRelease": "Offer Release Date",
+      "offerReleaseDesc": "Decisions will be communicated.",
+      "orientationDay": "Orientation Day"
+    },
+    "actions": {
+        "newApplication": "New Application"
+    },
+    "messages": {
+        "applicationAdded": "New application added successfully!"
+    }
+  },
+  "newApplicationForm": {
+    "title": "New Application",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "phoneNumber": "Phone Number (Optional)",
+    "dateOfBirth": "Date of Birth",
+    "program": "Program",
+    "selectProgramPlaceholder": "Select a program"
+  },
+  "admissionsTable": {
+    "columns": {
+      "applicantId": "Applicant ID",
+      "name": "Name",
+      "program": "Program",
+      "status": "Status",
+      "applicationDate": "Application Date",
+      "actions": "Actions"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by Name, Program, ID...",
+      "statusPlaceholder": "Filter by Status",
+      "dateRangePlaceholder": "Filter by Application Date",
+      "advancedFilters": "Filters"
+    },
+    "actions": {
+        "viewDetails": "View Details"
+    }
+  },
+  "applicationStatus": {
+    "Applied": "Applied",
+    "Shortlisted": "Shortlisted",
+    "Interview Scheduled": "Interview Scheduled",
+    "Offered": "Offered",
+    "Accepted": "Accepted",
+    "Rejected": "Rejected",
+    "Waitlisted": "Waitlisted",
+    "Enrollment Confirmed": "Enrollment Confirmed",
+    "Application Withdrawn": "Application Withdrawn"
+  },
+  "applicantDetailModal": {
+    "title": "Applicant Details",
+    "tabs": {
+      "personal": "Personal",
+      "documents": "Documents",
+      "interview": "Interview",
+      "visa": "Visa",
+      "statusActions": "Status & Actions"
+    },
+    "personal": {
+      "fullName": "Full Name",
+      "email": "Email",
+      "phone": "Phone",
+      "dob": "Date of Birth",
+      "gender": "Gender",
+      "nationality": "Nationality",
+      "address": "Address",
+      "program": "Applied Program",
+      "applicationDate": "Application Date",
+      "prevInstitution": "Previous Institution",
+      "prevDegree": "Previous Degree/GPA",
+      "feeStatus": "Application Fee",
+      "feePaid": "Paid",
+      "feeUnpaid": "Unpaid"
+    },
+    "documents": {
+      "type": "Type",
+      "uploaded": "Uploaded",
+      "noDocuments": "No documents uploaded.",
+      "uploadButton": "Upload Document (Mock)"
+    },
+    "interview": {
+      "date": "Date & Time",
+      "interviewer": "Interviewer",
+      "notes": "Notes",
+      "feedback": "Feedback",
+      "noInterview": "No interview scheduled or details available."
+    },
+    "visa": {
+        "type": "Visa Type",
+        "status": "Application Status",
+        "issueDate": "Issue Date",
+        "expiryDate": "Expiry Date",
+        "noDetails": "No visa details available."
+    },
+    "statusActions": {
+        "currentStatus": "Current Status",
+        "changeStatusTitle": "Change Applicant Status (Mock)",
+        "changeStatusDesc": "This section would allow authorized users to change the applicant's status, triggering workflows.",
+        "acceptButton": "Mark as Accepted (Mock)",
+        "rejectButton": "Mark as Rejected (Mock)"
+    }
   },
   "attendanceDashboard": {
     "title": "Attendance Dashboard"
@@ -31,5 +155,22 @@
   },
   "notFound": {
     "title": "Page Not Found"
+  },
+  "common": {
+    "noData": "No data available.",
+    "status": {
+      "today": "Today",
+      "soon": "Soon"
+    },
+    "notProvided": "N/A",
+    "actions": {
+        "download": "Download",
+        "cancel": "Cancel",
+        "submit": "Submit Application"
+    },
+    "validations": {
+      "requiredField": "This field is required",
+      "invalidEmail": "Please enter a valid email"
+    }
   }
 }
