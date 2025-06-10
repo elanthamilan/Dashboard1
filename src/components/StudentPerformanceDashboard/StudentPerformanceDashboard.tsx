@@ -167,7 +167,7 @@ const StudentPerformanceDashboard: React.FC = () => {
                 academicRecords={academicRecords}
                 loading={loading} // Or a more specific loading state if available
                 onSelectStudent={handleStudentChange} // This will update the main dashboard's selected student
-                selectedStudentId={selectedStudentId}
+                selectedStudentId={selectedStudentId || undefined} // Ensure undefined if null for child component
             />
         </Col>
       </Row>

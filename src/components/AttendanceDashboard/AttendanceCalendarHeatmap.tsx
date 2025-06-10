@@ -113,15 +113,25 @@ const AttendanceCalendarHeatmap: React.FC<AttendanceCalendarHeatmapProps> = ({ r
               itemDirection: 'right-to-left',
             },
           ]}
-          tooltip={({ day, value, color, data }: { day: string; value: number; color: string; data: CustomCalendarDatum }) => {
+          tooltip={(props: CalendarTooltipProps) => {
+            // Nivo passes an object conforming to CalendarTooltipProps.
+            // Our custom fields (present, absent, etc.) are mixed into this object at runtime.
+            // So, we cast props to a type that includes both CalendarTooltipProps and our custom fields.
+            const extendedProps = props as CalendarTooltipProps & {
+              // These are fields from our CustomCalendarDatum that are not formally in CalendarTooltipProps
+              present: number;
+              absent: number;
+              late: number;
+              excused: number;
+            };
             return (
               <div style={{ padding: '5px 10px', background: 'white', border: '1px solid #ccc', borderRadius: '3px' }}>
-                <strong>{dayjs(day).format('MMMM D, YYYY')}</strong><br />
-                {t('attendanceDashboard.calendar.tooltip.totalRecords', 'Total Records')}: {value}<br />
-                {data.present > 0 && <>{t('attendanceDashboard.calendar.tooltip.present', 'Present')}: {data.present}<br /></>}
-                {data.absent > 0 && <>{t('attendanceDashboard.calendar.tooltip.absent', 'Absent')}: {data.absent}<br /></>}
-                {data.late > 0 && <>{t('attendanceDashboard.calendar.tooltip.late', 'Late')}: {data.late}<br /></>}
-                {data.excused > 0 && <>{t('attendanceDashboard.calendar.tooltip.excused', 'Excused')}: {data.excused}<br /></>}
+                <strong>{dayjs(extendedProps.day).format('MMMM D, YYYY')}</strong><br />
+                {t('attendanceDashboard.calendar.tooltip.totalRecords', 'Total Records')}: {extendedProps.value}<br />
+                {extendedProps.present > 0 && <>{t('attendanceDashboard.calendar.tooltip.present', 'Present')}: {extendedProps.present}<br /></>}
+                {extendedProps.absent > 0 && <>{t('attendanceDashboard.calendar.tooltip.absent', 'Absent')}: {extendedProps.absent}<br /></>}
+                {extendedProps.late > 0 && <>{t('attendanceDashboard.calendar.tooltip.late', 'Late')}: {extendedProps.late}<br /></>}
+                {extendedProps.excused > 0 && <>{t('attendanceDashboard.calendar.tooltip.excused', 'Excused')}: {extendedProps.excused}<br /></>}
               </div>
             );
           }}
