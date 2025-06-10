@@ -3,8 +3,8 @@ import { Layout, Row, Col, Card, Typography, Spin, Select, DatePicker, Tag, Butt
 import { useTranslation } from 'react-i18next';
 import { Student, SchoolClass, AttendanceRecord, AttendanceStatus } from './types';
 import { generateMockStudents, generateMockClasses, generateMockAttendanceRecords } from '../../utils/mockData/attendance/generateMockAttendanceData';
-import { FilterOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons'; // Added CloseCircleOutlined, PlusOutlined
-import { message } from 'antd'; // For success/error messages
+import { FilterOutlined, CloseCircleOutlined, PlusOutlined, WarningOutlined, UserOutlined } from '@ant-design/icons'; // Added CloseCircleOutlined, PlusOutlined, WarningOutlined, UserOutlined
+import { message, List, Avatar, Empty } from 'antd'; // For success/error messages, List, Avatar, Empty
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
 import MarkAttendanceForm from './MarkAttendanceForm'; // Import the new component
@@ -25,7 +25,7 @@ const KpiCard: React.FC<{ title: string; value: string | number; precision?: num
 // const AbsenceReasonChartPlaceholder: React.FC = () => <Card style={{marginTop: '16px', minHeight: 300}}><Typography.Text>Absence Reason Bar Chart Placeholder</Typography.Text></Card>;
 // const WeeklyAttendanceTrendChartPlaceholder: React.FC = () => <Card style={{marginTop: '16px', minHeight: 300}}><Typography.Text>Weekly Attendance Trend Line Chart Placeholder</Typography.Text></Card>;
 // const AttendanceLogTablePlaceholder: React.FC = () => <Card style={{marginTop: '16px'}}><Typography.Text>Attendance Log Table Placeholder</Typography.Text></Card>;
-const IrregularAttendanceAlertsPlaceholder: React.FC = () => <Card style={{marginTop: '16px'}}><Typography.Text>Irregular Attendance Alerts Placeholder</Typography.Text></Card>;
+// const IrregularAttendanceAlertsPlaceholder: React.FC = () => <Card style={{marginTop: '16px'}}><Typography.Text>Irregular Attendance Alerts Placeholder</Typography.Text></Card>;
 
 
 const { Content } = Layout;
@@ -154,6 +154,62 @@ const AttendanceDashboard: React.FC = () => {
       handleOpenMarkAttendanceForm(record);
   };
 
+    // Logic for Irregular Attendance Alerts
+    const irregularAttendanceAlerts = useMemo(() => {
+        const alerts: Array<{ studentId: string; studentName: string; reason: string; details: string[] }> = [];
+        if (filteredAttendanceRecords.length === 0 || allStudents.length === 0) {
+            return alerts;
+        }
+
+        const studentAttendance: { [studentId: string]: { records: AttendanceRecord[], uniqueDays: Set<string> } } = {};
+
+        // Group records by student and collect unique attendance days
+        filteredAttendanceRecords.forEach(record => {
+            if (!studentAttendance[record.studentId]) {
+                studentAttendance[record.studentId] = { records: [], uniqueDays: new Set() };
+            }
+            studentAttendance[record.studentId].records.push(record);
+            studentAttendance[record.studentId].uniqueDays.add(dayjs(record.date).format('YYYY-MM-DD'));
+        });
+
+        const SEVEN_DAYS_AGO = dayjs().subtract(7, 'day');
+        const FOURTEEN_DAYS_AGO = dayjs().subtract(14, 'day');
+
+        for (const studentId in studentAttendance) {
+            const student = allStudents.find(s => s.id === studentId);
+            if (!student) continue;
+
+            const { records } = studentAttendance[studentId];
+            const studentAlerts: string[] = [];
+
+            // Criteria 1: More than 3 Absences in the last 7 unique attendance days recorded for the student
+            // This interpretation focuses on the student's active attendance days, not just a rolling calendar window.
+            // To make it simpler: check absences in records dated within the last 7 calendar days.
+            const recentAbsences = records.filter(r => r.status === 'Absent' && dayjs(r.date).isAfter(SEVEN_DAYS_AGO)).length;
+            if (recentAbsences > 3) {
+                studentAlerts.push(t('attendanceDashboard.alerts.absencesOverThreshold', { count: recentAbsences, days: 7 }));
+            }
+
+            // Criteria 2: More than 5 Lates in the last 14 calendar days
+            const recentLates = records.filter(r => r.status === 'Late' && dayjs(r.date).isAfter(FOURTEEN_DAYS_AGO)).length;
+            if (recentLates > 5) {
+                 studentAlerts.push(t('attendanceDashboard.alerts.latesOverThreshold', { count: recentLates, days: 14 }));
+            }
+
+            // Add more criteria as needed...
+
+            if (studentAlerts.length > 0) {
+                alerts.push({
+                    studentId,
+                    studentName: `${student.firstName} ${student.lastName}`,
+                    reason: studentAlerts.join('; '), // Combine multiple reasons
+                    details: studentAlerts // Keep individual messages if needed for sub-items
+                });
+            }
+        }
+        return alerts;
+    }, [filteredAttendanceRecords, allStudents, t]); // Add t to dependencies
+
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>;
@@ -264,7 +320,33 @@ const AttendanceDashboard: React.FC = () => {
         </Col>
         <Col xs={24} lg={8}>
           {/* <IrregularAttendanceAlerts data={filteredAttendanceRecords} students={allStudents} /> */}
-          <IrregularAttendanceAlertsPlaceholder />
+          {/* <IrregularAttendanceAlertsPlaceholder /> */}
+          <Card
+              title={<><WarningOutlined style={{marginRight: 8}} /> {t('attendanceDashboard.alerts.title', 'Irregular Attendance Alerts')}</>}
+              style={{marginTop: '0px', minHeight: 300}} // Adjusted marginTop to 0 as it's inside a Row with gutter
+          >
+              {loading && <Spin />}
+              {!loading && irregularAttendanceAlerts.length === 0 && (
+                  <Empty description={t('attendanceDashboard.alerts.noAlerts', 'No irregular attendance alerts at the moment.')} />
+              )}
+              {!loading && irregularAttendanceAlerts.length > 0 && (
+                  <List
+                      itemLayout="horizontal"
+                      dataSource={irregularAttendanceAlerts}
+                      renderItem={item => (
+                          <List.Item>
+                              <List.Item.Meta
+                                  avatar={<Avatar icon={<UserOutlined />} />}
+                                  title={<Typography.Text strong>{item.studentName}</Typography.Text>}
+                                  description={item.reason}
+                              />
+                              {/* Optionally, add an action like "View Details" */}
+                              {/* <Button size="small" onClick={() => console.log("View details for student:", item.studentId)}>View</Button> */}
+                          </List.Item>
+                      )}
+                  />
+              )}
+          </Card>
         </Col>
       </Row>
 

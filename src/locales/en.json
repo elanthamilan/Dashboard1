@@ -184,6 +184,12 @@
       "trendPresentRate": "Present Rate (%)",
       "weekLegend": "Week",
       "rateLegend": "Attendance Rate (%)"
+    },
+    "alerts": {
+      "title": "Irregular Attendance Alerts",
+      "noAlerts": "No irregular attendance alerts at the moment.",
+      "absencesOverThreshold": "{{count}} absences in the last {{days}} days.",
+      "latesOverThreshold": "{{count}} late arrivals in the last {{days}} days."
     }
   },
   "attendanceReasons": {

@@ -184,6 +184,12 @@
       "trendPresentRate": "Tasa de Presencia (%)",
       "weekLegend": "Semana",
       "rateLegend": "Tasa de Asistencia (%)"
+    },
+    "alerts": {
+      "title": "Alertas de Asistencia Irregular",
+      "noAlerts": "No hay alertas de asistencia irregular en este momento.",
+      "absencesOverThreshold": "{{count}} ausencias en los últimos {{days}} días.",
+      "latesOverThreshold": "{{count}} llegadas tarde en los últimos {{days}} días."
     }
   },
   "attendanceReasons": {
