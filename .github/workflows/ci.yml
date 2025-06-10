@@ -1,0 +1,40 @@
+name: SIS CI
+
+on:
+  push:
+    branches: [ main, develop ] # Adjust branches as needed
+  pull_request:
+    branches: [ main, develop ] # Adjust branches as needed
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x] # As per project prerequisites
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm' # Cache npm dependencies
+
+    - name: Install dependencies
+      run: npm install # Or npm ci for stricter builds if package-lock.json is committed and reliable
+
+    - name: Run linters (optional but recommended)
+      run: npm run lint # Add a lint script to package.json e.g., "lint": "eslint src/**/*.{ts,tsx}"
+      continue-on-error: true # Or false if you want to fail the build on lint errors
+
+    - name: Run tests
+      run: npm test -- --watchAll=false # Ensure tests run in non-interactive CI mode
+
+    - name: Build project
+      run: npm run build
+
+    # Optional: Add steps for deploying to a staging environment or other checks
