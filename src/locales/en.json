@@ -142,10 +142,145 @@
     }
   },
   "attendanceDashboard": {
-    "title": "Attendance Dashboard"
+    "title": "Attendance Tracking",
+    "kpi": {
+      "overallAttendanceRate": "Overall Rate",
+      "absencesToday": "Absences Today",
+      "lateToday": "Late Today",
+      "excusedToday": "Excused Today"
+    },
+    "filters": {
+      "student": "Student",
+      "selectStudent": "Select Student",
+      "class": "Class",
+      "selectClass": "Select Class",
+      "dateRange": "Date Range",
+      "filterButton": "Apply Filters", // Will be changed to Clear Filters
+      "clearFiltersButton": "Clear Filters",
+      "activeFilters": "Active Filters",
+      "studentTag": "Student",
+      "classTag": "Class",
+      "dateRangeTag": "Dates"
+    },
+    "actions": {
+        "markAttendance": "Mark Attendance"
+    },
+    "calendar": {
+      "title": "Attendance Calendar",
+      "tooltip": {
+        "totalRecords": "Total Records",
+        "present": "Present",
+        "absent": "Absent",
+        "late": "Late",
+        "excused": "Excused"
+      }
+    },
+    "charts": {
+      "absenceReasonTitle": "Absence Reasons",
+      "absenceCount": "Absences",
+      "reasonLegend": "Reason",
+      "countLegend": "Number of Absences",
+      "weeklyTrendTitle": "Weekly Attendance Trend",
+      "trendPresentRate": "Present Rate (%)",
+      "weekLegend": "Week",
+      "rateLegend": "Attendance Rate (%)"
+    }
+  },
+  "attendanceReasons": {
+    "Illness": "Illness",
+    "FamilyEmergency": "Family Emergency",
+    "Appointment": "Appointment",
+    "TransportationIssue": "Transportation Issue",
+    "SchoolActivity": "School Activity",
+    "Unexcused": "Unexcused",
+    "Traffic": "Traffic",
+    "Overslept": "Overslept"
+  },
+  "markAttendanceForm": {
+    "titleNew": "Mark Attendance",
+    "titleEdit": "Edit Attendance Record",
+    "student": "Student",
+    "selectStudentPlaceholder": "Select Student",
+    "class": "Class/Course",
+    "selectClassPlaceholder": "Select Class",
+    "date": "Date",
+    "status": "Status",
+    "reason": "Reason (if Absent/Excused/Late)",
+    "reasonPlaceholder": "e.g., Illness, Appointment",
+    "notes": "Notes (Optional)",
+    "notesPlaceholder": "Any additional details"
+  },
+  "attendanceLogTable": {
+    "title": "Attendance Log",
+    "columns": {
+      "date": "Date",
+      "studentName": "Student Name",
+      "className": "Class/Course",
+      "status": "Status",
+      "reason": "Reason",
+      "notes": "Notes",
+      "actions": "Actions"
+    },
+    "filters": {
+      "searchPlaceholder": "Search Student/Class...",
+      "statusPlaceholder": "Filter by Status",
+      "datePlaceholder": "Filter by Date"
+    },
+    "actions": {
+      "editRecord": "Edit Record"
+    }
   },
   "billingDashboard": {
     "title": "Billing Dashboard"
+  },
+  "attendanceDashboard": {
+    "title": "Attendance Tracking",
+    "kpi": {
+      "overallAttendanceRate": "Overall Rate",
+      "absencesToday": "Absences Today",
+      "lateToday": "Late Today",
+      "excusedToday": "Excused Today"
+    },
+    "filters": {
+      "student": "Student",
+      "selectStudent": "Select Student",
+      "class": "Class",
+      "selectClass": "Select Class",
+      "dateRange": "Date Range",
+      "filterButton": "Apply Filters",
+      "clearFiltersButton": "Clear Filters",
+      "activeFilters": "Active Filters",
+      "studentTag": "Student",
+      "classTag": "Class",
+      "dateRangeTag": "Dates"
+    },
+    "actions": {
+        "markAttendance": "Mark Attendance"
+    },
+    "calendar": {
+      "title": "Attendance Calendar",
+      "tooltip": {
+        "totalRecords": "Total Records",
+        "present": "Present",
+        "absent": "Absent",
+        "late": "Late",
+        "excused": "Excused"
+      }
+    },
+    "charts": {
+      "absenceReasonTitle": "Absence Reasons",
+      "absenceCount": "Absences",
+      "reasonLegend": "Reason",
+      "countLegend": "Number of Absences",
+      "weeklyTrendTitle": "Weekly Attendance Trend",
+      "trendPresentRate": "Present Rate (%)",
+      "weekLegend": "Week",
+      "rateLegend": "Attendance Rate (%)"
+    },
+    "messages": {
+        "recordAdded": "New attendance record added.",
+        "recordUpdated": "Attendance record updated."
+    }
   },
   "studentPerformanceDashboard": {
     "title": "Student Performance Dashboard"
@@ -166,11 +301,16 @@
     "actions": {
         "download": "Download",
         "cancel": "Cancel",
-        "submit": "Submit Application"
+        "submit": "Submit",
+        "saveChanges": "Save Changes"
     },
     "validations": {
       "requiredField": "This field is required",
-      "invalidEmail": "Please enter a valid email"
-    }
+      "invalidEmail": "Please enter a valid email",
+      "requiredForStatus": "Reason is required for this status."
+    },
+    "none": "None",
+    "noDataForChart": "No attendance data to display for the selected period.",
+    "notApplicable": "N/A"
   }
 }

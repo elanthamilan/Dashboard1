@@ -142,10 +142,145 @@
     }
   },
   "attendanceDashboard": {
-    "title": "Tablero de Asistencia"
+    "title": "Seguimiento de Asistencia",
+    "kpi": {
+      "overallAttendanceRate": "Tasa General",
+      "absencesToday": "Ausencias Hoy",
+      "lateToday": "Tardanzas Hoy",
+      "excusedToday": "Excusas Hoy"
+    },
+    "filters": {
+      "student": "Estudiante",
+      "selectStudent": "Seleccionar Estudiante",
+      "class": "Clase",
+      "selectClass": "Seleccionar Clase",
+      "dateRange": "Rango de Fechas",
+      "filterButton": "Aplicar Filtros", // Will be changed to Clear Filters
+      "clearFiltersButton": "Limpiar Filtros",
+      "activeFilters": "Filtros Activos",
+      "studentTag": "Estudiante",
+      "classTag": "Clase",
+      "dateRangeTag": "Fechas"
+    },
+    "actions": {
+        "markAttendance": "Marcar Asistencia"
+    },
+    "calendar": {
+      "title": "Calendario de Asistencia",
+      "tooltip": {
+        "totalRecords": "Total de Registros",
+        "present": "Presente",
+        "absent": "Ausente",
+        "late": "Tarde",
+        "excused": "Excusado"
+      }
+    },
+    "charts": {
+      "absenceReasonTitle": "Motivos de Ausencia",
+      "absenceCount": "Ausencias",
+      "reasonLegend": "Motivo",
+      "countLegend": "Número de Ausencias",
+      "weeklyTrendTitle": "Tendencia Semanal de Asistencia",
+      "trendPresentRate": "Tasa de Presencia (%)",
+      "weekLegend": "Semana",
+      "rateLegend": "Tasa de Asistencia (%)"
+    }
+  },
+  "attendanceReasons": {
+    "Illness": "Enfermedad",
+    "FamilyEmergency": "Emergencia Familiar",
+    "Appointment": "Cita Médica/Dental",
+    "TransportationIssue": "Problema de Transporte",
+    "SchoolActivity": "Actividad Escolar",
+    "Unexcused": "Injustificada",
+    "Traffic": "Tráfico",
+    "Overslept": "Se quedó dormido/a"
+  },
+  "markAttendanceForm": {
+    "titleNew": "Marcar Asistencia",
+    "titleEdit": "Editar Registro de Asistencia",
+    "student": "Estudiante",
+    "selectStudentPlaceholder": "Seleccionar Estudiante",
+    "class": "Clase/Curso",
+    "selectClassPlaceholder": "Seleccionar Clase",
+    "date": "Fecha",
+    "status": "Estado",
+    "reason": "Motivo (si Ausente/Excusado/Tarde)",
+    "reasonPlaceholder": "Ej: Enfermedad, Cita",
+    "notes": "Notas (Opcional)",
+    "notesPlaceholder": "Detalles adicionales"
+  },
+  "attendanceLogTable": {
+    "title": "Registro de Asistencia",
+    "columns": {
+      "date": "Fecha",
+      "studentName": "Nombre del Estudiante",
+      "className": "Clase/Curso",
+      "status": "Estado",
+      "reason": "Motivo",
+      "notes": "Notas",
+      "actions": "Acciones"
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar Estudiante/Clase...",
+      "statusPlaceholder": "Filtrar por Estado",
+      "datePlaceholder": "Filtrar por Fecha"
+    },
+    "actions": {
+      "editRecord": "Editar Registro"
+    }
   },
   "billingDashboard": {
     "title": "Tablero de Facturación"
+  },
+  "attendanceDashboard": {
+    "title": "Seguimiento de Asistencia",
+    "kpi": {
+      "overallAttendanceRate": "Tasa General",
+      "absencesToday": "Ausencias Hoy",
+      "lateToday": "Tardanzas Hoy",
+      "excusedToday": "Excusas Hoy"
+    },
+    "filters": {
+      "student": "Estudiante",
+      "selectStudent": "Seleccionar Estudiante",
+      "class": "Clase",
+      "selectClass": "Seleccionar Clase",
+      "dateRange": "Rango de Fechas",
+      "filterButton": "Aplicar Filtros",
+      "clearFiltersButton": "Limpiar Filtros",
+      "activeFilters": "Filtros Activos",
+      "studentTag": "Estudiante",
+      "classTag": "Clase",
+      "dateRangeTag": "Fechas"
+    },
+    "actions": {
+        "markAttendance": "Marcar Asistencia"
+    },
+    "calendar": {
+      "title": "Calendario de Asistencia",
+      "tooltip": {
+        "totalRecords": "Total de Registros",
+        "present": "Presente",
+        "absent": "Ausente",
+        "late": "Tarde",
+        "excused": "Excusado"
+      }
+    },
+    "charts": {
+      "absenceReasonTitle": "Motivos de Ausencia",
+      "absenceCount": "Ausencias",
+      "reasonLegend": "Motivo",
+      "countLegend": "Número de Ausencias",
+      "weeklyTrendTitle": "Tendencia Semanal de Asistencia",
+      "trendPresentRate": "Tasa de Presencia (%)",
+      "weekLegend": "Semana",
+      "rateLegend": "Tasa de Asistencia (%)"
+    },
+    "messages": {
+        "recordAdded": "Nuevo registro de asistencia agregado.",
+        "recordUpdated": "Registro de asistencia actualizado."
+    }
   },
   "studentPerformanceDashboard": {
     "title": "Tablero de Rendimiento Estudiantil"
@@ -166,11 +301,16 @@
     "actions": {
         "download": "Descargar",
         "cancel": "Cancelar",
-        "submit": "Enviar Solicitud"
+        "submit": "Enviar",
+        "saveChanges": "Guardar Cambios"
     },
     "validations": {
       "requiredField": "Este campo es obligatorio",
-      "invalidEmail": "Por favor ingrese un correo electrónico válido"
-    }
+      "invalidEmail": "Por favor ingrese un correo electrónico válido",
+      "requiredForStatus": "El motivo es obligatorio para este estado."
+    },
+    "none": "Ninguno",
+    "noDataForChart": "No hay datos de asistencia para mostrar en el período seleccionado.",
+    "notApplicable": "N/A"
   }
 }
