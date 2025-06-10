@@ -10,5 +10,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'build', // Consistent with CRA's default and project description
+    rollupOptions: {
+      input: 'public/index.html', // Specify the entry point
+    },
   },
 });
