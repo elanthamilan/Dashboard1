@@ -5,7 +5,8 @@ import {
   TeamOutlined,
   CalendarOutlined,
   DollarOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  ApartmentOutlined // Add this
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -17,6 +18,7 @@ const menuItems = [
   { key: '/attendance', icon: <CalendarOutlined />, label: <Link to="/attendance">Attendance</Link> },
   { key: '/billing', icon: <DollarOutlined />, label: <Link to="/billing">Billing</Link> },
   { key: '/performance', icon: <BarChartOutlined />, label: <Link to="/performance">Performance</Link> },
+  { key: '/principal-view', icon: <ApartmentOutlined />, label: <Link to="/principal-view">Principal View</Link> },
 ];
 
 const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

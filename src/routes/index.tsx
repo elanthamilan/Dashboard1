@@ -5,6 +5,7 @@ import { AdmissionsDashboard } from '../components/AdmissionsDashboard';
 import { AttendanceDashboard } from '../components/AttendanceDashboard';
 import { BillingDashboard } from '../components/BillingDashboard';
 import { StudentPerformanceDashboard } from '../components/StudentPerformanceDashboard';
+import PrincipalViewDashboard from '../components/PrincipalView/PrincipalViewDashboard'; // Added import
 
 const router = createBrowserRouter([
   {
@@ -26,6 +27,10 @@ const router = createBrowserRouter([
   {
     path: '/performance',
     element: <MainLayout><StudentPerformanceDashboard /></MainLayout>,
+  },
+  {
+    path: '/principal-view', // New Route
+    element: <MainLayout><PrincipalViewDashboard /></MainLayout>,
   },
   {
     path: '*',
