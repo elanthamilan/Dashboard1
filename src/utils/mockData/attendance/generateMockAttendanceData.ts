@@ -2,7 +2,8 @@ import { faker } from '@faker-js/faker';
 import { Student, SchoolClass, AttendanceStatus, AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Adjust path
 import dayjs from 'dayjs';
 
-const ABSENCE_REASONS = ['Illness', 'Family Emergency', 'Appointment', 'Transportation Issue', 'School Activity', 'Unexcused'];
+// Updated list of absence reasons as per the prompt
+const ABSENCE_REASONS = ['Sick leave', 'Medical appointment', 'Family event', 'Technical issues', 'Other', 'Unexcused'];
 const ATTENDANCE_STATUSES: AttendanceStatus[] = ['Present', 'Present', 'Present', 'Present', 'Present', 'Absent', 'Late', 'Excused']; // Skew towards 'Present'
 
 export const generateMockStudents = (count: number): Student[] => {

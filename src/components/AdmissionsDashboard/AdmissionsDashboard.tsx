@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react'; // Added useMemo
-import { Layout, Row, Col, Card, Typography, Spin, Statistic, Button, message } from 'antd'; // Added Button, message
-import { PlusOutlined } from '@ant-design/icons'; // For New Application button icon
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layout, Row, Col, Card, Typography, Spin, Statistic, Button, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { Applicant, ApplicationStatus } from './types';
-import NewApplicationForm from './NewApplicationForm'; // Import the new component
-import { generateMockApplicants } from '../../utils/mockData/admissions/generateMockApplicants';
-import ApplicantFunnelChart from './ApplicantFunnelChart'; // Import the new component
-import KeyDeadlinesTimeline from './KeyDeadlinesTimeline'; // Import the new component
+import { Applicant, ApplicationStatus, KeyDeadline } from './types'; // Import KeyDeadline
+import NewApplicationForm from './NewApplicationForm';
+import { generateMockApplicants, generateMockKeyDeadlines } from '../../utils/mockData/admissions/generateMockApplicants'; // Import generateMockKeyDeadlines
+import ApplicantFunnelChart from './ApplicantFunnelChart';
+import KeyDeadlinesTimeline from './KeyDeadlinesTimeline';
 import ApplicantTable from './ApplicantTable'; // Import the new component
 import ApplicantDetailModal from './ApplicantDetailModal'; // Import the new component
 
@@ -35,6 +35,7 @@ const AdmissionsDashboard: React.FC = () => {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [isNewAppFormVisible, setIsNewAppFormVisible] = useState(false);
+  const [keyDeadlines, setKeyDeadlines] = useState<KeyDeadline[]>([]); // New state for key deadlines
 
   const handleOpenNewAppForm = () => {
     setIsNewAppFormVisible(true);
@@ -63,12 +64,15 @@ const AdmissionsDashboard: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    const mockData = generateMockApplicants(ADMISSIONS_DATA_COUNT);
-    setApplicants(mockData);
+    const mockApplicantData = generateMockApplicants(ADMISSIONS_DATA_COUNT);
+    const mockDeadlineData = generateMockKeyDeadlines(5); // Generate 5 mock deadlines
+    setApplicants(mockApplicantData);
+    setKeyDeadlines(mockDeadlineData); // Set deadlines state
     setLoading(false);
   }, []);
 
   // Calculate KPIs using useMemo for efficiency
+  // Update KPI calculations based on new ApplicationStatus values
   const kpiData = useMemo(() => {
     if (applicants.length === 0) {
       return {
@@ -81,29 +85,35 @@ const AdmissionsDashboard: React.FC = () => {
     }
 
     const totalApplicants = applicants.length;
-    const shortlistedCount = applicants.filter(a =>
-      ['Shortlisted', 'Interview Scheduled', 'Offered', 'Accepted', 'Enrollment Confirmed'].includes(a.status)
+    // Example: 'Screened' could be an equivalent to old 'Shortlisted' for KPI display purposes.
+    // Or we define KPIs based on the new funnel explicitly.
+    // Let's assume 'Screened' and beyond are "past initial review".
+    const pastScreeningCount = applicants.filter(a =>
+      ['Screened', 'Interview Scheduled', 'Interview Complete', 'Offer Made', 'Offer Accepted', 'Enrollment Confirmed'].includes(a.status)
     ).length;
     const offersMadeCount = applicants.filter(a =>
-      ['Offered', 'Accepted', 'Enrollment Confirmed'].includes(a.status)
+      ['Offer Made', 'Offer Accepted', 'Enrollment Confirmed'].includes(a.status)
     ).length;
-    const acceptedCount = applicants.filter(a =>
-      ['Accepted', 'Enrollment Confirmed'].includes(a.status)
+    const acceptedCount = applicants.filter(a => // Offer Accepted or Enrollment Confirmed
+      ['Offer Accepted', 'Enrollment Confirmed'].includes(a.status)
     ).length;
 
-    // Base conversion on 'Applied' vs 'Accepted' or 'Enrollment Confirmed'
-    // For this, we need to know how many were initially 'Applied'. Assuming all in dataset were initially applied.
     const conversionRate = totalApplicants > 0 ? (acceptedCount / totalApplicants) * 100 : 0;
 
     // Placeholder for Avg Processing Time - requires more specific date logic
     // For now, mock it or leave it out.
     // const avgProcessingTime = ...;
 
+    // For "Shortlisted" KPI, if 'Screened' is the new equivalent:
+    const screenedCount = applicants.filter(a => a.status === 'Screened').length;
+
+
     return {
       totalApplicants,
-      shortlistedCount,
+      // shortlistedCount: pastScreeningCount, // Or screenedCount specifically
+      shortlistedCount: screenedCount, // Using 'Screened' as a direct KPI now
       offersMadeCount,
-      acceptedCount, // Added for clarity, used in conversion rate
+      acceptedCount,
       conversionRate,
     };
   }, [applicants]);
@@ -159,7 +169,7 @@ const AdmissionsDashboard: React.FC = () => {
           <ApplicantFunnelChart data={applicants} loading={loading} />
         </Col>
         <Col xs={24} md={12} lg={8}>
-          <KeyDeadlinesTimeline loading={loading} />
+          <KeyDeadlinesTimeline deadlines={keyDeadlines} loading={loading} />
         </Col>
         <Col xs={24} md={12} lg={8}>
           <ApplicantOriginMapPlaceholder />

@@ -1,110 +1,111 @@
 import React from 'react';
 import { Card, Timeline, Typography, Tag } from 'antd';
-import { ClockCircleOutlined } from '@ant-design/icons';
+import { Card, Timeline, Typography, Tag, Spin, Empty } from 'antd'; // Added Spin, Empty
+import { ClockCircleOutlined, FileDoneOutlined, ScheduleOutlined, CheckCircleOutlined, NotificationOutlined } from '@ant-design/icons'; // Added more icons
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs'; // Ensure dayjs is available
+import dayjs from 'dayjs';
+import { KeyDeadline } from './types'; // Import the correct KeyDeadline type
 
-interface Deadline {
-  id: string;
-  date: string; // ISO string
-  titleKey: string; // Translation key for title
-  descriptionKey?: string; // Translation key for description
-  status?: 'upcoming' | 'past' | 'today';
-  color?: string; // Ant Design color for the dot
+interface KeyDeadlinesTimelineProps {
+  deadlines: KeyDeadline[];
+  loading: boolean;
 }
 
-// Mock deadlines data
-const mockDeadlines: Deadline[] = [
-  {
-    id: 'app-close',
-    date: dayjs().subtract(10, 'day').toISOString(), // Example: 10 days ago
-    titleKey: 'admissionsDashboard.deadlines.applicationClose',
-    descriptionKey: 'admissionsDashboard.deadlines.applicationCloseDesc',
-    status: 'past',
-    color: 'red',
-  },
-  {
-    id: 'interview-start',
-    date: dayjs().add(5, 'day').toISOString(), // Example: 5 days from now
-    titleKey: 'admissionsDashboard.deadlines.interviewPeriodStart',
-    status: 'upcoming',
-    color: 'blue',
-  },
-  {
-    id: 'interview-end',
-    date: dayjs().add(15, 'day').toISOString(), // Example: 15 days from now
-    titleKey: 'admissionsDashboard.deadlines.interviewPeriodEnd',
-    status: 'upcoming',
-    color: 'blue',
-  },
-  {
-    id: 'offer-release',
-    date: dayjs().add(30, 'day').toISOString(), // Example: 30 days from now
-    titleKey: 'admissionsDashboard.deadlines.offerRelease',
-    descriptionKey: 'admissionsDashboard.deadlines.offerReleaseDesc',
-    status: 'upcoming',
-    color: 'green',
-  },
-   {
-    id: 'orientation-day',
-    date: dayjs().add(2, 'day').toISOString(),
-    titleKey: 'admissionsDashboard.deadlines.orientationDay',
-    status: 'upcoming',
-    color: 'purple',
-  },
-];
-
-// Function to determine status dynamically (optional enhancement, for now using predefined)
-const getDeadlineStatus = (date: string): { status: 'upcoming' | 'past' | 'today', color: string } => {
+// Function to determine status dynamically and icon/color based on type
+const getDeadlineVisuals = (deadline: KeyDeadline): { status: 'upcoming' | 'past' | 'today'; color: string; icon?: React.ReactNode } => {
     const today = dayjs().startOf('day');
-    const deadlineDate = dayjs(date).startOf('day');
-    if (deadlineDate.isBefore(today)) return { status: 'past', color: 'red' };
-    if (deadlineDate.isSame(today)) return { status: 'today', color: 'orange' };
-    return { status: 'upcoming', color: 'blue' };
+    const deadlineDate = dayjs(deadline.date).startOf('day');
+    let status: 'upcoming' | 'past' | 'today';
+    let color = 'blue'; // Default for upcoming
+    let icon: React.ReactNode | undefined = undefined;
+
+    if (deadlineDate.isBefore(today)) {
+        status = 'past';
+        color = 'red';
+        icon = <ClockCircleOutlined />;
+    } else if (deadlineDate.isSame(today)) {
+        status = 'today';
+        color = 'orange';
+    } else {
+        status = 'upcoming';
+    }
+
+    // Customize color/icon based on deadline.type
+    switch (deadline.type) {
+        case 'Application':
+            icon = icon || <FileDoneOutlined />; // Use past icon if past, otherwise this
+            if (status === 'upcoming') color = 'geekblue';
+            break;
+        case 'Interview':
+            icon = icon || <ScheduleOutlined />;
+            if (status === 'upcoming') color = 'cyan';
+            break;
+        case 'Decision':
+            icon = icon || <NotificationOutlined />;
+            if (status === 'upcoming') color = 'purple';
+            break;
+        case 'Enrollment':
+            icon = icon || <CheckCircleOutlined />;
+            if (status === 'upcoming') color = 'green';
+            break;
+        default:
+            icon = icon || <ClockCircleOutlined />; // Default icon
+    }
+
+    return { status, color, icon };
 };
 
 
-const KeyDeadlinesTimeline: React.FC<{ loading?: boolean }> = ({ loading }) => {
+const KeyDeadlinesTimeline: React.FC<KeyDeadlinesTimelineProps> = ({ deadlines, loading }) => {
   const { t } = useTranslation();
 
-  const sortedDeadlines = mockDeadlines.map(d => {
-      const dynamicStatus = getDeadlineStatus(d.date);
-      return {...d, status: dynamicStatus.status, color: d.color || dynamicStatus.color };
-  }).sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
-
-
   if (loading) {
-    return <Card title={t('admissionsDashboard.deadlines.title', 'Key Deadlines')} style={{ minHeight: 300 }} loading={true} />;
+    return (
+      <Card title={t('admissionsDashboard.deadlines.title', 'Key Deadlines')} style={{ minHeight: 300 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+          <Spin />
+        </div>
+      </Card>
+    );
   }
 
+  if (!deadlines || deadlines.length === 0) {
+    return (
+      <Card title={t('admissionsDashboard.deadlines.title', 'Key Deadlines')} style={{ minHeight: 300 }}>
+        <Empty description={t('common.noData', 'No deadlines to display.')} />
+      </Card>
+    );
+  }
+
+  const sortedDeadlines = [...deadlines] // Create a new array before sorting
+    .map(d => ({ ...d, visuals: getDeadlineVisuals(d) }))
+    .sort((a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
+
+
   return (
-    <Card title={t('admissionsDashboard.deadlines.title', 'Key Deadlines')} style={{ minHeight: 300 /* Match Funnel Chart height approx */ }}>
-      {sortedDeadlines.length === 0 ? (
-        <Typography.Text>{t('common.noData', 'No deadlines to display.')}</Typography.Text>
-      ) : (
-        <Timeline mode="left" style={{ marginTop: '20px', paddingLeft: '5px' }}>
-          {sortedDeadlines.map(deadline => {
-            const isPast = deadline.status === 'past';
-            return (
-              <Timeline.Item
-                key={deadline.id}
-                label={dayjs(deadline.date).format('MMM DD, YYYY')}
-                color={deadline.color}
-                dot={isPast ? <ClockCircleOutlined /> : undefined}
-              >
-                <Typography.Text strong>{t(deadline.titleKey)}</Typography.Text>
-                {deadline.descriptionKey && (
-                  <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-                    {t(deadline.descriptionKey)}
-                  </Typography.Paragraph>
-                )}
-                 {deadline.status === 'today' && <Tag color="orange">{t('common.status.today', 'Today')}</Tag>}
-                 {deadline.status === 'upcoming' && dayjs(deadline.date).diff(dayjs(), 'day') <=7 &&  <Tag color="geekblue">{t('common.status.soon', 'Soon')}</Tag>}
-              </Timeline.Item>
-            );
-          })}
-        </Timeline>
-      )}
+    <Card title={t('admissionsDashboard.deadlines.title', 'Key Deadlines')} style={{ minHeight: 300 }}>
+      <Timeline mode="left" style={{ marginTop: '20px', paddingLeft: '5px' }}>
+        {sortedDeadlines.map(deadline => {
+          return (
+            <Timeline.Item
+              key={deadline.id}
+              label={dayjs(deadline.date).format('MMM DD, YYYY')}
+              color={deadline.visuals.color}
+              dot={deadline.visuals.icon}
+            >
+              <Typography.Text strong>{deadline.title}</Typography.Text> {/* Use direct title */}
+              {deadline.description && ( // Use direct description
+                <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+                  {deadline.description}
+                </Typography.Paragraph>
+              )}
+               {deadline.visuals.status === 'today' && <Tag color={deadline.visuals.color}>{t('common.status.today', 'Today')}</Tag>}
+               {deadline.visuals.status === 'upcoming' && dayjs(deadline.date).diff(dayjs(), 'day') <= 7 && dayjs(deadline.date).diff(dayjs(), 'day') >=0 && <Tag color={deadline.visuals.color}>{t('common.status.soon', 'Soon')}</Tag>}
+               {deadline.visuals.status === 'past' && <Tag color={deadline.visuals.color}>{t('common.status.past', 'Past')}</Tag>}
+            </Timeline.Item>
+          );
+        })}
+      </Timeline>
     </Card>
   );
 };

@@ -99,15 +99,78 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
               </Row>
                <Row gutter={16} style={{marginTop: '10px'}}>
                 <Col span={12}>
-                  <Statistic title="Required Credits" value={program.requiredCredits || 'N/A'} />
+                  <Statistic title="Required Credits" value={program.requiredCredits ?? 'N/A'} />
                 </Col>
                  <Col span={12}>
-                  {/* UI display of graduationRate includes '%' */}
-                  <Statistic title="Graduation Rate" value={program.graduationRate ? `${program.graduationRate.toFixed(0)}%` : 'N/A'} />
+                  <Statistic title="Graduation Rate" value={program.graduationRate !== undefined ? `${program.graduationRate.toFixed(0)}%` : 'N/A'} />
                 </Col>
               </Row>
+
+              {/* Attendance KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={12}>
+                  <Statistic
+                    title="Avg. Attendance"
+                    value={program.avgAttendancePercentage !== undefined ? program.avgAttendancePercentage.toFixed(1) : undefined}
+                    suffix={program.avgAttendancePercentage !== undefined ? "%" : undefined}
+                    formatter={program.avgAttendancePercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic title="Total Absences" value={program.totalProgramAbsences ?? 'N/A'} />
+                </Col>
+              </Row>
+
+              {/* Billing KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={12}>
+                  <Statistic
+                    title="Avg. Fees Paid"
+                    value={program.avgFeesPaidPercentage !== undefined ? program.avgFeesPaidPercentage.toFixed(1) : undefined}
+                    suffix={program.avgFeesPaidPercentage !== undefined ? "%" : undefined}
+                    formatter={program.avgFeesPaidPercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic title="Overdue Fees (Students)" value={program.totalStudentsWithOverdueFees ?? 'N/A'} />
+                </Col>
+              </Row>
+
+              {/* Admissions KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={8}>
+                  <Statistic title="Applicants" value={program.applicants ?? 'N/A'} />
+                </Col>
+                <Col span={8}>
+                  <Statistic
+                    title="Acceptance Rate"
+                    value={program.acceptanceRate !== undefined ? program.acceptanceRate.toFixed(1) : undefined}
+                    suffix={program.acceptanceRate !== undefined ? "%" : undefined}
+                    formatter={program.acceptanceRate === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Statistic title="Enrolled" value={program.enrolledCount ?? 'N/A'} />
+                </Col>
+              </Row>
+
+              {/* Student Risk and Grades */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                 <Col span={12}>
+                  <Statistic title="At-Risk Students" value={program.atRiskStudents ?? 'N/A'} />
+                </Col>
+                <Col span={12}>
+                  <Typography.Text strong style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)'}}>Grade Distribution</Typography.Text>
+                  <Typography.Text style={{display: 'block', fontSize: '14px'}}>
+                    {program.gradeDistribution
+                      ? Object.entries(program.gradeDistribution).map(([grade, count]) => `${grade}:${count}`).join('; ')
+                      : 'N/A'}
+                  </Typography.Text>
+                </Col>
+              </Row>
+
               <Button
-                type="primary" // Changed to primary for drill-down action
+                type="primary"
                 style={{ marginTop: '20px' }}
                 onClick={() => onSelectProgram(program.programId)}
               >

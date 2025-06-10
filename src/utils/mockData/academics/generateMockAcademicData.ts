@@ -10,11 +10,20 @@ import {
     Program,
     Semester,
     StudentSummary
-} from '../../../types/hierarchy'; // Path to the new hierarchy types
-import { generateMockStudents } from '../attendance/generateMockAttendanceData'; // To get student list
+} from '../../../types/hierarchy';
+// Import base data types and generators
+import { Student } from '../../../components/AttendanceDashboard/types';
+import { generateMockStudents } from '../attendance/generateMockAttendanceData';
+import { AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Added
+import { generateMockAttendanceRecords } from '../attendance/generateMockAttendanceData'; // Added
+import { Invoice } from '../../../components/BillingDashboard/types'; // Added
+import { generateMockInvoices } from '../billing/generateMockBillingData'; // Added
+import { Applicant } from '../../../components/AdmissionsDashboard/types'; // Added
+import { generateMockApplicants } from '../admissions/generateMockApplicants'; // Added
+
 
 import dayjs from 'dayjs';
-import { faker } from '@faker-js/faker'; // faker was used but not explicitly imported at the top
+// faker is already imported via the first line: import { faker } from '@faker-js/faker';
 
 // Helper to assign grade points (simplified)
 const gradeToPoints = (letterGrade: Grade['letterGrade']): number => {
@@ -171,6 +180,132 @@ export const generateMockAcademicRecords = (students: Student[]): StudentAcademi
   return students.map((student, index) => generateMockStudentAcademicRecord(student, index));
 };
 
+// --- KPI Helper Functions ---
+
+// Attendance KPIs
+const calculateAttendanceKPIs = (
+    studentIdsInContext: string[], // Students relevant to the current context (e.g., in a specific semester/program)
+    attendanceRecords: AttendanceRecord[],
+    contextStartDate?: string, // Optional: to filter records within a specific period (e.g., semester dates)
+    contextEndDate?: string
+): { percentage?: number; totalAbsences?: number } => {
+    if (studentIdsInContext.length === 0) return { percentage: 100, totalAbsences: 0 };
+
+    const relevantRecords = attendanceRecords.filter(r => {
+        const studentMatch = studentIdsInContext.includes(r.studentId);
+        if (!studentMatch) return false;
+        if (contextStartDate && contextEndDate) {
+            return dayjs(r.date).isBetween(dayjs(contextStartDate), dayjs(contextEndDate), null, '[]'); // '[]' includes start/end
+        }
+        return true;
+    });
+
+    const totalPossibleSessions = studentIdsInContext.length * (contextStartDate && contextEndDate ? dayjs(contextEndDate).diff(dayjs(contextStartDate), 'days') : 1); // Simplified: 1 session per day per student
+    const absences = relevantRecords.filter(r => r.status === 'Absent' || r.status === 'Excused').length;
+
+    // This is a very rough estimation of attendance percentage.
+    // A more accurate calculation would need total scheduled sessions for these students in this context.
+    // For mock data, if we assume each student has X expected sessions in the period:
+    const estimatedTotalSessions = studentIdsInContext.length * 20; // Assume 20 sessions in a typical period for mock
+    const attendancePercentage = estimatedTotalSessions > 0
+        ? parseFloat(( ( (estimatedTotalSessions - absences) / estimatedTotalSessions) * 100).toFixed(2))
+        : 100;
+
+    return {
+        percentage: Math.max(0, Math.min(100, attendancePercentage)), // Clamp between 0-100
+        totalAbsences: absences,
+    };
+};
+
+// Billing KPIs
+const calculateBillingKPIs = (
+    studentIdsInContext: string[],
+    invoices: Invoice[]
+): { feesPaidPercentage?: number; overdueCount?: number } => {
+    if (studentIdsInContext.length === 0) return { feesPaidPercentage: 100, overdueCount: 0 };
+
+    const relevantInvoices = invoices.filter(inv => studentIdsInContext.includes(inv.studentId) && inv.status !== 'Cancelled' && inv.status !== 'Draft');
+    if (relevantInvoices.length === 0) return { feesPaidPercentage: 100, overdueCount: 0 };
+
+    const totalAmountDue = relevantInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0);
+    const totalAmountPaid = relevantInvoices
+        .filter(inv => inv.status === 'Paid') // Consider only fully paid for simplicity, or sum actual payments if available
+        .reduce((sum, inv) => sum + inv.totalAmount, 0);
+        // More accurately, this should sum from actual Payment records if available and linked.
+        // For now, using invoice status.
+
+    const feesPaidPercentage = totalAmountDue > 0 ? parseFloat(((totalAmountPaid / totalAmountDue) * 100).toFixed(2)) : 100;
+    const overdueCount = relevantInvoices.filter(inv => inv.status === 'Overdue').length;
+
+    return {
+        feesPaidPercentage: Math.min(100, feesPaidPercentage), // Can't be over 100%
+        overdueCount,
+    };
+};
+
+// Admission KPIs
+const calculateAdmissionKPIs = (
+    programApplicants: Applicant[] // Applicants specifically for this program
+): { applicants: number; acceptanceRate?: number; enrolledCount?: number } => {
+    if (!programApplicants || programApplicants.length === 0) {
+        return { applicants: 0, acceptanceRate: 0, enrolledCount: 0 };
+    }
+    const totalApplicants = programApplicants.length;
+    const offersMade = programApplicants.filter(a => ['Offer Made', 'Offer Accepted', 'Enrollment Confirmed'].includes(a.status)).length;
+    const enrolled = programApplicants.filter(a => a.status === 'Enrollment Confirmed').length;
+    // Acceptance rate: offers made / total applicants for this program
+    const acceptanceRate = totalApplicants > 0 ? parseFloat(((offersMade / totalApplicants) * 100).toFixed(2)) : 0;
+
+    return {
+        applicants: totalApplicants,
+        acceptanceRate,
+        enrolledCount: enrolled,
+    };
+};
+
+// Grade Distribution
+const calculateGradeDistribution = (studentRecords: StudentAcademicRecord[]): { [gradeCategory: string]: number } => {
+    const distribution: { [gradeCategory: string]: number } = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0, 'Other': 0 };
+    studentRecords.forEach(record => {
+        record.terms.forEach(term => {
+            term.courses.forEach(course => {
+                if (course.grade) {
+                    const letter = course.grade.letterGrade[0]; // Take first char (A+ -> A)
+                    if (distribution[letter] !== undefined) {
+                        distribution[letter]++;
+                    } else if (course.grade.letterGrade === 'P' || course.grade.letterGrade === 'NP') {
+                        distribution['Other']++;
+                    }
+                }
+            });
+        });
+    });
+    return distribution;
+};
+
+// At-Risk Students
+const countAtRiskStudents = (
+    studentRecords: StudentAcademicRecord[],
+    studentIdsInContext: string[],
+    attendanceRecords?: AttendanceRecord[], // Optional: add attendance criteria later
+    minGpaThreshold: number = 2.0,
+    maxAbsencesThreshold: number = 10 // Example threshold
+): number => {
+    let atRiskCount = 0;
+    const relevantStudentRecords = studentRecords.filter(sr => studentIdsInContext.includes(sr.studentId));
+
+    relevantStudentRecords.forEach(record => {
+        if (record.cumulativeGPA !== undefined && record.cumulativeGPA < minGpaThreshold) {
+            atRiskCount++;
+            return; // Counted once for GPA
+        }
+        // TODO: Add attendance-based at-risk logic if attendanceRecords are provided and processed
+        // For example, filter attendance for this student, sum absences, compare to maxAbsencesThreshold
+    });
+    return atRiskCount;
+};
+
+
 // --- New Hierarchical Mock Data Generation ---
 
 const calculateSemesterAverageGPA = (students: StudentSummary[], courses: CourseEnrollment[], termId: string): number | undefined => {
@@ -208,20 +343,34 @@ const calculateSemesterPassRate = (students: StudentSummary[], courses: CourseEn
 };
 
 
-export const generateMockSemester = (term: Term, studentsInProgramForSemester: StudentSummary[]): Semester => {
-    // For now, assume all studentsInProgramForSemester are active in this semester.
-    // A more complex logic could filter based on enrollment dates, status, etc.
+export const generateMockSemester = (
+    term: Term,
+    studentsInProgramForSemester: StudentSummary[],
+    allAttendanceRecords: AttendanceRecord[], // All attendance for the institution
+    allInvoices: Invoice[] // All invoices for the institution
+): Semester => {
     const semesterStudents = studentsInProgramForSemester;
+    const studentIdsInSemester = semesterStudents.map(s => s.studentId);
+
+    // Calculate new KPIs for the semester
+    const attendanceKPIs = calculateAttendanceKPIs(studentIdsInSemester, allAttendanceRecords, term.startDate, term.endDate);
+    const billingKPIs = calculateBillingKPIs(studentIdsInSemester, allInvoices); // Invoices are typically not semester-specific in the same way attendance is.
+                                                                            // This will use all invoices for these students. Refine if invoices are term-linked.
 
     return {
         semesterId: term.termId,
         semesterName: term.termName,
         startDate: term.startDate,
         endDate: term.endDate,
-        courses: term.courses, // Courses offered in the term, not student-specific enrollments here
+        courses: term.courses,
         students: semesterStudents,
         averageGPA: calculateSemesterAverageGPA(semesterStudents, term.courses, term.termId),
         passRate: calculateSemesterPassRate(semesterStudents, term.courses, term.termId),
+        // New KPIs
+        attendancePercentage: attendanceKPIs.percentage,
+        totalAbsences: attendanceKPIs.totalAbsences,
+        feesPaidPercentage: billingKPIs.feesPaidPercentage,
+        studentsWithOverdueFees: billingKPIs.overdueCount,
     };
 };
 
@@ -230,9 +379,12 @@ export const generateMockProgram = (
     programName: string,
     degreeId: string,
     requiredCredits: number,
-    allStudents: Student[], // All students in the institution
-    allAcademicRecords: StudentAcademicRecord[], // All records
-    termsForProgram: Term[] // Pre-filtered terms relevant to this program's timeline or structure
+    allStudents: Student[],
+    allAcademicRecords: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[], // Added
+    allInvoices: Invoice[], // Added
+    allApplicants: Applicant[], // Added
+    termsForProgram: Term[]
 ): Program => {
     const programStudentRecords = allAcademicRecords.filter(ar => ar.programId === programId);
     const programStudentIds = new Set(programStudentRecords.map(ar => ar.studentId));
@@ -248,11 +400,30 @@ export const generateMockProgram = (
         // More realistic: Filter students based on their actual enrollment period for the term.
         // For example, only include students whose enrollmentStatus is 'Active' and whose
         // academic history suggests they were active in this specific term.
-        const activeStudentsInSemester = programStudentSummaries.filter(s => s.enrollmentStatus === 'Active');
-        return generateMockSemester(term, activeStudentsInSemester);
+        const activeStudentsInSemester = programStudentSummaries.filter(s => s.enrollmentStatus === 'Active'); // Keep this simple filter for now
+        return generateMockSemester(
+            term,
+            activeStudentsInSemester,
+            allAttendanceRecords, // Pass down relevant slices or full lists
+            allInvoices           // Pass down relevant slices or full lists
+            );
     });
 
     const totalStudentsInProgram = programStudentSummaries.length;
+    const programStudentIds = programStudentSummaries.map(s => s.studentId);
+
+    // Aggregate KPIs for the Program
+    const programAttendanceKPIs = calculateAttendanceKPIs(programStudentIds, allAttendanceRecords); // For the whole program duration ideally
+    const programBillingKPIs = calculateBillingKPIs(programStudentIds, allInvoices);
+
+    // Filter applicants for this specific program
+    // This assumes applicants have a programId they applied to.
+    // generateMockApplicants assigns a programId.
+    const applicantsForProgram = allApplicants.filter(app => app.programId === programId);
+    const programAdmissionKPIs = calculateAdmissionKPIs(applicantsForProgram);
+
+    const programGradeDistribution = calculateGradeDistribution(programStudentRecords);
+    const programAtRiskStudents = countAtRiskStudents(programStudentRecords, programStudentIds, allAttendanceRecords);
 
     let sumOfGpas = 0;
     let studentsWithGpas = 0;
@@ -280,6 +451,16 @@ export const generateMockProgram = (
         totalStudents: totalStudentsInProgram,
         averageProgramGPA,
         graduationRate,
+        // New Program KPIs
+        avgAttendancePercentage: programAttendanceKPIs.percentage,
+        totalProgramAbsences: programAttendanceKPIs.totalAbsences,
+        avgFeesPaidPercentage: programBillingKPIs.feesPaidPercentage,
+        totalStudentsWithOverdueFees: programBillingKPIs.overdueCount,
+        applicants: programAdmissionKPIs.applicants,
+        acceptanceRate: programAdmissionKPIs.acceptanceRate,
+        enrolledCount: programAdmissionKPIs.enrolledCount,
+        gradeDistribution: programGradeDistribution,
+        atRiskStudents: programAtRiskStudents,
     };
 };
 
@@ -307,7 +488,10 @@ export const generateMockDegree = (
     degreeName: string,
     allStudents: Student[],
     allAcademicRecords: StudentAcademicRecord[],
-    availableTerms: Term[] // All terms that could potentially be part of programs in this degree
+    allAttendanceRecords: AttendanceRecord[], // Added
+    allInvoices: Invoice[], // Added
+    allApplicants: Applicant[], // Added
+    availableTerms: Term[]
 ): Degree => {
     const programsInDegreeData = degreeProgramMappings[degreeId] || [];
     if (programsInDegreeData.length === 0) {
@@ -324,26 +508,65 @@ export const generateMockDegree = (
             pInfo.requiredCredits,
             allStudents,
             allAcademicRecords,
+            allAttendanceRecords, // Pass down
+            allInvoices,          // Pass down
+            allApplicants,        // Pass down
             availableTerms
         );
     });
 
+    // Aggregate KPIs for the Degree
     let totalStudentsInDegree = 0;
+    let totalDegreeAbsences = 0;
+    let sumOfProgramAttendance = 0;
+    let programsWithAttendance = 0;
+    let totalStudentsWithOverdueFeesInDegree = 0;
+    let sumOfProgramFeesPaid = 0;
+    let programsWithFees = 0;
+    let totalDegreeApplicants = 0;
+    let sumOfProgramAcceptanceRates = 0;
+    let programsWithAdmissions = 0;
+    let totalDegreeEnrolled = 0;
+    const overallGradeDistribution: { [key: string]: number } = {};
+    let totalAtRiskInDegree = 0;
     let sumOfProgramGpas = 0;
     let programsWithGpas = 0;
 
     generatedPrograms.forEach(prog => {
-        if (prog.totalStudents) {
-            totalStudentsInDegree += prog.totalStudents;
+        totalStudentsInDegree += prog.totalStudents || 0;
+        if (prog.averageProgramGPA !== undefined && prog.totalStudents) {
+            sumOfProgramGpas += prog.averageProgramGPA * prog.totalStudents;
+            programsWithGpas += prog.totalStudents;
         }
-        if (prog.averageProgramGPA !== undefined) {
-            // Weight by number of students in program for a more accurate average
-            sumOfProgramGpas += prog.averageProgramGPA * (prog.totalStudents || 1);
-            programsWithGpas += (prog.totalStudents || 1);
+        // Aggregate new KPIs
+        if(prog.avgAttendancePercentage !== undefined && prog.totalStudents) {
+            sumOfProgramAttendance += prog.avgAttendancePercentage * prog.totalStudents; // Weight by students
+            programsWithAttendance += prog.totalStudents;
         }
+        totalDegreeAbsences += prog.totalProgramAbsences || 0;
+        if(prog.avgFeesPaidPercentage !== undefined && prog.totalStudents) {
+            sumOfProgramFeesPaid += prog.avgFeesPaidPercentage * prog.totalStudents; // Weight by students
+            programsWithFees += prog.totalStudents;
+        }
+        totalStudentsWithOverdueFeesInDegree += prog.totalStudentsWithOverdueFees || 0;
+        totalDegreeApplicants += prog.applicants || 0;
+        if(prog.acceptanceRate !== undefined && prog.applicants) { // Weight by applicants for acceptance rate
+            sumOfProgramAcceptanceRates += prog.acceptanceRate * prog.applicants;
+            programsWithAdmissions += prog.applicants;
+        }
+        totalDegreeEnrolled += prog.enrolledCount || 0;
+        if(prog.gradeDistribution) {
+            for(const grade in prog.gradeDistribution) {
+                overallGradeDistribution[grade] = (overallGradeDistribution[grade] || 0) + prog.gradeDistribution[grade];
+            }
+        }
+        totalAtRiskInDegree += prog.atRiskStudents || 0;
     });
 
     const averageDegreeGPA = programsWithGpas > 0 ? parseFloat((sumOfProgramGpas / programsWithGpas).toFixed(2)) : undefined;
+    const avgDegreeAttendance = programsWithAttendance > 0 ? parseFloat((sumOfProgramAttendance / programsWithAttendance).toFixed(2)) : undefined;
+    const avgDegreeFeesPaid = programsWithFees > 0 ? parseFloat((sumOfProgramFeesPaid / programsWithFees).toFixed(2)) : undefined;
+    const avgDegreeAcceptanceRate = programsWithAdmissions > 0 ? parseFloat((sumOfProgramAcceptanceRates / programsWithAdmissions).toFixed(2)) : undefined;
 
     return {
         degreeId,
@@ -351,6 +574,16 @@ export const generateMockDegree = (
         programs: generatedPrograms,
         totalStudents: totalStudentsInDegree,
         averageDegreeGPA,
+        // New Degree KPIs
+        avgAttendancePercentage: avgDegreeAttendance,
+        totalDegreeAbsences,
+        avgFeesPaidPercentage: avgDegreeFeesPaid,
+        totalStudentsWithOverdueFeesInDegree,
+        totalApplicants: totalDegreeApplicants,
+        avgAcceptanceRate: avgDegreeAcceptanceRate,
+        totalEnrolledCount: totalDegreeEnrolled,
+        overallGradeDistribution,
+        totalAtRiskStudents: totalAtRiskInDegree,
     };
 };
 
@@ -364,44 +597,94 @@ const mockDegrees = [
 export const generateMockAcademicYear = (
     yearId: string, // e.g., "2022-2023"
     yearName: string, // e.g., "Academic Year 2022-2023"
-    startDate: string, // ISO String
-    endDate: string, // ISO String
+    startDate: string,
+    endDate: string,
     allStudents: Student[],
     allAcademicRecords: StudentAcademicRecord[],
-    allAvailableTerms: Term[] // All terms generated for the institution
+    allAttendanceRecords: AttendanceRecord[], // Added
+    allInvoices: Invoice[], // Added
+    allApplicants: Applicant[], // Added
+    allAvailableTerms: Term[]
 ): AcademicYear => {
-    // Filter terms that fall within this academic year
     const termsForThisYear = allAvailableTerms.filter(term => {
         const termStart = dayjs(term.startDate);
         return termStart.isAfter(dayjs(startDate).subtract(1, 'day')) && termStart.isBefore(dayjs(endDate).add(1, 'day'));
     });
 
     const degreesInYear: Degree[] = mockDegrees.map(degInfo => {
-        // Pass only the terms relevant to this academic year down to degree generation
         return generateMockDegree(
             degInfo.degreeId,
             degInfo.degreeName,
-            allStudents,
+            allStudents, // Pass full lists, filtering happens at program/semester if needed
             allAcademicRecords,
-            termsForThisYear
+            allAttendanceRecords,
+            allInvoices,
+            allApplicants,
+            termsForThisYear // Terms are filtered for the year
         );
-    }).filter(degree => degree.programs.length > 0); // Only include degrees that ended up with programs
+    }).filter(degree => degree.programs.length > 0);
 
+    // Aggregate KPIs for the Academic Year
     let totalStudentsInYear = 0;
     let sumOfDegreeGpas = 0;
-    let degreesWithGpasWeighted = 0;
+    let degreesWithGpas = 0; // count of students for weighted GPA
+
+    let annualAttendancePercentage = 0;
+    let totalAnnualAbsences = 0;
+    let annualFeesPaidPercentage = 0;
+    let totalStudentsWithOverdueFeesInYear = 0;
+    let totalAnnualApplicants = 0;
+    let avgAnnualAcceptanceRate = 0;
+    let totalAnnualEnrolledCount = 0;
+    const annualGradeDistribution: { [key: string]: number } = {};
+    let totalAnnualAtRiskStudents = 0;
+
+    let weightedSumAttendance = 0;
+    let totalStudentsForAttendance = 0;
+    let weightedSumFeesPaid = 0;
+    let totalStudentsForFees = 0;
+    let weightedSumAcceptance = 0;
+    let totalApplicantsForRate = 0;
+
 
     degreesInYear.forEach(deg => {
-        if (deg.totalStudents) {
-            totalStudentsInYear += deg.totalStudents;
-        }
-        if (deg.averageDegreeGPA !== undefined && deg.totalStudents && deg.totalStudents > 0) {
+        totalStudentsInYear += deg.totalStudents || 0;
+        if (deg.averageDegreeGPA !== undefined && deg.totalStudents) {
             sumOfDegreeGpas += deg.averageDegreeGPA * deg.totalStudents;
-            degreesWithGpasWeighted += deg.totalStudents;
+            degreesWithGpas += deg.totalStudents;
         }
+
+        if(deg.avgAttendancePercentage !== undefined && deg.totalStudents) {
+            weightedSumAttendance += deg.avgAttendancePercentage * deg.totalStudents;
+            totalStudentsForAttendance += deg.totalStudents;
+        }
+        totalAnnualAbsences += deg.totalDegreeAbsences || 0;
+
+        if(deg.avgFeesPaidPercentage !== undefined && deg.totalStudents) {
+            weightedSumFeesPaid += deg.avgFeesPaidPercentage * deg.totalStudents;
+            totalStudentsForFees += deg.totalStudents;
+        }
+        totalStudentsWithOverdueFeesInYear += deg.totalStudentsWithOverdueFeesInDegree || 0;
+
+        totalAnnualApplicants += deg.totalApplicants || 0;
+        if(deg.avgAcceptanceRate !== undefined && deg.totalApplicants) {
+            weightedSumAcceptance += deg.avgAcceptanceRate * deg.totalApplicants;
+            totalApplicantsForRate += deg.totalApplicants;
+        }
+        totalAnnualEnrolledCount += deg.totalEnrolledCount || 0;
+
+        if(deg.overallGradeDistribution) {
+            for(const grade in deg.overallGradeDistribution) {
+                annualGradeDistribution[grade] = (annualGradeDistribution[grade] || 0) + deg.overallGradeDistribution[grade];
+            }
+        }
+        totalAnnualAtRiskStudents += deg.totalAtRiskStudents || 0;
     });
 
-    const overallAverageGPA = degreesWithGpasWeighted > 0 ? parseFloat((sumOfDegreeGpas / degreesWithGpasWeighted).toFixed(2)) : undefined;
+    const overallAverageGPA = degreesWithGpas > 0 ? parseFloat((sumOfDegreeGpas / degreesWithGpas).toFixed(2)) : undefined;
+    annualAttendancePercentage = totalStudentsForAttendance > 0 ? parseFloat((weightedSumAttendance / totalStudentsForAttendance).toFixed(2)) : undefined;
+    annualFeesPaidPercentage = totalStudentsForFees > 0 ? parseFloat((weightedSumFeesPaid / totalStudentsForFees).toFixed(2)) : undefined;
+    avgAnnualAcceptanceRate = totalApplicantsForRate > 0 ? parseFloat((weightedSumAcceptance / totalApplicantsForRate).toFixed(2)) : undefined;
 
     return {
         yearId,
@@ -411,24 +694,55 @@ export const generateMockAcademicYear = (
         degrees: degreesInYear,
         totalStudents: totalStudentsInYear,
         overallAverageGPA,
+        // New Academic Year KPIs
+        annualAttendancePercentage,
+        totalAnnualAbsences,
+        annualFeesPaidPercentage,
+        totalStudentsWithOverdueFeesInYear,
+        totalAnnualApplicants,
+        avgAnnualAcceptanceRate,
+        totalAnnualEnrolledCount,
+        annualGradeDistribution,
+        totalAnnualAtRiskStudents,
     };
 };
 
 // Main function to generate the full institution hierarchy
 export const generateMockInstitutions = (
-    numStudents: number = 100, // Default number of students for the institution
-    numYears: number = 2 // Default number of academic years to generate
+    numStudents: number = 250, // Default number of students for the institution
+    numYears: number = 3, // Default number of academic years to generate
+    numApplicantsPerProgram: number = 50 // For admissions data
 ): Institution[] => {
-    const students = generateMockStudents(numStudents);
-    const academicRecords = generateMockAcademicRecords(students); // Generate full records first
+    // 1. Generate Base Data Sets
+    const allStudents = generateMockStudents(numStudents);
+    const allAcademicRecords = generateMockAcademicRecords(allStudents);
+
+    // For Attendance: Generate some classes for context if your attendance mock data needs it.
+    // Assuming generateMockAttendanceRecords can work primarily with students and date ranges.
+    // Let's generate records for roughly the duration of the academic years being mocked.
+    // If academic years are, e.g., 2022-2023, 2023-2024, 2024-2025, that's 3*365 days.
+    const allAttendanceRecords = generateMockAttendanceRecords(allStudents, [], numYears * 365); // Empty classes array for now if not strictly needed by attendance logic for this KPI
+
+    const allInvoices = generateMockInvoices(allStudents, 5); // Max 5 invoices per student
+
+    // For Applicants: This is tricky as applicants are tied to programs.
+    // We'll generate a pool of applicants. Programs will later filter/associate them.
+    // For simplicity, let's assume a total number of applicants for the institution.
+    // Or, generate them per program later. For now, a general pool.
+    // The number of programs is dynamic based on degreeProgramMappings.
+    // Let's estimate ~2-3 programs per degree, 2-3 degrees. So ~4-9 programs.
+    // numApplicantsPerProgram * (avg number of programs)
+    const estimatedTotalApplicants = numApplicantsPerProgram * (Object.keys(degreeProgramMappings).length * 2.5);
+    const allApplicants = generateMockApplicants(Math.max(estimatedTotalApplicants, numStudents)); // Ensure enough applicants, some might not get in.
+
 
     const institutionId = faker.string.uuid();
     const institutionName = `${faker.company.name()} University`;
 
-    const academicYears: AcademicYear[] = [];
+    const academicYearsData: AcademicYear[] = []; // Renamed to avoid conflict with type
     const allTermsAcrossYears: Term[] = [];
 
-    const currentCycleYear = dayjs().year(); // e.g. 2024
+    const currentCycleYear = dayjs().year();
 
     // Generate all terms for all relevant academic years first
     for (let i = 0; i < numYears; i++) {
@@ -456,49 +770,93 @@ export const generateMockInstitutions = (
                 yearName,
                 startDate,
                 endDate,
-                students,
-                academicRecords,
-                allTermsAcrossYears // Provide all terms, filtering happens in generateMockAcademicYear
+                allStudents,
+                allAcademicRecords,
+                allAttendanceRecords, // Pass down
+                allInvoices,          // Pass down
+                allApplicants,        // Pass down
+                allTermsAcrossYears
             )
         );
     }
 
-    let totalInstitutionStudents = 0;
+    // Aggregate Institution-Level KPIs from academicYearsData
+    let instAttendancePercentage: number | undefined = 0;
+    let instTotalAbsences = 0;
+    let instFeesPaidPercentage: number | undefined = 0;
+    let instTotalStudentsWithOverdueFees = 0;
+    let instTotalApplicants = 0;
+    let instAvgAcceptanceRate: number | undefined = 0;
+    let instTotalEnrolled = 0;
+    const instGradeDistribution: { [key: string]: number } = {};
+    let instTotalAtRisk = 0;
+
+    let weightedSumInstAttendance = 0;
+    let totalStudentsForInstAttendance = 0; // Sum of students from years that have attendance data
+    let weightedSumInstFeesPaid = 0;
+    let totalStudentsForInstFees = 0; // Sum of students from years that have fee data
+    let weightedSumInstAcceptance = 0;
+    let totalApplicantsForInstRate = 0; // Sum of applicants from years that have acceptance data
     let sumOfAnnualGpas = 0;
-    let yearsWithGpasWeighted = 0;
+    let totalStudentsForGpa = 0; // Sum of students from years that have GPA data
 
     academicYears.forEach(ay => {
-        // Total students should ideally be unique students across years,
-        // but for this structure, it's the sum of active students per year view.
-        // A true unique count would require more complex student tracking across years.
-        // For now, sum of year totals gives a sense of activity volume.
-        if (ay.totalStudents) {
-             // This will double count students if they are in multiple years.
-             // A more accurate way would be to use students.length if all students are part of the institution.
-             // However, the hierarchy asks for totalStudents at each level.
-             // Let's use the highest total student count from any academic year as a proxy for peak enrollment.
-             // Or, even better, just use the initial `numStudents` as the institution's total student body size.
+        if(ay.annualAttendancePercentage !== undefined && ay.totalStudents) {
+            weightedSumInstAttendance += ay.annualAttendancePercentage * ay.totalStudents;
+            totalStudentsForInstAttendance += ay.totalStudents;
         }
-        if (ay.overallAverageGPA !== undefined && ay.totalStudents && ay.totalStudents > 0) {
+        instTotalAbsences += ay.totalAnnualAbsences || 0;
+
+        if(ay.annualFeesPaidPercentage !== undefined && ay.totalStudents) {
+            weightedSumInstFeesPaid += ay.annualFeesPaidPercentage * ay.totalStudents;
+            totalStudentsForInstFees += ay.totalStudents;
+        }
+        instTotalStudentsWithOverdueFees += ay.totalStudentsWithOverdueFeesInYear || 0;
+
+        instTotalApplicants += ay.totalAnnualApplicants || 0;
+        if(ay.avgAnnualAcceptanceRate !== undefined && ay.totalAnnualApplicants) {
+            weightedSumInstAcceptance += ay.avgAnnualAcceptanceRate * ay.totalAnnualApplicants;
+            totalApplicantsForInstRate += ay.totalAnnualApplicants;
+        }
+        instTotalEnrolled += ay.totalAnnualEnrolledCount || 0;
+
+        if(ay.annualGradeDistribution) {
+            for(const grade in ay.annualGradeDistribution) {
+                instGradeDistribution[grade] = (instGradeDistribution[grade] || 0) + ay.annualGradeDistribution[grade];
+            }
+        }
+        instTotalAtRisk += ay.totalAnnualAtRiskStudents || 0;
+
+        if(ay.overallAverageGPA !== undefined && ay.totalStudents) {
             sumOfAnnualGpas += ay.overallAverageGPA * ay.totalStudents;
-            yearsWithGpasWeighted += ay.totalStudents;
+            totalStudentsForGpa += ay.totalStudents;
         }
     });
 
-    // For institution total students, it's likely best to use the initial number of students generated.
-    totalInstitutionStudents = students.length;
-
-    const overallInstitutionGPA = yearsWithGpasWeighted > 0 ? parseFloat((sumOfAnnualGpas / yearsWithGpasWeighted).toFixed(2)) : undefined;
+    instAttendancePercentage = totalStudentsForInstAttendance > 0 ? parseFloat((weightedSumInstAttendance / totalStudentsForInstAttendance).toFixed(2)) : undefined;
+    instFeesPaidPercentage = totalStudentsForInstFees > 0 ? parseFloat((weightedSumInstFeesPaid / totalStudentsForInstFees).toFixed(2)) : undefined;
+    instAvgAcceptanceRate = totalApplicantsForInstRate > 0 ? parseFloat((weightedSumInstAcceptance / totalApplicantsForInstRate).toFixed(2)) : undefined;
+    const overallInstitutionGPA = totalStudentsForGpa > 0 ? parseFloat((sumOfAnnualGpas / totalStudentsForGpa).toFixed(2)) : undefined;
 
     const institution: Institution = {
         institutionId,
         institutionName,
-        academicYears,
-        totalStudents: totalInstitutionStudents,
+        academicYears: academicYearsData,
+        totalStudents: allStudents.length,
         overallAverageGPA: overallInstitutionGPA,
+        // Populated aggregated KPIs
+        institutionAttendancePercentage: instAttendancePercentage,
+        totalInstitutionAbsences: instTotalAbsences,
+        institutionFeesPaidPercentage: instFeesPaidPercentage,
+        totalStudentsWithOverdueFeesInInstitution: instTotalStudentsWithOverdueFees,
+        totalInstitutionApplicants: instTotalApplicants,
+        avgInstitutionAcceptanceRate: instAvgAcceptanceRate,
+        totalInstitutionEnrolledCount: instTotalEnrolled,
+        institutionGradeDistribution: instGradeDistribution,
+        totalInstitutionAtRiskStudents: instTotalAtRisk,
     };
 
-    return [institution]; // Returns an array as per the type, even if it's a single institution
+    return [institution];
 };
 
 // Remove old export if generateMockAcademicRecords is now internal

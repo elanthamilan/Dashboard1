@@ -34,10 +34,37 @@ const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester
               </Row>
               <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={12}>
-                   {/* Corrected passRate display */}
-                   <Statistic title="Pass Rate" value={semester.passRate ? `${semester.passRate.toFixed(0)}%` : 'N/A'} />
+                   <Statistic title="Pass Rate" value={semester.passRate !== undefined ? `${semester.passRate.toFixed(0)}%` : 'N/A'} />
                 </Col>
-                 {/* Add more semester specific stats if available */}
+                {/* Placeholder for other academic stats if any */}
+              </Row>
+              {/* Attendance KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={12}>
+                  <Statistic
+                    title="Attendance"
+                    value={semester.attendancePercentage !== undefined ? semester.attendancePercentage.toFixed(1) : undefined}
+                    suffix={semester.attendancePercentage !== undefined ? "%" : undefined}
+                    formatter={semester.attendancePercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic title="Total Absences" value={semester.totalAbsences ?? 'N/A'} />
+                </Col>
+              </Row>
+              {/* Billing KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={12}>
+                  <Statistic
+                    title="Fees Paid"
+                    value={semester.feesPaidPercentage !== undefined ? semester.feesPaidPercentage.toFixed(1) : undefined}
+                    suffix={semester.feesPaidPercentage !== undefined ? "%" : undefined}
+                    formatter={semester.feesPaidPercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic title="Overdue Fees (Students)" value={semester.studentsWithOverdueFees ?? 'N/A'} />
+                </Col>
               </Row>
               <Button type="primary" style={{ marginTop: '20px' }} onClick={() => onSelectSemester(semester.semesterId)}>
                 View Students

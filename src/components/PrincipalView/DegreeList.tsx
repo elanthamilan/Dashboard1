@@ -32,6 +32,60 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree }) => {
                   <Statistic title="Avg. GPA" value={degree.averageDegreeGPA?.toFixed(2) || 'N/A'} />
                 </Col>
               </Row>
+
+              {/* Attendance & Billing KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={12}>
+                  <Statistic
+                    title="Avg. Attendance"
+                    value={degree.avgAttendancePercentage !== undefined ? degree.avgAttendancePercentage.toFixed(1) : undefined}
+                    suffix={degree.avgAttendancePercentage !== undefined ? "%" : undefined}
+                    formatter={degree.avgAttendancePercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={12}>
+                  <Statistic
+                    title="Avg. Fees Paid"
+                    value={degree.avgFeesPaidPercentage !== undefined ? degree.avgFeesPaidPercentage.toFixed(1) : undefined}
+                    suffix={degree.avgFeesPaidPercentage !== undefined ? "%" : undefined}
+                    formatter={degree.avgFeesPaidPercentage === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+              </Row>
+
+              {/* Admissions KPIs */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={8}>
+                  <Statistic title="Total Applicants" value={degree.totalApplicants ?? 'N/A'} />
+                </Col>
+                <Col span={8}>
+                  <Statistic
+                    title="Avg. Acceptance Rate"
+                    value={degree.avgAcceptanceRate !== undefined ? degree.avgAcceptanceRate.toFixed(1) : undefined}
+                    suffix={degree.avgAcceptanceRate !== undefined ? "%" : undefined}
+                    formatter={degree.avgAcceptanceRate === undefined ? () => <Typography.Text type="secondary" style={{fontSize: '1em'}}>N/A</Typography.Text> : undefined}
+                  />
+                </Col>
+                <Col span={8}>
+                  <Statistic title="Total Enrolled" value={degree.totalEnrolledCount ?? 'N/A'} />
+                </Col>
+              </Row>
+
+              {/* Student Risk and Grades */}
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                 <Col span={12}>
+                  <Statistic title="Total At-Risk Students" value={degree.totalAtRiskStudents ?? 'N/A'} />
+                </Col>
+                <Col span={12}>
+                  <Typography.Text strong style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)'}}>Grade Distribution</Typography.Text>
+                  <Typography.Text style={{display: 'block', fontSize: '14px'}}>
+                    {degree.overallGradeDistribution
+                      ? Object.entries(degree.overallGradeDistribution).map(([grade, count]) => `${grade}:${count}`).join('; ')
+                      : 'N/A'}
+                  </Typography.Text>
+                </Col>
+              </Row>
+
               <Button type="primary" style={{ marginTop: '20px' }} onClick={() => onSelectDegree(degree.degreeId)}>
                 View Programs
               </Button>

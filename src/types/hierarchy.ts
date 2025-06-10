@@ -15,6 +15,11 @@ export interface Semester extends Term {
   students: StudentSummary[];
   averageGPA?: number;
   passRate?: number;
+  // New KPIs for Semester
+  attendancePercentage?: number;
+  totalAbsences?: number;
+  feesPaidPercentage?: number;
+  studentsWithOverdueFees?: number;
 }
 
 export interface Program {
@@ -26,6 +31,16 @@ export interface Program {
   totalStudents?: number;
   averageProgramGPA?: number;
   graduationRate?: number;
+  // New KPIs for Program
+  avgAttendancePercentage?: number;
+  totalProgramAbsences?: number;
+  avgFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFees?: number;
+  applicants?: number;
+  acceptanceRate?: number;
+  enrolledCount?: number;
+  gradeDistribution?: { [gradeCategory: string]: number };
+  atRiskStudents?: number;
 }
 
 export interface Degree {
@@ -34,6 +49,16 @@ export interface Degree {
   programs: Program[];
   totalStudents?: number;
   averageDegreeGPA?: number;
+  // New KPIs for Degree (Aggregated from Programs)
+  avgAttendancePercentage?: number;
+  totalDegreeAbsences?: number;
+  avgFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFeesInDegree?: number;
+  totalApplicants?: number;
+  avgAcceptanceRate?: number;
+  totalEnrolledCount?: number;
+  overallGradeDistribution?: { [gradeCategory: string]: number };
+  totalAtRiskStudents?: number;
 }
 
 export interface AcademicYear {
@@ -44,6 +69,16 @@ export interface AcademicYear {
   degrees: Degree[];
   totalStudents?: number;
   overallAverageGPA?: number;
+  // New KPIs for AcademicYear (Aggregated from Degrees)
+  annualAttendancePercentage?: number;
+  totalAnnualAbsences?: number;
+  annualFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFeesInYear?: number;
+  totalAnnualApplicants?: number;
+  avgAnnualAcceptanceRate?: number;
+  totalAnnualEnrolledCount?: number;
+  annualGradeDistribution?: { [gradeCategory: string]: number };
+  totalAnnualAtRiskStudents?: number;
 }
 
 export interface Institution {
@@ -52,4 +87,14 @@ export interface Institution {
   academicYears: AcademicYear[];
   totalStudents?: number;
   overallAverageGPA?: number;
+  // New KPIs for Institution (Aggregated from AcademicYears)
+  institutionAttendancePercentage?: number;
+  totalInstitutionAbsences?: number;
+  institutionFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFeesInInstitution?: number;
+  totalInstitutionApplicants?: number;
+  avgInstitutionAcceptanceRate?: number;
+  totalInstitutionEnrolledCount?: number;
+  institutionGradeDistribution?: { [gradeCategory: string]: number };
+  totalInstitutionAtRiskStudents?: number;
 }

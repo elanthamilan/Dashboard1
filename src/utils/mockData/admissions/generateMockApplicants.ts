@@ -9,22 +9,33 @@ const programs = [
   { id: 'SCI505', name: 'PhD Quantum Physics' },
 ];
 
+// Updated Application Statuses to match the new types
 const applicationStatuses: ApplicationStatus[] = [
-  'Applied', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Accepted', 'Rejected', 'Waitlisted', 'Enrollment Confirmed', 'Application Withdrawn'
+  'Applied',
+  'Screened',
+  'Interview Scheduled',
+  'Interview Complete',
+  'Offer Made',
+  'Offer Accepted',
+  'Offer Declined',
+  'Enrollment Confirmed',
+  'Application Withdrawn',
 ];
 
 const documentTypes: Array<'Transcript' | 'Resume/CV' | 'Reference Letter' | 'Essay' | 'Passport Copy' | 'Visa Document'> = ['Transcript', 'Resume/CV', 'Reference Letter', 'Essay', 'Passport Copy'];
 
-// Helper to get a realistic funnel stage based on status
+// Helper to get a realistic funnel stage based on the new statuses
 const getFunnelStage = (status: ApplicationStatus): number => {
   switch (status) {
     case 'Applied': return 1;
-    case 'Shortlisted': return 2;
+    case 'Screened': return 2;
     case 'Interview Scheduled': return 3;
-    case 'Offered': return 4;
-    case 'Accepted': return 5;
-    case 'Enrollment Confirmed': return 6; // Could be a stage beyond 'Accepted' in some funnels
-    default: return 0; // For Rejected, Withdrawn etc. that are out of the main funnel
+    case 'Interview Complete': return 4;
+    case 'Offer Made': return 5;
+    case 'Offer Accepted': return 6;
+    case 'Enrollment Confirmed': return 7;
+    // Offer Declined and Application Withdrawn are off-funnel states
+    default: return 0;
   }
 };
 
@@ -66,6 +77,8 @@ export const generateMockApplicant = (id: number): Applicant => {
     programId: program.id,
     programName: program.name,
     status,
+    originCity: faker.location.city(), // New field
+    originCountry: faker.location.country(), // New field (can be different from address.country or nationality for diversity)
     previousEducation: {
       institution: faker.company.name() + ' University',
       degree: faker.helpers.arrayElement(['BSc', 'BA', 'MSc', 'MA', 'High School Diploma']),
@@ -104,4 +117,28 @@ export const generateMockApplicant = (id: number): Applicant => {
 
 export const generateMockApplicants = (count: number): Applicant[] => {
   return Array.from({ length: count }, (_, i) => generateMockApplicant(i + 1));
+};
+
+// New function to generate mock key deadlines
+import { KeyDeadline } from '../../../components/AdmissionsDashboard/types'; // Import KeyDeadline
+import dayjs from 'dayjs'; // For date manipulation
+
+export const generateMockKeyDeadlines = (count: number): KeyDeadline[] => {
+  const deadlines: KeyDeadline[] = [];
+  const types: KeyDeadline['type'][] = ['Application', 'Interview', 'Decision', 'Enrollment'];
+  let lastDate = dayjs(); // Start from today or a bit in the past
+
+  for (let i = 0; i < count; i++) {
+    const type = faker.helpers.arrayElement(types);
+    lastDate = dayjs(faker.date.future({ refDate: lastDate, years: 0.2 })); // Ensure dates progress somewhat logically
+
+    deadlines.push({
+      id: `DEADLINE-${String(i + 1).padStart(3, '0')}`,
+      title: `${type} Deadline - ${faker.lorem.words(2)}`,
+      date: lastDate.toISOString(),
+      description: faker.lorem.sentence(),
+      type: type,
+    });
+  }
+  return deadlines.sort((a,b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()); // Sort by date
 };

@@ -12,47 +12,32 @@ interface ApplicantFunnelChartProps {
 const ApplicantFunnelChart: React.FC<ApplicantFunnelChartProps> = ({ data, loading }) => {
   const { t } = useTranslation();
 
-  // Define funnel stages based on ApplicationStatus and funnelStage property
-  const funnelStages = [
-    { id: 'applied', value: 0, label: t('admissionsDashboard.funnel.applied', 'Applied') },
-    { id: 'shortlisted', value: 0, label: t('admissionsDashboard.funnel.shortlisted', 'Shortlisted') },
-    { id: 'interview', value: 0, label: t('admissionsDashboard.funnel.interview', 'Interview Scheduled') },
-    { id: 'offered', value: 0, label: t('admissionsDashboard.funnel.offered', 'Offered') },
-    { id: 'accepted', value: 0, label: t('admissionsDashboard.funnel.accepted', 'Accepted') },
-    { id: 'confirmed', value: 0, label: t('admissionsDashboard.funnel.confirmed', 'Enrollment Confirmed') },
+  // Define funnel stages based on the new ApplicationStatus mapping to funnelStage
+  // The `funnelStage` on Applicant data is now:
+  // 1: Applied, 2: Screened, 3: Interview Scheduled, 4: Interview Complete,
+  // 5: Offer Made, 6: Offer Accepted, 7: Enrollment Confirmed
+  const funnelChartStages = [
+    { id: 'applied', minFunnelStage: 1, label: t('admissionsDashboard.funnel.applied', 'Applied') },
+    { id: 'screened', minFunnelStage: 2, label: t('admissionsDashboard.funnel.screened', 'Screened') },
+    // For the chart, 'Interview Scheduled' and 'Interview Complete' might be grouped or shown sequentially.
+    // Let's represent the start of the interview process.
+    { id: 'interview_scheduled', minFunnelStage: 3, label: t('admissionsDashboard.funnel.interviewScheduled', 'Interview Scheduled') },
+    // 'Interview Complete' (stage 4) could be another step if desired, or this implies they passed it.
+    { id: 'offer_made', minFunnelStage: 5, label: t('admissionsDashboard.funnel.offerMade', 'Offer Made') },
+    { id: 'offer_accepted', minFunnelStage: 6, label: t('admissionsDashboard.funnel.offerAccepted', 'Offer Accepted') },
+    { id: 'confirmed', minFunnelStage: 7, label: t('admissionsDashboard.funnel.confirmed', 'Enrollment Confirmed') },
   ];
 
   // Process applicant data to count occurrences for each funnel stage
-  const processedData: FunnelDatum[] = funnelStages.map(stageConfig => {
-    let count = 0;
-    switch (stageConfig.id) {
-      case 'applied':
-        count = data.filter(a => a.funnelStage >= 1).length;
-        break;
-      case 'shortlisted':
-        count = data.filter(a => a.funnelStage >= 2).length;
-        break;
-      case 'interview':
-        count = data.filter(a => a.funnelStage >= 3).length;
-        break;
-      case 'offered':
-        count = data.filter(a => a.funnelStage >= 4).length;
-        break;
-      case 'accepted':
-        count = data.filter(a => a.funnelStage >= 5).length;
-        break;
-      case 'confirmed':
-        count = data.filter(a => a.funnelStage >= 6).length;
-        break;
-      default:
-        count = 0;
-    }
+  // Nivo funnel chart expects data where each stage's value is the count of items AT OR BEYOND that stage.
+  const processedData: FunnelDatum[] = funnelChartStages.map(stageConfig => {
+    const count = data.filter(applicant => applicant.funnelStage >= stageConfig.minFunnelStage).length;
     return {
       id: stageConfig.id,
       value: count,
       label: stageConfig.label,
     };
-  }).filter(d => d.value > 0); // Only include stages with data
+  }).filter(d => d.value > 0); // Only include stages that have applicants
 
   if (loading) {
     return <Card title={t('admissionsDashboard.funnel.title', 'Applicant Funnel')} style={{ height: 400 }} loading={true} />;
