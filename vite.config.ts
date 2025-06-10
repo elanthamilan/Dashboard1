@@ -8,10 +8,8 @@ export default defineConfig({
     port: 3000, // Optional: set a default port
     open: true, // Optional: automatically open browser on server start
   },
+  base: './',
   build: {
     outDir: 'build', // Consistent with CRA's default and project description
-    rollupOptions: {
-      input: 'public/index.html', // Specify the entry point
-    },
   },
 });

@@ -6,6 +6,8 @@ import './i18n';
 // If you have global CSS not covered by App.css (e.g., from Ant Design), import it here
 // import 'antd/dist/reset.css'; // Or the v5 equivalent if using AntD v5
 
+console.log("App is running!");
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

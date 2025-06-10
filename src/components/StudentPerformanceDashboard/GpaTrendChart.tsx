@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ResponsiveLine, Serie } from '@nivo/line';
+import { ResponsiveLine } from '@nivo/line';
 import { Card, Typography, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { StudentAcademicRecord, Term } from './types'; // Adjust path
@@ -9,6 +9,13 @@ interface GpaTrendChartProps {
   studentAcademicRecord: StudentAcademicRecord | null; // Corrected prop name from academicRecord
   loading?: boolean;
 }
+
+// Define Serie type inline for Nivo Line
+// Nivo expects: { id: string; data: { x: string | number; y: number | null }[] }
+type Serie = {
+  id: string;
+  data: { x: string | number; y: number | null }[];
+};
 
 const GpaTrendChart: React.FC<GpaTrendChartProps> = ({ studentAcademicRecord, loading }) => {
   const { t } = useTranslation();

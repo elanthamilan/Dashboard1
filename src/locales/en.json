@@ -155,7 +155,7 @@
       "class": "Class",
       "selectClass": "Select Class",
       "dateRange": "Date Range",
-      "filterButton": "Apply Filters", // Will be changed to Clear Filters
+      "filterButton": "Apply Filters",
       "clearFiltersButton": "Clear Filters",
       "activeFilters": "Active Filters",
       "studentTag": "Student",

@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ResponsiveLine, Serie } from '@nivo/line'; // Serie type for data structure
+import { ResponsiveLine } from '@nivo/line'; // Remove Serie from import
 import { Card, Typography, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { AttendanceRecord } from './types'; // Adjust path
@@ -16,6 +16,13 @@ interface WeeklyAttendanceTrendChartProps {
 }
 
 const NUM_WEEKS_TO_DISPLAY = 8; // Display trend for the last 8 weeks
+
+// Define Serie type inline for Nivo Line
+// Nivo expects: { id: string; data: { x: string | number; y: number | null }[] }
+type Serie = {
+  id: string;
+  data: { x: string | number; y: number | null }[];
+};
 
 const WeeklyAttendanceTrendChart: React.FC<WeeklyAttendanceTrendChartProps> = ({ records, loading }) => {
   const { t } = useTranslation();
@@ -144,7 +151,7 @@ const WeeklyAttendanceTrendChart: React.FC<WeeklyAttendanceTrendChartProps> = ({
             return (
                 <div style={{ padding: '5px 10px', background: 'white', border: '1px solid #ccc', borderRadius: '3px' }}>
                     <strong>{t('attendanceDashboard.charts.weekLegend', 'Week')} {point.data.xFormatted}</strong><br />
-                    {point.serieId}: {point.data.yFormatted}
+                    {point.seriesId}: {point.data.yFormatted}
                 </div>
             )
           }}
