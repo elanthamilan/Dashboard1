@@ -202,6 +202,20 @@
     "Traffic": "Tráfico",
     "Overslept": "Se quedó dormido/a"
   },
+  "studentSummaryTable": {
+    "title": "Resúmenes Académicos Estudiantiles",
+    "columns": {
+      "name": "Nombre",
+      "program": "Programa",
+      "gpa": "GPA Acum.",
+      "credits": "Créditos Obtenidos",
+      "progress": "Progreso",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "viewDetails": "Ver Tablero del Estudiante"
+    }
+  },
   "markAttendanceForm": {
     "titleNew": "Marcar Asistencia",
     "titleEdit": "Editar Registro de Asistencia",
@@ -289,7 +303,48 @@
     }
   },
   "studentPerformanceDashboard": {
-    "title": "Tablero de Rendimiento Estudiantil"
+    "title": "Rendimiento Académico",
+    "selectStudentPlaceholder": "Seleccionar un estudiante",
+    "noStudentSelected": "Ningún Estudiante Seleccionado",
+    "pleaseSelectStudent": "Por favor seleccione un estudiante para ver su rendimiento académico.",
+    "noDataForStudent": "No se encontraron datos académicos para el estudiante seleccionado.",
+    "kpi": {
+      "cumulativeGpa": "GPA Acum.",
+      "creditsEarned": "Créditos Obtenidos",
+      "coursesPassed": "Cursos Aprobados",
+      "attendanceRate": "Tasa de Asistencia"
+    },
+    "actions": {
+        "generateTranscript": "Generar Expediente (Simulacro)"
+    },
+    "charts": {
+      "gpaTrend": {
+        "title": "Tendencia de GPA",
+        "seriesName": "GPA del Período",
+        "termLegend": "Período",
+        "gpaLegend": "GPA",
+        "gpaLabel": "GPA"
+      },
+      "skills": {
+        "title": "Competencias Clave",
+        "studentSeriesName": "Nivel"
+      },
+      "gradeDist": {
+        "title": "Distribución de Calificaciones del Estudiante",
+        "count": "Cantidad",
+        "gradeLegend": "Calificación",
+        "countLegend": "Número de Cursos",
+        "courses": "cursos"
+      },
+      "progress": {
+        "title": "Progreso de Titulación",
+        "creditsEarned": "Créditos Obtenidos",
+        "creditsRequired": "Créditos Requeridos",
+        "creditsRemaining": "Créditos Restantes",
+        "completed": "Completado",
+        "inProgress": "En Progreso"
+      }
+    }
   },
   "homePage": {
     "title": "Bienvenido al SIS"
@@ -317,6 +372,10 @@
     },
     "none": "Ninguno",
     "noDataForChart": "No hay datos de asistencia para mostrar en el período seleccionado.",
-    "notApplicable": "N/A"
+    "notApplicable": "N/A",
+    "loadingStudentData": "Cargando datos del estudiante...",
+    "notEnrolled": "No Inscrito/a",
+    "noDataAvailable": "Datos no disponibles.",
+    "unknownProgram": "Programa Desconocido"
   }
 }

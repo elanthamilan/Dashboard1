@@ -202,6 +202,20 @@
     "Traffic": "Traffic",
     "Overslept": "Overslept"
   },
+  "studentSummaryTable": {
+    "title": "Student Academic Summaries",
+    "columns": {
+      "name": "Name",
+      "program": "Program",
+      "gpa": "Cum. GPA",
+      "credits": "Credits Earned",
+      "progress": "Progress",
+      "actions": "Actions"
+    },
+    "actions": {
+      "viewDetails": "View Student Dashboard"
+    }
+  },
   "markAttendanceForm": {
     "titleNew": "Mark Attendance",
     "titleEdit": "Edit Attendance Record",
@@ -289,7 +303,48 @@
     }
   },
   "studentPerformanceDashboard": {
-    "title": "Student Performance Dashboard"
+    "title": "Academic Performance",
+    "selectStudentPlaceholder": "Select a student",
+    "noStudentSelected": "No Student Selected",
+    "pleaseSelectStudent": "Please select a student to view their academic performance.",
+    "noDataForStudent": "No academic data found for the selected student.",
+    "kpi": {
+      "cumulativeGpa": "Cum. GPA",
+      "creditsEarned": "Credits Earned",
+      "coursesPassed": "Courses Passed",
+      "attendanceRate": "Attendance Rate"
+    },
+    "actions": {
+        "generateTranscript": "Generate Transcript (Mock)"
+    },
+    "charts": {
+      "gpaTrend": {
+        "title": "GPA Trend",
+        "seriesName": "Term GPA",
+        "termLegend": "Term",
+        "gpaLegend": "GPA",
+        "gpaLabel": "GPA"
+      },
+      "skills": {
+        "title": "Skill Proficiencies",
+        "studentSeriesName": "Proficiency"
+      },
+      "gradeDist": {
+        "title": "Student's Grade Distribution",
+        "count": "Count",
+        "gradeLegend": "Grade",
+        "countLegend": "Number of Courses",
+        "courses": "courses"
+      }
+    },
+    "progress": {
+      "title": "Degree Completion Progress",
+      "creditsEarned": "Credits Earned",
+      "creditsRequired": "Credits Required",
+      "creditsRemaining": "Credits Remaining",
+      "completed": "Completed",
+      "inProgress": "In Progress"
+    }
   },
   "homePage": {
     "title": "Welcome to SIS"
@@ -317,6 +372,10 @@
     },
     "none": "None",
     "noDataForChart": "No attendance data to display for the selected period.",
-    "notApplicable": "N/A"
+    "notApplicable": "N/A",
+    "loadingStudentData": "Loading student data...",
+    "notEnrolled": "Not Enrolled",
+    "noDataAvailable": "Data not available.",
+    "unknownProgram": "Unknown Program"
   }
 }
