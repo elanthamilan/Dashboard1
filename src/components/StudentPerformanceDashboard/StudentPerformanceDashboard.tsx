@@ -14,7 +14,9 @@ import GpaTrendChart from './GpaTrendChart'; // Import the new component
 import SkillProficiencyChart from './SkillProficiencyChart'; // Import the new component
 import StudentGradeDistributionChart from './StudentGradeDistributionChart'; // Import the new component
 import DegreeCompletionProgress from './DegreeCompletionProgress'; // Import the new component
-const StudentGradeGridPlaceholder: React.FC = () => <Card style={{marginTop: '16px'}}><Typography.Text>Student Grade Grid Placeholder</Typography.Text></Card>;
+import StudentGradeGrid from './StudentGradeGrid'; // Import the new component
+import { Grade } from './types'; // For handleGradeUpdate
+import { message } from 'antd'; // For feedback
 
 
 // KpiCard component using Ant Design Statistic
@@ -35,42 +37,6 @@ const MOCK_STUDENT_COUNT = 50;
 const StudentPerformanceDashboard: React.FC = () => {
   const { t } = useTranslation();
   const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [academicRecords, setAcademicRecords] = useState<StudentAcademicRecord[]>([]);
-  const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [loadingStudentData, setLoadingStudentData] = useState<boolean>(false);
-
-
-  useEffect(() => {
-    setLoading(true);
-    const mockStudents = generateMockStudents(MOCK_STUDENT_COUNT);
-    setAllStudents(mockStudents);
-    const mockAcademicRecords = generateMockAcademicRecords(mockStudents);
-    setAcademicRecords(mockAcademicRecords);
-
-    if (mockStudents.length > 0 && !selectedStudentId) { // Only auto-select if no student is selected yet
-        setSelectedStudentId(mockStudents[0].id);
-    }
-    setLoading(false);
-  }, []); // Removed selectedStudentId from dependency array to prevent re-running this on student change
-
-  const selectedStudentRecord = useMemo(() => {
-    if (!selectedStudentId) return null;
-    // Simulate a slight delay for fetching/processing student specific data if needed
-    // setLoadingStudentData(true); // This would need to be handled carefully with useEffect
-    const record = academicRecords.find(r => r.studentId === selectedStudentId) || null;
-    // setLoadingStudentData(false);
-    return record;
-  }, [selectedStudentId, academicRecords]);
-
-  const handleStudentChange = (studentId: string) => {
-    setLoadingStudentData(true); // Indicate loading for student-specific part
-    setSelectedStudentId(studentId);
-    // Simulate data processing delay for the new student
-    setTimeout(() => setLoadingStudentData(false), 200); // Short delay
-  };
-
-  // Calculate derived KPI values for the selected student
   const studentKpiData = useMemo(() => {
     if (!selectedStudentRecord) {
       return {
@@ -99,6 +65,37 @@ const StudentPerformanceDashboard: React.FC = () => {
     };
   }, [selectedStudentRecord]);
 
+  const handleGradeUpdate = (studentId: string, termId: string, courseId: string, updatedGradeDetails: Partial<Grade>, comments?: string) => {
+    setAcademicRecords(prevRecords => {
+        return prevRecords.map(studentRecord => {
+            if (studentRecord.studentId === studentId) {
+                const updatedTerms = studentRecord.terms.map(term => {
+                    if (term.termId === termId) {
+                        const updatedCourses = term.courses.map(course => {
+                            if (course.courseId === courseId) {
+                                const newGrade = { ...course.grade, ...updatedGradeDetails } as Grade;
+                                // Recalculate term GPA (simplified, assumes all courses in term count)
+                                // A full recalculation would re-evaluate all courses in this term
+                                // For now, just update the course. Full GPA recalc can be a follow-up.
+                                return { ...course, grade: newGrade, comments: comments !== undefined ? comments : course.comments };
+                            }
+                            return course;
+                        });
+                        // TODO: Recalculate termGPA and cumulativeGPA if grades change significantly
+                        // This is a complex part if done fully.
+                        // For now, the GPAs on the record are not auto-recalculated by this mock edit.
+                        return { ...term, courses: updatedCourses };
+                    }
+                    return term;
+                });
+                // TODO: Recalculate cumulativeGPA based on updated term GPAs
+                return { ...studentRecord, terms: updatedTerms };
+            }
+            return studentRecord;
+        });
+    });
+    message.success(t('studentPerformanceDashboard.messages.gradeUpdated', 'Grade updated successfully (mock)! GPA recalculation is conceptual.'));
+};
 
   if (loading) { // Initial dashboard loading
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>;
@@ -184,7 +181,11 @@ const StudentPerformanceDashboard: React.FC = () => {
                 <DegreeCompletionProgress studentAcademicRecord={selectedStudentRecord} loading={loadingStudentData} />
             </Col>
         </Row>
-          <Row style={{ marginTop: '24px' }}><Col span={24}><StudentGradeGridPlaceholder /></Col></Row>
+          <Row style={{ marginTop: '24px' }}><Col span={24}><StudentGradeGrid
+              studentAcademicRecord={selectedStudentRecord}
+              loading={loadingStudentData}
+              onGradeUpdate={handleGradeUpdate}
+          /></Col></Row>
           <Row style={{ marginTop: '24px' }}><Col><Button type="primary">{t('studentPerformanceDashboard.actions.generateTranscript')}</Button></Col></Row>
         </>
       )}

@@ -317,6 +317,9 @@
     "actions": {
         "generateTranscript": "Generar Expediente (Simulacro)"
     },
+    "messages": {
+        "gradeUpdated": "¡Calificación actualizada (simulacro)! Recálculo de GPA es conceptual."
+    },
     "charts": {
       "gpaTrend": {
         "title": "Tendencia de GPA",
@@ -344,6 +347,28 @@
         "completed": "Completado",
         "inProgress": "En Progreso"
       }
+    }
+  },
+   "studentGradeGrid": {
+    "title": "Parrilla de Calificaciones del Estudiante",
+    "columns": {
+      "term": "Período",
+      "courseCode": "Cód. Curso",
+      "courseName": "Nombre del Curso",
+      "credits": "Créditos",
+      "letterGrade": "Calificación",
+      "score": "Puntaje (%)",
+      "instructor": "Instructor(a)",
+      "comments": "Comentarios",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "editGrade": "Editar Calificación/Comentarios"
+    },
+    "placeholders": {
+        "score": "0-100",
+        "grade": "Seleccionar Calificación",
+        "comments": "Ingresar comentarios"
     }
   },
   "homePage": {

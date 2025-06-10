@@ -317,6 +317,9 @@
     "actions": {
         "generateTranscript": "Generate Transcript (Mock)"
     },
+    "messages": {
+        "gradeUpdated": "Grade updated successfully (mock)! GPA recalculation is conceptual."
+    },
     "charts": {
       "gpaTrend": {
         "title": "GPA Trend",
@@ -377,5 +380,27 @@
     "notEnrolled": "Not Enrolled",
     "noDataAvailable": "Data not available.",
     "unknownProgram": "Unknown Program"
+  },
+   "studentGradeGrid": {
+    "title": "Student Grade Grid",
+    "columns": {
+      "term": "Term",
+      "courseCode": "Course Code",
+      "courseName": "Course Name",
+      "credits": "Credits",
+      "letterGrade": "Grade",
+      "score": "Score (%)",
+      "instructor": "Instructor",
+      "comments": "Comments",
+      "actions": "Actions"
+    },
+    "actions": {
+      "editGrade": "Edit Grade/Comments"
+    },
+    "placeholders": {
+        "score": "0-100",
+        "grade": "Select Grade",
+        "comments": "Enter comments"
+    }
   }
 }
