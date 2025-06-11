@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, Alert, Select, Button, Table, Tag, Timeline } from 'antd'; // Added Timeline
+import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, Alert, Select, Button, Table, Tag, Timeline, DescriptionsProps } from 'antd'; // Added Timeline, DescriptionsProps
+import type { ColumnsType } from 'antd/es/table'; // For table columns typing (if needed later)
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
 import { HomeOutlined, UsergroupAddOutlined, AuditOutlined, DollarCircleOutlined, RiseOutlined, BarChartOutlined, TeamOutlined, ArrowLeftOutlined, GlobalOutlined, CalendarOutlined } from '@ant-design/icons'; // Added GlobalOutlined, CalendarOutlined
-import { Bar, DotMap } from '@ant-design/plots'; // Added DotMap
-import { Institution, PlacementRecord, Alumnus, Program as ProgramType, StudentSummary, AlumniActivity } from '../../../types';
+import { Bar } from '@ant-design/plots'; // DotMap removed
+import { DotMap } from '@ant-design/maps'; // Added DotMap from @ant-design/maps
+import { Institution, Program as ProgramType, StudentSummary } from '../../../types/hierarchy';
+import { PlacementRecord } from '../../../types/placement';
+import { Alumnus, AlumniActivity } from '../../../types/alumni';
 import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
@@ -13,6 +17,21 @@ import dayjs from 'dayjs';
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const MODULE_KEY = 'placements';
+
+interface KpiItem {
+  key: string;
+  title: string;
+  value: string | number | undefined;
+  precision?: number;
+  prefix?: React.ReactNode;
+  suffix?: string;
+  color?: string;
+  icon?: React.ReactNode;
+}
+
+interface ProgramInfo { programId: string; programName: string; }
+interface EmployerPlacementStats { companyName: string; totalHires: number; avgSalary?: number; }
+
 
 const PlacementAlumniModule: React.FC = () => {
   const { t } = useTranslation();
@@ -36,7 +55,8 @@ const PlacementAlumniModule: React.FC = () => {
             prog.semesters.forEach(sem =>
               sem.students.forEach(s => {
                 if(!studentSummaries.find(es => es.studentId === s.studentId)) {
-                  studentSummaries.push({...s, programName: prog.programName, departmentId: prog.departmentId});
+                  // departmentId is not a property of StudentSummary, removing it.
+                  studentSummaries.push({...s, programName: prog.programName });
                 }
               })
             )
@@ -46,29 +66,72 @@ const PlacementAlumniModule: React.FC = () => {
     return {allStudentsSummaryList: studentSummaries};
   }, [institutionData]);
 
-  const placementModuleData = useMemo(() => { /* ... same as before ... */ }, [institutionData, filters.academicYear]);
-  const availableProgramsList = useMemo(() => { /* ... same as before ... */ }, [institutionData]);
-  const batchPlacementStatsData = useMemo(() => { /* ... same as before ... */ }, [selectedProgramForPlacements, institutionData, allStudentsSummaryList, filters.academicYear]);
-  const placementsBySelectedEmployer = useMemo(() => { /* ... same as before ... */ }, [selectedEmployer, institutionData, allStudentsSummaryList]);
+  const placementModuleData = useMemo(() => {
+    // Stub with default structure
+    return {
+      overallPlacementRate: 0,
+      averagePackage: 0,
+      totalPlacedStudents: 0,
+      totalInternships: 0,
+      topRecruitersData: [] as { companyName: string; hires: number }[],
+      placementTrendData: [] as { year: string; rate: number }[],
+    };
+  }, [institutionData, filters.academicYear]);
+
+  const availableProgramsList = useMemo((): ProgramInfo[] => {
+    if (!institutionData) return [];
+    const programs: ProgramInfo[] = [];
+    institutionData.academicYears.forEach(ay => {
+      ay.degrees.forEach(deg => {
+        deg.programs.forEach(prog => {
+          if (!programs.find(p => p.programId === prog.programId)) {
+            programs.push({ programId: prog.programId, programName: prog.programName });
+          }
+        });
+      });
+    });
+    return programs.sort((a,b)=>a.programName.localeCompare(b.programName));
+  }, [institutionData]);
+
+  const batchPlacementStatsData = useMemo(() => {
+    // Stub with default structure
+    return {
+      programName: selectedProgramForPlacements?.programName || '',
+      totalStudents: 0,
+      placedStudents: 0,
+      placementRate: 0,
+      averageSalary: 0,
+      medianSalary: 0,
+      highestSalary: 0,
+      topSectors: [] as { sector: string; count: number }[],
+    };
+  }, [selectedProgramForPlacements, institutionData, allStudentsSummaryList, filters.academicYear]);
+
+  const placementsBySelectedEmployer = useMemo(() => {
+    // Stub with default structure
+    return [] as (PlacementRecord & { studentName?: string; programName?: string })[];
+  }, [selectedEmployer, institutionData, allStudentsSummaryList]);
+
   const mockEmployerStats = useMemo(() => ({
-      avgFeedbackScore: parseFloat(faker.number.float({ min: 3.5, max: 4.8, precision: 0.1 }).toFixed(1)),
+      avgFeedbackScore: parseFloat(faker.number.float({ min: 3.5, max: 4.8, precision: 0.1 }).toFixed(1)), // Ensure this is a number if used as such
       returnRate: parseFloat(faker.number.float({ min: 60, max: 90, precision: 1 }).toFixed(1)),
   }), [selectedEmployer]); // Re-calculate if employer changes, though it's random
 
   const alumniGeoData = useMemo(() => {
-    if (!institutionData?.alumni) return [];
+    if (!institutionData?.alumni) return []; // Guard against undefined alumni
     return institutionData.alumni.filter(a => a.geoCoordinates).map(alum => ({
-        ...alum.geoCoordinates,
+        lng: alum.geoCoordinates?.lng, // Use optional chaining for safety
+        lat: alum.geoCoordinates?.lat, // Use optional chaining for safety
         name: `${alum.currentEmployer || t('common.unknownEmployer','Unknown Employer')} - ${alum.currentRole || t('common.unknownRole','Unknown Role')}`,
         studentId: alum.studentId, // For potential click events/tooltips
     }));
   }, [institutionData?.alumni, t]);
 
   const alumniActivitiesTimelineData = useMemo(() => {
-    if (!institutionData?.alumniActivities || !institutionData?.alumni) return [];
+    if (!institutionData?.alumniActivities || !institutionData.alumni) return []; // Guard against undefined alumni
     return institutionData.alumniActivities
       .map(activity => {
-        const alumnus = institutionData.alumni.find(a => a.studentId === activity.alumnusId);
+        const alumnus = institutionData.alumni!.find(a => a.studentId === activity.alumnusId); // Use non-null assertion after check
         const studentSummary = allStudentsSummaryList.find(s => s.studentId === activity.alumnusId);
         return {
           ...activity,
@@ -86,28 +149,52 @@ const PlacementAlumniModule: React.FC = () => {
   const handleBackToOverview = () => { setSelectedProgramForPlacements(null); setSelectedEmployer(null); setViewingAlumniNetwork(false); };
 
 
-  let currentBreadcrumbItems = [ /* ... */ ]; // Base items
-  // Expanded Breadcrumb Logic
-  currentBreadcrumbItems = [
-    React.createElement(Breadcrumb.Item, { key: 'home' }, React.createElement(Link, { to: "/principal-view" }, React.createElement(HomeOutlined))),
-    React.createElement(Breadcrumb.Item, { key: 'dashboard' }, React.createElement(Link, { to: "/principal-view" }, t('principalView.dashboardTitle', "Principal's Dashboard"))),
-    React.createElement(Breadcrumb.Item, { key: 'moduleTitleLink' },
-      selectedProgramForPlacements || selectedEmployer || viewingAlumniNetwork
-      ? React.createElement(Link, { to: '#', onClick: (e) => { e.preventDefault(); handleBackToOverview(); } }, t(`module.${MODULE_KEY}.title`, "Placement & Alumni Success"))
-      : t(`module.${MODULE_KEY}.title`, "Placement & Alumni Success")
-    ),
-  ];
-  if (selectedProgramForPlacements) { /* ... */ }
-  else if (selectedEmployer) { currentBreadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'employer' }, selectedEmployer.companyName)); }
-  else if (viewingAlumniNetwork) { currentBreadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'alumniNetwork' }, t('module.placements.alumniNetworkTitle', "Alumni Network Insights"))); }
+  const breadcrumbItems = useMemo(() => {
+    const items: any[] = [ // Using any for now
+        { key: 'home', title: React.createElement(Link, { to: "/principal-view"}, React.createElement(HomeOutlined)) },
+        { key: 'dashboard', title: React.createElement(Link, { to: "/principal-view"}, t('principalView.dashboardTitle', "Principal's Dashboard")) },
+        {
+            key: 'moduleTitleLink',
+            title: selectedProgramForPlacements || selectedEmployer || viewingAlumniNetwork
+                   ? React.createElement(Link, { to: '#', onClick: (e: React.MouseEvent) => { e.preventDefault(); handleBackToOverview(); } }, t(`module.${MODULE_KEY}.title`, "Placement & Alumni Success"))
+                   : t(`module.${MODULE_KEY}.title`, "Placement & Alumni Success")
+        },
+    ];
+    if (selectedProgramForPlacements) { items.push({ key:'program', title: selectedProgramForPlacements.programName}); }
+    else if (selectedEmployer) { items.push({ key: 'employer', title: selectedEmployer.companyName }); }
+    else if (viewingAlumniNetwork) { items.push({ key: 'alumniNetwork', title: t('module.placements.alumniNetworkTitle', "Alumni Network Insights")}); }
+    return items;
+  }, [selectedProgramForPlacements, selectedEmployer, viewingAlumniNetwork, t]);
 
+  const filterDescriptionItems: DescriptionsProps['items'] = useMemo(() => Object.entries(filters)
+    .filter(([key]) => !['setAcademicYear', 'setCampus', 'setDegreeType', 'setDepartment', 'setProgramId', 'setDateRange', 'clearFilters'].includes(key))
+    .map(([key, value]) => {
+      let stringValue: string;
+      if (key === 'dateRange' && Array.isArray(value)) {
+        stringValue = value.join(' - ');
+      } else if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+        stringValue = t('common.notSet', "Not Set");
+      } else {
+        stringValue = String(value);
+      }
+      return {
+        label: t(`filters.${key}`, key.replace(/([A-Z])/g, " $1").replace(/^_/, "").trim()),
+        key: key,
+        children: React.createElement(Text, null, stringValue)
+      };
+    }), [filters, t]);
 
-  const filterDescriptionItems = [ /* ... */ ];
   if (loading) { /* ... */ }
   if (error) { /* ... */ }
-  const overviewKpis = [ /* ... */];
 
-  const topRecruitersBarConfig = {
+  const overviewKpis: KpiItem[] = useMemo(() => [
+    { key: 'overallPlacementRate', title: t('module.placements.kpi.overallPlacementRate', "Overall Placement Rate"), value: placementModuleData.overallPlacementRate, suffix: '%', icon: React.createElement(RiseOutlined), precision: 1 },
+    { key: 'averagePackage', title: t('module.placements.kpi.averagePackage', "Average Package"), value: placementModuleData.averagePackage, prefix: '₹', suffix: t('module.placements.lpaSuffix', " LPA"), icon: React.createElement(DollarCircleOutlined), precision: 2 },
+    { key: 'totalPlacedStudents', title: t('module.placements.kpi.totalPlacedStudents', "Total Placed Students"), value: placementModuleData.totalPlacedStudents, icon: React.createElement(UsergroupAddOutlined), precision: 0 },
+    { key: 'totalInternships', title: t('module.placements.kpi.totalInternships', "Total Internships Secured"), value: placementModuleData.totalInternships, icon: React.createElement(AuditOutlined), precision: 0 },
+  ], [t, placementModuleData]);
+
+  const topRecruitersBarConfig = { // Type this as any if specific plot options cause issues
     data: placementModuleData.topRecruitersData, xField: 'hires', yField: 'companyName',
     seriesField: 'companyName', legend: { position: 'top-right' as const, offsetY: 20 },
     barWidthRatio: 0.7, yAxis: { label: { autoHide: false, autoRotate: false, formatter:(v:string) => v.length > 15 ? v.substring(0,15)+'...' : v } },
@@ -126,11 +213,12 @@ const PlacementAlumniModule: React.FC = () => {
         React.createElement(Select, {
           style: { width: '100%' },
           placeholder: t('module.placements.selectProgramPrompt', "Select Program..."),
-          onChange: handleProgramSelect,
+          onChange: (value: any) => handleProgramSelect(value as string | null), // Corrected onChange
           allowClear: !selectedEmployer && !viewingAlumniNetwork,
           value: selectedProgramForPlacements?.programId,
           disabled: !!selectedEmployer || viewingAlumniNetwork,
-        }, availableProgramsList.map(prog => React.createElement(Option, { key: prog.programId, value: prog.programId }, prog.programName)))
+          options: availableProgramsList.map(prog => ({ label: prog.programName, value: prog.programId })) // Use options prop
+        })
       ),
       React.createElement(Col, { xs:24, sm:12, md: (selectedProgramForPlacements || selectedEmployer || viewingAlumniNetwork) ? 6 : 6, style: { textAlign: 'right' } },
          React.createElement(Button, { icon: React.createElement(TeamOutlined), onClick: handleViewAlumniNetwork, disabled: viewingAlumniNetwork },
@@ -169,13 +257,13 @@ const PlacementAlumniModule: React.FC = () => {
     }));
 
     return React.createElement('div', { style: { padding: '20px' } },
-      React.createElement(Breadcrumb, { style: { marginBottom: '20px' }, children: currentBreadcrumbItems }),
+      React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
       programSelectorSection,
       React.createElement(Title, { level: 3, style:{ marginTop: '20px' } }, t('module.placements.alumniNetworkTitle', "Alumni Network Insights")),
       React.createElement(Row, { gutter: [16,16], style:{marginTop:20}},
         React.createElement(Col, { xs:24, lg:14},
           React.createElement(Card, {title: t('module.placements.alumniGeoDistributionTitle', "Alumni Geographic Distribution")},
-            alumniGeoData.length > 0 ? React.createElement(DotMap, { ...dotMapConfig, style:{height:'400px'} }) : React.createElement(Text, null, t('common.noDataAvailable', "No geographic data for alumni."))
+            alumniGeoData.length > 0 ? React.createElement(DotMap, { ...dotMapConfig, style:{height:'400px'} } as any) : React.createElement(Text, null, t('common.noDataAvailable', "No geographic data for alumni.")) // Cast DotMap props to any for now
           )
         ),
         React.createElement(Col, { xs:24, lg:10},
@@ -184,7 +272,7 @@ const PlacementAlumniModule: React.FC = () => {
           )
         )
       ),
-      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', children: filterDescriptionItems }))
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
     );
   }
 

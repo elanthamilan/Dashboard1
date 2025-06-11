@@ -1,6 +1,6 @@
 // src/components/PrincipalView/modules/AdmissionsModule.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { Typography, Breadcrumb, Row, Col, Card, Statistic, Timeline, Spin, Descriptions, Table, Select, Button, Tag, Space, List } from 'antd'; // Added Table, Select, Button, Tag, Space, List
+import { Typography, Breadcrumb, Row, Col, Card, Statistic, Timeline, Spin, Descriptions, Table, Select, Button, Tag, Space, List, DescriptionsProps, Drawer } from 'antd'; // Added Table, Select, Button, Tag, Space, List, DescriptionsProps, Drawer
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
@@ -84,9 +84,51 @@ const AdmissionsModule: React.FC = () => {
 
   const filteredPrograms = useMemo(() => { /* ... existing ... */ return []; }, [institutionData, filters.academicYear, filters.degreeType, filters.department]);
 
-  const degreeOptionsForSelect = useMemo(() => { /* ... existing ... */ return []; }, [institutionData]);
+  // Removed the first (stubbed) definition of degreeOptionsForSelect that was around line 87
+  // const degreeOptionsForSelect = useMemo(() => { /* ... existing ... */ return []; }, [institutionData]);
   const degreeYearlyComparisonData = useMemo(() => { /* ... existing ... */ return []; }, [selectedDegreeForComparison, allApplicants, institutionData?.academicYears, t]);
   const degreeYearlyComparisonChartConfig = { /* ... existing ... */ };
+
+  // Corrected onChange type for Select component
+  const handleDegreeForComparisonChange = (value: string | null): void => {
+    setSelectedDegreeForComparison(value);
+  };
+
+  // Assuming degreeOptionsForSelect was already defined elsewhere or stubbed as per original file structure.
+  // If it was defined as "/* ... existing ... */", this new definition might be a duplicate.
+  // For now, I will keep the one I introduced if the other was just a comment.
+  // If tsc still complains about redeclaration, one of them needs to be removed.
+  const degreeOptionsForSelect = useMemo(() => {
+    if (!institutionData?.academicYears) return [];
+    const degrees: { label: string, value: string }[] = [];
+    institutionData.academicYears.forEach(ay => {
+      ay.degrees.forEach(deg => {
+        if (!degrees.find(d => d.value === deg.degreeId)) {
+          degrees.push({ label: deg.degreeName, value: deg.degreeId });
+        }
+      });
+    });
+    return degrees.sort((a,b) => a.label.localeCompare(b.label));
+   }, [institutionData?.academicYears]);
+
+
+  const filterDescriptionItems: DescriptionsProps['items'] = Object.entries(filters)
+    .filter(([key]) => !['setAcademicYear', 'setCampus', 'setDegreeType', 'setDepartment', 'setDateRange', 'clearFilters'].includes(key))
+    .map(([key, value]) => {
+      let stringValue: string;
+      if (key === 'dateRange' && Array.isArray(value)) {
+        stringValue = value.join(' - ');
+      } else if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+        stringValue = t('common.notSet', "Not Set");
+      } else {
+        stringValue = String(value);
+      }
+      return {
+        label: t(`filters.${key}`, key.replace(/([A-Z])/g, " $1").replace(/^_/, "").trim()),
+        key: key,
+        children: React.createElement(Text, null, stringValue)
+      };
+    });
 
   const filteredApplicantsForTable = useMemo(() => {
     if (!allApplicants || !institutionData?.academicYears) return [];
@@ -132,7 +174,7 @@ const AdmissionsModule: React.FC = () => {
 
   // Re-fill sections for context.
   const programTableColumnsPrev = [ { title: t('module.admissions.programName'), dataIndex: 'programName', key: 'programName', sorter: (a: any, b: any) => a.programName.localeCompare(b.programName) }, { title: t('module.admissions.numApplicants'), dataIndex: 'applicants', key: 'applicants', sorter: (a: any, b: any) => (a.applicants || 0) - (b.applicants || 0), align: 'right' as const }, { title: t('module.admissions.admissionRate'), dataIndex: 'acceptanceRate', key: 'acceptanceRate', sorter: (a: any, b: any) => (a.acceptanceRate || 0) - (b.acceptanceRate || 0), align: 'right' as const, render: (rate?: number) => rate !== undefined ? `${rate.toFixed(2)}%` : t('common.notApplicableShort', 'N/A') }, { title: t('module.admissions.avgApplicationTime'), key: 'avgAppTime', render: () => t('module.admissions.mockAvgAppTime') }];
-  const filterDescriptionItems = Object.entries(filters).filter(([key]) => !['setAcademicYear', 'setCampus', 'setDegreeType', 'setDepartment', 'setDateRange', 'clearFilters'].includes(key)).map(([key, value]) => React.createElement(Descriptions.Item, { label: t(`filters.${key}`, key.replace(/([A-Z])/g, " $1").replace(/^_/, "").trim()), key: key }, React.createElement(Text, null, value || t('common.notSet', "Not Set"))));
+  // filterDescriptionItems is now defined above filteredApplicantsForTable
   const keyDeadlinesSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, keyDeadlines.length > 0 ? React.createElement(Timeline, { mode: "alternate" }, keyDeadlines.map(deadline => React.createElement(Timeline.Item, { key: deadline.id, label: dayjs(deadline.date).format('DD MMM YYYY'), dot: deadline.type === 'Application' ? React.createElement(CalendarOutlined, {style: {fontSize: '16px'}}) : deadline.type === 'Interview' ? React.createElement(UserIconForTimeline, {style: {fontSize: '16px'}}) : undefined }, React.createElement(Text, { strong: true }, deadline.title), deadline.description && React.createElement(Paragraph, { type: "secondary", style: { marginBottom: 0, fontSize: 'small' } }, deadline.description)))) : React.createElement(Text, null, t('common.noDataAvailable', 'No deadline information available.')));
   const reservedCategorySection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, categoryData.length > 0 ? React.createElement(Pie, pieChartConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', 'No category data available.')));
   const admissionFunnelSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, funnelData.length > 0 ? React.createElement(Funnel, funnelChartConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', 'No funnel data available.')));
@@ -140,7 +182,7 @@ const AdmissionsModule: React.FC = () => {
   const applicantOriginsMapSection = React.createElement(Card, { style: { height: '450px', padding: '0px', marginTop: '30px', boxShadow: '0 2px 8px rgba(0,0,0,0.09)' } }, applicantMapContent);
   const programStatsTableSectionPrev = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, React.createElement(Table, { dataSource: filteredPrograms, columns: programTableColumnsPrev, rowKey: 'programId', loading: loading, scroll: { x: 'max-content' }, pagination: { pageSize: 10, showSizeChanger: true, pageSizeOptions: ['5', '10', '20'] }, expandable: { expandedRowRender: (record: Program) => { const trendDataForProgram = getProgramTrendData(record.programId, allApplicants, institutionData?.academicYears, t); if (!trendDataForProgram || trendDataForProgram.length === 0) { return React.createElement(Text, null, t('common.noTrendDataAvailable')); } return React.createElement(Line, { ...trendChartConfigBase, data: trendDataForProgram, height: 200 } as any); }, rowExpandable: (record: Program) => true, }} as any));
   let degreeComparisonContent; if (selectedDegreeForComparison) { if (degreeYearlyComparisonData.length > 0) { degreeComparisonContent = React.createElement(Column, degreeYearlyComparisonChartConfig as any); } else { degreeComparisonContent = React.createElement(Text, null, t('common.noDataAvailable')); } } else { degreeComparisonContent = React.createElement(Text, null, t('module.admissions.selectDegreePrompt')); }
-  const degreeComparisonSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, React.createElement(Select, { options: degreeOptionsForSelect, onChange: (value: string) => setSelectedDegreeForComparison(value), placeholder: t('module.admissions.selectDegreePlaceholder'), style: { width: 300, marginBottom: 20 }, allowClear: true, value: selectedDegreeForComparison }), degreeComparisonContent );
+  const degreeComparisonSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, React.createElement(Select, { options: degreeOptionsForSelect, onChange: (value: any) => handleDegreeForComparisonChange(value as string | null), placeholder: t('module.admissions.selectDegreePlaceholder'), style: { width: 300, marginBottom: 20 }, allowClear: true, value: selectedDegreeForComparison }), degreeComparisonContent );
 
 
   const applicantListSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } },
@@ -155,22 +197,36 @@ const AdmissionsModule: React.FC = () => {
     } as any)
   );
 
-  const applicantDetailDrawerContent = selectedApplicant ? React.createElement(Descriptions, { bordered: true, column: 1, size: "small"},
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.name')}, `${selectedApplicant.firstName} ${selectedApplicant.lastName}`),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.email')}, selectedApplicant.email),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.phone')}, selectedApplicant.phoneNumber),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.dob')}, dayjs(selectedApplicant.dateOfBirth).format('YYYY-MM-DD')),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.gender')}, selectedApplicant.gender),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.nationality')}, selectedApplicant.nationality),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.address')}, `${selectedApplicant.address.street}, ${selectedApplicant.address.city}, ${selectedApplicant.address.country}`),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.program')}, selectedApplicant.programName),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.applicationDate')}, dayjs(selectedApplicant.applicationDate).format('YYYY-MM-DD')),
-      React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.status')}, selectedApplicant.status),
-      selectedApplicant.previousEducation ? React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.prevEducation')}, `${selectedApplicant.previousEducation.degree} from ${selectedApplicant.previousEducation.institution} (${selectedApplicant.previousEducation.graduationYear || ''}), GPA: ${selectedApplicant.previousEducation.gpa || 'N/A'}`) : null,
-      selectedApplicant.documents && selectedApplicant.documents.length > 0 ? React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.documents')}, React.createElement(List, { size:"small", bordered:true, dataSource:selectedApplicant.documents, renderItem:(item:any) => React.createElement(List.Item, null, `${item.type}: ${item.fileName}`) })) : null,
-      selectedApplicant.interview ? React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.interview')}, `Date: ${dayjs(selectedApplicant.interview.date).format('YYYY-MM-DD')} ${selectedApplicant.interview.time}, Interviewer: ${selectedApplicant.interview.interviewer}, Feedback: ${selectedApplicant.interview.feedback}`) : null,
-      selectedApplicant.visaDetails ? React.createElement(Descriptions.Item, {label: t('module.admissions.applicantDetail.visa')}, `Type: ${selectedApplicant.visaDetails.visaType}, Status: ${selectedApplicant.visaDetails.applicationStatus}`) : null
-  ) : null;
+  const applicantDetailDrawerContent = useMemo(() => {
+    if (!selectedApplicant) return null;
+
+    const descItems: DescriptionsProps['items'] = [
+      { key: 'name', label: t('module.admissions.applicantDetail.name'), children: `${selectedApplicant.firstName || ''} ${selectedApplicant.lastName || ''}` },
+      { key: 'email', label: t('module.admissions.applicantDetail.email'), children: selectedApplicant.email || t('common.notApplicableShort', 'N/A') },
+      { key: 'phone', label: t('module.admissions.applicantDetail.phone'), children: selectedApplicant.phoneNumber || t('common.notApplicableShort', 'N/A') },
+      { key: 'dob', label: t('module.admissions.applicantDetail.dob'), children: selectedApplicant.dateOfBirth ? dayjs(selectedApplicant.dateOfBirth).format('YYYY-MM-DD') : t('common.notApplicableShort', 'N/A') },
+      { key: 'gender', label: t('module.admissions.applicantDetail.gender'), children: selectedApplicant.gender || t('common.notApplicableShort', 'N/A') },
+      { key: 'nationality', label: t('module.admissions.applicantDetail.nationality'), children: selectedApplicant.nationality || t('common.notApplicableShort', 'N/A') },
+      { key: 'address', label: t('module.admissions.applicantDetail.address'), children: selectedApplicant.address ? `${selectedApplicant.address.street || ''}, ${selectedApplicant.address.city || ''}, ${selectedApplicant.address.country || ''}` : t('common.notApplicableShort', 'N/A') },
+      { key: 'program', label: t('module.admissions.applicantDetail.program'), children: selectedApplicant.programName || t('common.notApplicableShort', 'N/A') },
+      { key: 'appDate', label: t('module.admissions.applicantDetail.applicationDate'), children: selectedApplicant.applicationDate ? dayjs(selectedApplicant.applicationDate).format('YYYY-MM-DD') : t('common.notApplicableShort', 'N/A') },
+      { key: 'status', label: t('module.admissions.applicantDetail.status'), children: selectedApplicant.status || t('common.notApplicableShort', 'N/A') },
+    ];
+
+    if (selectedApplicant.previousEducation) {
+      descItems.push({ key: 'prevEdu', label: t('module.admissions.applicantDetail.prevEducation'), children: `${selectedApplicant.previousEducation.degree || ''} from ${selectedApplicant.previousEducation.institution || ''} (${selectedApplicant.previousEducation.graduationYear || ''}), GPA: ${selectedApplicant.previousEducation.gpa || 'N/A'}` });
+    }
+    if (selectedApplicant.documents && selectedApplicant.documents.length > 0) {
+      descItems.push({ key: 'docs', label: t('module.admissions.applicantDetail.documents'), children: React.createElement(React.Fragment, null, React.createElement(List, { size: "small", bordered: true, dataSource: selectedApplicant.documents, renderItem: (item: any) => React.createElement(List.Item, null, `${item.type || ''}: ${item.fileName || ''}`) })) });
+    }
+    if (selectedApplicant.interview) {
+      descItems.push({ key: 'interview', label: t('module.admissions.applicantDetail.interview'), children: `Date: ${selectedApplicant.interview.date ? dayjs(selectedApplicant.interview.date).format('YYYY-MM-DD') : ''} ${selectedApplicant.interview.time || ''}, Interviewer: ${selectedApplicant.interview.interviewer || ''}, Feedback: ${selectedApplicant.interview.feedback || ''}` });
+    }
+    if (selectedApplicant.visaDetails) {
+      descItems.push({ key: 'visa', label: t('module.admissions.applicantDetail.visa'), children: `Type: ${selectedApplicant.visaDetails.visaType || ''}, Status: ${selectedApplicant.visaDetails.applicationStatus || ''}` });
+    }
+    return React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: descItems.filter(item => item.children !== null) });
+  }, [selectedApplicant, t]);
 
   const applicantDetailDrawer = React.createElement(Drawer, {
       title: t('module.admissions.applicantDetail.title'),
@@ -207,7 +263,7 @@ const AdmissionsModule: React.FC = () => {
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.degreeYearlyComparisonTitle')), degreeComparisonSection,
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.applicantListTitle')), applicantListSection, // New Applicant List
       applicantDetailDrawer, // New Drawer
-      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small" }, filterDescriptionItems)),
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: filterDescriptionItems })),
       React.createElement(Paragraph, { style: { marginTop: '20px', fontStyle: 'italic', textAlign: 'center', color: '#888' } }, t('common.moduleSpecificContentPlaceholder'))
     )
   );

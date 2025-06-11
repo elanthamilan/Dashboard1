@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, Alert, Select, Button, Table, Timeline } from 'antd'; // Added Timeline
+import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, Alert, Select, Button, Table, Timeline, DescriptionsProps } from 'antd'; // Added Timeline, DescriptionsProps
+import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
+// Correcting icon imports - ensure ClockCircleOutlined is available if used
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
 import {
-  HomeOutlined, UserOutlined, RiseOutlined, FallOutlined, WarningOutlined, SolutionOutlined, // Added SolutionOutlined for At-Risk
-  BarChartOutlined, LineChartOutlined, CalendarOutlined, IssuesCloseOutlined, CheckCircleOutlined,
+  HomeOutlined, UserOutlined, RiseOutlined, FallOutlined, WarningOutlined, SolutionOutlined,
+  BarChartOutlined, LineChartOutlined, CalendarOutlined, IssuesCloseOutlined, CheckCircleOutlined, ClockCircleOutlined, // Added ClockCircleOutlined
   LoginOutlined, DownloadOutlined, MessageOutlined, EyeOutlined, ArrowLeftOutlined
 } from '@ant-design/icons';
 import { Bar, Line, Heatmap } from '@ant-design/plots';
-import { Institution, AttendanceRecord, StudentSummary, AbsenceReason, Program as ProgramType, Semester as SemesterType, CourseEnrollment } from '../../../types';
+import { Institution, StudentSummary, Program as ProgramType, Semester as SemesterType, CourseEnrollment } from '../../../types/hierarchy';
+import { AttendanceRecord } from '../../AttendanceDashboard/types';
+// Note: AbsenceReason was removed as it's not a defined type in the provided files. It was used as string.
 import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
-import { generateMockAttendanceForInstitution } from '../../../utils/mockData/attendance/generateMockAttendanceData';
+import { generateMockAttendanceRecords, generateMockClasses } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Changed import
 import { getWeekNumberWithYear } from '../../../utils/dateUtils';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -25,7 +29,42 @@ const AT_RISK_PERIOD_DAYS = 30; // Look at attendance for the last 30 days for a
 
 const formatDateYYYYMMDD = (date: Date): string => date.toISOString().split('T')[0];
 
-const calculateClassAttendanceKPIs = ( /* ... same as before ... */ ): { percentage?: number; totalAbsences?: number; enrolledCount: number } => { /* ... same as before ... */ };
+interface KpiItem {
+  key: string;
+  title: string;
+  value: string | number | undefined;
+  precision?: number;
+  prefix?: React.ReactNode;
+  suffix?: string;
+  color?: string;
+  icon?: React.ReactNode; // Added icon prop
+}
+
+// Stubbed function to satisfy TS2355 and allow further type checking
+const calculateClassAttendanceKPIs = (
+  records: AttendanceRecord[], // Assuming records are passed in
+  studentIds: string[],       // Assuming studentIds relevant to the scope (e.g., program, semester, class)
+  courseId?: string           // Optional courseId for specific class attendance
+): { percentage?: number; totalAbsences?: number; enrolledCount: number } => {
+  // Actual logic for this function is missing in the provided context.
+  // This stub returns a valid structure.
+  // Real implementation would filter records by studentIds (and courseId if provided),
+  // calculate present/absent counts, and derive percentage.
+  if (!studentIds || studentIds.length === 0) {
+    return { enrolledCount: 0, percentage: 0, totalAbsences: 0 };
+  }
+  // Example:
+  // const relevantRecords = records.filter(r => studentIds.includes(r.studentId) && (courseId ? r.courseId === courseId : true));
+  // const absences = relevantRecords.filter(r => r.status === 'Absent').length;
+  // const presents = relevantRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
+  // const total = relevantRecords.length; // Or just presents + absences if other statuses are ignored for rate
+  // const percentage = total > 0 ? (presents / total) * 100 : 100;
+  return {
+    enrolledCount: studentIds.length, // This is just the count of students in scope
+    percentage: 100, // Placeholder
+    totalAbsences: 0   // Placeholder
+  };
+};
 
 const AttendanceEngagementModule: React.FC = () => {
   const { t } = useTranslation();
@@ -50,13 +89,52 @@ const AttendanceEngagementModule: React.FC = () => {
   const todayStr = latestDateInRecords;
 
   // Memoized data for the overview
-  const memoizedOverviewData = useMemo(() => { /* ... same as before ... */ }, [institutionData, allAttendanceRecords, t, todayStr]);
+  // Assuming the actual implementation of this useMemo hook exists elsewhere or was not fully provided.
+  // For type safety and to prevent runtime errors if the real memoizedOverviewData is undefined/void:
+  const memoizedOverviewData = useMemo(() => {
+    // Placeholder for the actual complex calculation logic that should be here.
+    // This logic would use institutionData, allAttendanceRecords, t, todayStr
+    // and call functions like calculateClassAttendanceKPIs.
+    // Since the full logic isn't available, we return a structure with default/empty values
+    // to ensure downstream code doesn't break on 'undefined' properties.
+    return {
+      avgAttendanceOverall: 0,
+      todaysStats: { present: 0, absent: 0, late: 0, excused: 0 }, // Added excused
+      irregularityAlertsCount: 0,
+      topAbsenceReasonsData: [] as { type: string; value: number }[], // Added type for clarity
+      weeklyAttendanceTrendData: [] as { date: string; value: number }[], // Added type for clarity
+      lmsStats: { logins: 0, downloads: 0, posts: 0 },
+    };
+  }, [institutionData, allAttendanceRecords, t, todayStr]); // Actual dependencies
+
   const { avgAttendanceOverall, todaysStats, irregularityAlertsCount, topAbsenceReasonsData, weeklyAttendanceTrendData, lmsStats } = memoizedOverviewData;
 
+  const filterDescriptionItems: DescriptionsProps['items'] = useMemo(() => Object.entries(filters)
+    .filter(([key]) => !['setAcademicYear', 'setCampus', 'setDegreeType', 'setDepartment', 'setProgramId', 'setDateRange', 'clearFilters'].includes(key))
+    .map(([key, value]) => {
+      let stringValue: string;
+      if (key === 'dateRange' && Array.isArray(value)) {
+        stringValue = value.join(' - ');
+      } else if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+        stringValue = t('common.notSet', "Not Set");
+      } else {
+        stringValue = String(value);
+      }
+      return {
+        label: t(`filters.${key}`, key.replace(/([A-Z])/g, " $1").replace(/^_/, "").trim()),
+        key: key,
+        children: React.createElement(Text, null, stringValue)
+      };
+    }), [filters, t]);
+
   // Memoized data for drilldowns
-  const calendarHeatmapData = useMemo(() => { /* ... same as before ... */ }, [allAttendanceRecords, todayStr, t]);
-  const availablePrograms = useMemo(() => { /* ... same as before ... */ }, [institutionData, filters.academicYear]);
-  const semestersInSelectedProgram = useMemo(() => { /* ... same as before ... */ }, [selectedProgramForAttendance, institutionData, filters.academicYear]);
+  const calendarHeatmapData = useMemo(() => {
+    // Actual logic for calendarHeatmapData based on allAttendanceRecords, todayStr, t
+    // Since logic is "/* ... same as before ... */", provide a default.
+    return [] as { date: string; count: number; content: string }[]; // Assuming this structure
+  }, [allAttendanceRecords, todayStr, t]);
+  const availablePrograms = useMemo(() => { /* ... same as before ... */ return []; }, [institutionData, filters.academicYear]); // Added default for availablePrograms
+  const semestersInSelectedProgram = useMemo(() => { /* ... same as before ... */ return []; }, [selectedProgramForAttendance, institutionData, filters.academicYear]); // Added default
   const classesInSelectedSemester = useMemo(() => { /* ... same as before ... */ }, [selectedSemesterForClasses, allAttendanceRecords]);
 
   // Memoized data for At-Risk Students
@@ -96,9 +174,9 @@ const AttendanceEngagementModule: React.FC = () => {
         r.studentId === student.studentId &&
         dayjs(r.date).isBetween(periodStartDate, periodEndDate, null, '[]')
       );
-      const presentOrLate = studentRecords.filter(r => r.status === 'present' || r.status === 'late').length;
-      const absences = studentRecords.filter(r => r.status === 'absent').length;
-      const excused = studentRecords.filter(r => r.status === 'excused').length;
+      const presentOrLate = studentRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
+      const absences = studentRecords.filter(r => r.status === 'Absent').length;
+      const excused = studentRecords.filter(r => r.status === 'Excused').length;
       const totalAccountable = presentOrLate + absences + excused;
       const calculatedAttendanceRate = totalAccountable > 0 ? (presentOrLate / totalAccountable) * 100 : 100;
 
@@ -132,44 +210,62 @@ const AttendanceEngagementModule: React.FC = () => {
     setSelectedStudentForAttendanceDetail(null);
   };
 
-  let breadcrumbItems = [ /* ... breadcrumb logic from previous step, needs to be expanded ... */ ];
-  // Expanded Breadcrumb Logic
-  breadcrumbItems = [
-    React.createElement(Breadcrumb.Item, { key: 'home' }, React.createElement(Link, { to: "/principal-view" }, React.createElement(HomeOutlined))),
-    React.createElement(Breadcrumb.Item, { key: 'dashboard' }, React.createElement(Link, { to: "/principal-view" }, t('principalView.dashboardTitle', "Principal's Dashboard"))),
-  ];
-
-  if (viewingAtRiskStudents) {
-    breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'moduleTitleLink' },
-      selectedStudentForAttendanceDetail
-      ? React.createElement(Link, { to: '#', onClick: (e) => { e.preventDefault(); handleBackToOverviewFromAtRisk();  } }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement"))
-      : t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")
-    ));
-    breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'atRiskList' },
-      selectedStudentForAttendanceDetail
-      ? React.createElement(Link, { to: '#', onClick: (e) => { e.preventDefault(); handleBackToAtRiskList(); } }, t('module.attendance.atRiskStudentsTitle', "At-Risk Students"))
-      : t('module.attendance.atRiskStudentsTitle', "At-Risk Students")
-    ));
-    if (selectedStudentForAttendanceDetail) {
-      breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'studentDetail' }, selectedStudentForAttendanceDetail.firstName + " " + selectedStudentForAttendanceDetail.lastName));
+  const breadcrumbItems = useMemo(() => {
+    const items: any[] = [ // Using any for now, can be BreadcrumbItemType[] if imported correctly
+        { key: 'home', title: React.createElement(Link, { to: "/principal-view" }, React.createElement(HomeOutlined)) },
+        { key: 'dashboard', title: React.createElement(Link, { to: "/principal-view" }, t('principalView.dashboardTitle', "Principal's Dashboard")) },
+    ];
+    if (viewingAtRiskStudents) {
+        items.push({
+            key: 'moduleTitleLink',
+            title: selectedStudentForAttendanceDetail
+                   ? React.createElement(Link, { to: '#', onClick: (e: React.MouseEvent) => { e.preventDefault(); handleBackToOverviewFromAtRisk(); } }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement"))
+                   : t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")
+        });
+        items.push({
+            key: 'atRiskList',
+            title: selectedStudentForAttendanceDetail
+                   ? React.createElement(Link, { to: '#', onClick: (e: React.MouseEvent) => { e.preventDefault(); handleBackToAtRiskList(); } }, t('module.attendance.atRiskStudentsTitle', "At-Risk Students"))
+                   : t('module.attendance.atRiskStudentsTitle', "At-Risk Students")
+        });
+        if (selectedStudentForAttendanceDetail) {
+            items.push({ key: 'studentDetail', title: `${selectedStudentForAttendanceDetail.firstName} ${selectedStudentForAttendanceDetail.lastName}` });
+        }
+    } else if (selectedProgramForAttendance) {
+        items.push({ key: 'moduleTitleLink', title: React.createElement(Link, { to: '#', onClick: (e: React.MouseEvent) => { e.preventDefault(); handleProgramSelect(null); } }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement"))});
+        items.push({
+            key: 'program',
+            title: selectedSemesterForClasses
+                   ? React.createElement(Link, { to: '#', onClick: (e: React.MouseEvent) => { e.preventDefault(); handleSemesterSelect(null); } }, selectedProgramForAttendance.programName)
+                   : selectedProgramForAttendance.programName
+        });
+        if (selectedSemesterForClasses) {
+            items.push({ key: 'semester', title: selectedSemesterForClasses.termName });
+        }
+    } else {
+        items.push({ key: 'moduleTitle', title: t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")});
     }
-  } else if (selectedProgramForAttendance) {
-    breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'moduleTitleLink' }, React.createElement(Link, { to: '#', onClick: (e) => { e.preventDefault(); handleProgramSelect(null); } }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement"))));
-    breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'program' }, selectedSemesterForClasses ? React.createElement(Link, { to: '#', onClick: (e) => { e.preventDefault(); handleSemesterSelect(null); } }, selectedProgramForAttendance.programName) : selectedProgramForAttendance.programName));
-    if (selectedSemesterForClasses) {
-      breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'semester' }, selectedSemesterForClasses.termName));
-    }
-  } else {
-    breadcrumbItems.push(React.createElement(Breadcrumb.Item, { key: 'moduleTitle' }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")));
-  }
+    return items;
+  }, [viewingAtRiskStudents, selectedStudentForAttendanceDetail, selectedProgramForAttendance, selectedSemesterForClasses, t]);
 
-
-  const filterDescriptionItems = [ /* ... same as before ... */ ];
+  // const filterDescriptionItems = [ /* ... same as before ... */ ]; // Now defined above
   if (loading) { /* ... */ }
   if (error) { /* ... */ }
 
-  const summaryKpis = [ /* ... */]; // Assumed complete from previous steps
-  const lmsKpis = [ /* ... */ ]; // Assumed complete
+  const summaryKpis: KpiItem[] = useMemo(() => [
+    { key: 'avgAttendance', title: t('module.attendance.kpi.avgAttendanceOverall', "Avg. Attendance Overall"), value: avgAttendanceOverall, suffix: '%', precision: 1, icon: React.createElement(UserOutlined), color: avgAttendanceOverall >= 85 ? '#3f8600' : avgAttendanceOverall >= 70 ? '#faad14' : '#cf1322' },
+    { key: 'presentToday', title: t('module.attendance.kpi.presentToday', "Present Today"), value: todaysStats?.present, precision: 0, icon: React.createElement(CheckCircleOutlined) },
+    { key: 'absentToday', title: t('module.attendance.kpi.absentToday', "Absent Today"), value: todaysStats?.absent, precision: 0, icon: React.createElement(IssuesCloseOutlined), color: (todaysStats?.absent ?? 0) > 0 ? '#cf1322' : undefined },
+    { key: 'lateToday', title: t('module.attendance.kpi.lateToday', "Late Today"), value: todaysStats?.late, precision: 0, icon: React.createElement(ClockCircleOutlined) },
+    { key: 'irregularityAlerts', title: t('module.attendance.kpi.irregularityAlerts', "Irregularity Alerts"), value: irregularityAlertsCount, precision: 0, icon: React.createElement(WarningOutlined), color: irregularityAlertsCount > 0 ? '#cf1322' : undefined },
+  ], [t, avgAttendanceOverall, todaysStats, irregularityAlertsCount]);
+
+  const lmsKpis: KpiItem[] = useMemo(() => [
+    { key: 'lmsLogins', title: t('module.attendance.kpi.lmsLogins', "LMS Logins (30d)"), value: lmsStats?.logins, icon: React.createElement(LoginOutlined) },
+    { key: 'lmsDownloads', title: t('module.attendance.kpi.lmsDownloads', "Resource Downloads (30d)"), value: lmsStats?.downloads, icon: React.createElement(DownloadOutlined) },
+    { key: 'lmsPosts', title: t('module.attendance.kpi.lmsPosts', "Forum Posts (30d)"), value: lmsStats?.posts, icon: React.createElement(MessageOutlined) },
+  ], [t, lmsStats]);
+
   const barConfig = { /* ... */ };
   const lineConfig = { /* ... */ };
   const heatmapConfig = { /* ... */ };
@@ -179,13 +275,13 @@ const AttendanceEngagementModule: React.FC = () => {
   if (selectedStudentForAttendanceDetail) {
     const studentRecords = allAttendanceRecords.filter(r => r.studentId === selectedStudentForAttendanceDetail.studentId && dayjs(r.date).isBetween(dayjs(todayStr).subtract(AT_RISK_PERIOD_DAYS, 'day'), dayjs(todayStr), null, '[]')).sort((a,b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf());
     const timelineItems = studentRecords.map(r => ({
-        key: r.recordId,
-        color: r.status === 'present' ? 'green' : r.status === 'absent' ? 'red' : r.status === 'late' ? 'orange' : 'gray',
-        children: `${dayjs(r.date).format('YYYY-MM-DD')}: ${t(`attendanceStatus.${r.status}`, r.status)} ${r.courseId ? `(${r.courseId})` : ''} ${r.absenceReason ? `- ${t(`absenceReasons.${r.absenceReason}`, r.absenceReason)}` : ''} ${r.notes ? `- ${r.notes}`: ''}`
+        key: r.id, // Changed from r.recordId
+        color: r.status === 'Present' ? 'green' : r.status === 'Absent' ? 'red' : r.status === 'Late' ? 'orange' : 'gray', // Capitalized status
+        children: `${dayjs(r.date).format('YYYY-MM-DD')}: ${t(`attendanceStatus.${r.status}`, r.status)} ${r.classId ? `(${r.classId})` : ''} ${r.absenceReason ? `- ${t(`absenceReasons.${r.absenceReason}`, r.absenceReason)}` : ''} ${r.notes ? `- ${r.notes}`: ''}` // Changed r.courseId to r.classId
     }));
 
     return React.createElement('div', { style: { padding: '20px' } },
-      React.createElement(Breadcrumb, { style: { marginBottom: '20px' }, children: breadcrumbItems }),
+      React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
       React.createElement(Button, { icon: React.createElement(ArrowLeftOutlined), onClick: handleBackToAtRiskList, style: { marginBottom: 20 } }, t('module.attendance.backToAtRiskList', "Back to At-Risk List")),
       React.createElement(Title, { level: 3, style: { marginTop: '0px' } }, t('module.attendance.studentAttendanceDetailTitle', "Attendance Details for {studentName}", { studentName: `${selectedStudentForAttendanceDetail.firstName} ${selectedStudentForAttendanceDetail.lastName}` })),
       React.createElement(Card, { style: { marginBottom: 20 } },
@@ -194,26 +290,27 @@ const AttendanceEngagementModule: React.FC = () => {
       React.createElement(Card, { title: t('module.attendance.attendanceLogTitle', "Attendance Log (Last 30 Days)")},
         timelineItems.length > 0 ? React.createElement(Timeline, { items: timelineItems }) : React.createElement(Text, null, t('common.noRecentAttendanceData', "No recent attendance records for this student."))
       ),
-      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', children: filterDescriptionItems }))
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
     );
   }
 
   // At-Risk Students View
   if (viewingAtRiskStudents) {
-    const atRiskColumns = [
-      { title: t('module.attendance.studentName', 'Student Name'), key: 'name', render: (_:any, r:StudentSummary) => `${r.firstName} ${r.lastName}` },
+    type AtRiskStudentType = StudentSummary & { calculatedAttendanceRate?: number; recentAbsences?: number };
+    const atRiskColumns: ColumnsType<AtRiskStudentType> = [
+      { title: t('module.attendance.studentName', 'Student Name'), key: 'name', render: (_:any, r: AtRiskStudentType) => `${r.firstName} ${r.lastName}` },
       { title: t('module.attendance.studentId', 'Student ID'), dataIndex: 'studentId', key: 'studentId' },
       { title: t('module.attendance.programName', 'Program'), dataIndex: 'programName', key: 'programName' },
-      { title: t('module.attendance.calculatedAttendanceRate', 'Attendance (%)'), dataIndex: 'calculatedAttendanceRate', key: 'calculatedAttendanceRate', render: (val?:number) => val?.toFixed(1) ?? 'N/A', sorter: (a:any,b:any) => a.calculatedAttendanceRate - b.calculatedAttendanceRate },
-      { title: t('module.attendance.recentAbsences', 'Recent Absences (30d)'), dataIndex: 'recentAbsences', key: 'recentAbsences', sorter: (a:any,b:any) => a.recentAbsences - b.recentAbsences },
-      { title: t('common.actions', 'Actions'), key: 'actions', render: (_:any, record:any) => React.createElement(Button, { icon: React.createElement(EyeOutlined), onClick: () => handleViewStudentDetail(record)}, t('common.viewDetails', "View Details"))}
+      { title: t('module.attendance.calculatedAttendanceRate', 'Attendance (%)'), dataIndex: 'calculatedAttendanceRate', key: 'calculatedAttendanceRate', render: (val?:number) => val?.toFixed(1) ?? 'N/A', sorter: (a:AtRiskStudentType,b:AtRiskStudentType) => (a.calculatedAttendanceRate ?? 0) - (b.calculatedAttendanceRate ?? 0) },
+      { title: t('module.attendance.recentAbsences', 'Recent Absences (30d)'), dataIndex: 'recentAbsences', key: 'recentAbsences', sorter: (a:AtRiskStudentType,b:AtRiskStudentType) => (a.recentAbsences ?? 0) - (b.recentAbsences ?? 0) },
+      { title: t('common.actions', 'Actions'), key: 'actions', render: (_:any, record:AtRiskStudentType) => React.createElement(Button, { icon: React.createElement(EyeOutlined), onClick: () => handleViewStudentDetail(record)}, t('common.viewDetails', "View Details"))}
     ];
     return React.createElement('div', { style: { padding: '20px' } },
-      React.createElement(Breadcrumb, { style: { marginBottom: '20px' }, children: breadcrumbItems }),
+      React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
       React.createElement(Button, { icon: React.createElement(ArrowLeftOutlined), onClick: handleBackToOverviewFromAtRisk, style: { marginBottom: 20 } }, t('module.attendance.backToOverview', "Back to Overview")),
       React.createElement(Title, { level: 3, style: { marginTop: '0px' } }, t('module.attendance.atRiskStudentsTitle', "At-Risk Students (Low Attendance)")),
-      React.createElement(Table, { dataSource: atRiskStudentsData, columns: atRiskColumns, rowKey: 'studentId', style: { marginTop: 20 }, locale: {emptyText: t('common.noAtRiskStudents', "No students currently identified as at-risk based on attendance.")}}),
-      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', children: filterDescriptionItems }))
+      React.createElement(Table, { dataSource: atRiskStudentsData, columns: atRiskColumns as any, rowKey: 'studentId', style: { marginTop: 20 }, locale: {emptyText: t('common.noAtRiskStudents', "No students currently identified as at-risk based on attendance.")}}),
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
     );
   }
 
@@ -227,23 +324,23 @@ const AttendanceEngagementModule: React.FC = () => {
   // It starts with: React.createElement(Title, { level: 2 }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")),
   // and includes programSelectorSection, summary KPIs, LMS KPIs, charts, heatmap, and global filters.
   return React.createElement('div', { style: { padding: '20px' } },
-    React.createElement(Breadcrumb, { style: { marginBottom: '20px' }, children: breadcrumbItems }),
-    !viewingAtRiskStudents && programSelectorSection, // Only show program selector if not in at-risk views
-    !viewingAtRiskStudents && React.createElement(Button, { icon: React.createElement(SolutionOutlined), onClick: handleViewAtRisk, style:{ marginBottom: 20, marginTop: selectedProgramForAttendance ? 0 : 20 } }, t('module.attendance.viewAtRiskButton', "View At-Risk Students")),
-    React.createElement(Title, { level: 2 }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")),
-    React.createElement(Paragraph, null, t(`module.${MODULE_KEY}.descriptionPlaceholder`, "Overview of student attendance, engagement patterns, and absence reasons.")),
-    React.createElement(Title, { level: 4, style: { marginTop: '30px' } }, t('module.attendance.summary', "Attendance Summary")),
-    React.createElement(Row, { gutter: [16, 16] }, summaryKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 8, lg: 6, xl: 4, key: kpi.title }, React.createElement(Card, { hoverable: true }, React.createElement(Statistic, { title: kpi.title, value: kpi.value, precision: kpi.precision, prefix: kpi.icon, valueStyle: kpi.color ? { color: kpi.color } : {} }))))),
-    React.createElement(Title, { level: 4, style: { marginTop: '30px' } }, t('module.attendance.lmsEngagementTitle', "LMS Engagement (Last 30 Days)")),
-    React.createElement(Row, { gutter: [16, 16] }, lmsKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 8, key: kpi.title }, React.createElement(Card, { hoverable: true }, React.createElement(Statistic, { title: kpi.title, value: kpi.value, prefix: kpi.icon }))))),
-    React.createElement(Row, { gutter: [16, 16], style: { marginTop: '30px' } },
-      React.createElement(Col, { xs: 24, xl: 12 }, React.createElement(Card, { title: React.createElement(Text, null, React.createElement(BarChartOutlined, { style: { marginRight: 8 }}), t('module.attendance.topAbsenceReasons', "Top Absence Reasons")) }, topAbsenceReasonsData && topAbsenceReasonsData.length > 0 ? React.createElement(Bar, barConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this period.")))),
-      React.createElement(Col, { xs: 24, xl: 12 }, React.createElement(Card, { title: React.createElement(Text, null, React.createElement(LineChartOutlined, { style: { marginRight: 8 }}), t('module.attendance.weeklyAttendanceTrend', "Weekly Attendance Trend (Last 3 Months)")) }, weeklyAttendanceTrendData && weeklyAttendanceTrendData.length > 0 ? React.createElement(Line, lineConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this period."))))
-    ),
-    React.createElement(Row, { gutter: [16, 16], style: { marginTop: '30px' } }, React.createElement(Col, { xs: 24 }, React.createElement(Card, { title: React.createElement(Text, null, React.createElement(CalendarOutlined, { style: { marginRight: 8 }}), t('module.attendance.calendarHeatmapTitle', "Monthly Attendance Heatmap")) }, calendarHeatmapData.length > 0 ? React.createElement(Heatmap, heatmapConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this month's heatmap."))))),
-    React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', children: filterDescriptionItems }))
-  );
-};
+      React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
+      !viewingAtRiskStudents && programSelectorSection,
+      !viewingAtRiskStudents && React.createElement(Button, { icon: React.createElement(SolutionOutlined), onClick: handleViewAtRisk, style:{ marginBottom: 20, marginTop: selectedProgramForAttendance ? 0 : 20 } }, t('module.attendance.viewAtRiskButton', "View At-Risk Students")),
+      React.createElement(Title, { level: 2 }, t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")),
+      React.createElement(Paragraph, null, t(`module.${MODULE_KEY}.descriptionPlaceholder`, "Overview of student attendance, engagement patterns, and absence reasons.")),
+      React.createElement(Title, { level: 4, style: { marginTop: '30px' } }, t('module.attendance.summary', "Attendance Summary")),
+      React.createElement(Row, { gutter: [16, 16] }, summaryKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 8, lg: 6, xl: 4, key: kpi.key }, React.createElement(Card, { hoverable: true }, React.createElement(Statistic, { title: kpi.title, value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle: kpi.color ? { color: kpi.color } : {} }))))),
+      React.createElement(Title, { level: 4, style: { marginTop: '30px' } }, t('module.attendance.lmsEngagementTitle', "LMS Engagement (Last 30 Days)")),
+      React.createElement(Row, { gutter: [16, 16] }, lmsKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 8, key: kpi.key }, React.createElement(Card, { hoverable: true }, React.createElement(Statistic, { title: kpi.title, value: kpi.value, prefix: kpi.icon, suffix: kpi.suffix }))))),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '30px' } },
+        React.createElement(Col, { xs: 24, xl: 12 }, React.createElement(Card, { title: React.createElement(Text, null, React.createElement(BarChartOutlined, { style: { marginRight: 8 }}), t('module.attendance.topAbsenceReasons', "Top Absence Reasons")) }, (memoizedOverviewData.topAbsenceReasonsData || []).length > 0 ? React.createElement(Bar, barConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this period.")))),
+        React.createElement(Col, { xs: 24, xl: 12 }, React.createElement(Card, { title: React.createElement(Text, null, React.createElement(LineChartOutlined, { style: { marginRight: 8 }}), t('module.attendance.weeklyAttendanceTrend', "Weekly Attendance Trend (Last 3 Months)")) }, (memoizedOverviewData.weeklyAttendanceTrendData || []).length > 0 ? React.createElement(Line, lineConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this period."))))
+      ),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '30px' } }, React.createElement(Col, { xs: 24 }, React.createElement(Card, { title: React.createElement(Text, null, React.createElement(CalendarOutlined, { style: { marginRight: 8 }}), t('module.attendance.calendarHeatmapTitle', "Monthly Attendance Heatmap")) }, (calendarHeatmapData || []).length > 0 ? React.createElement(Heatmap, heatmapConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this month's heatmap."))))),
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
+    );
+  };
 
 export default AttendanceEngagementModule;
 

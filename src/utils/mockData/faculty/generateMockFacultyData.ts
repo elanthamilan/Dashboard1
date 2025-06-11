@@ -1,5 +1,6 @@
 // src/utils/mockData/faculty/generateMockFacultyData.ts
 import { faker } from '@faker-js/faker';
+import dayjs from 'dayjs';
 import { FacultyMember, FacultyEvaluation } from '../../../types/academics'; // Path to academics.ts
 import { Department } from '../../../types/departments'; // Corrected path to departments.ts
 import { StudentSummary } from '../../../types/hierarchy';

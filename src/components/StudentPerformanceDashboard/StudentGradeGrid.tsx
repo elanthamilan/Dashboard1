@@ -183,7 +183,7 @@ const StudentGradeGrid: React.FC<StudentGradeGridProps> = ({ studentAcademicReco
       editable: true,
       render: (score?: number) => score ?? '-',
     },
-    { title: t('studentGradeGrid.columns.instructor', 'Instructor'), dataIndex: 'instructor', key: 'instructor', width: 150, ellipsis: true, render: (text) => text || '-' },
+    { title: t('studentGradeGrid.columns.instructor', 'Instructor'), dataIndex: 'instructorName', key: 'instructorName', width: 150, ellipsis: true, render: (text) => text || '-' },
     { title: t('studentGradeGrid.columns.comments', 'Comments'), dataIndex: 'comments', key: 'comments', width: 200, editable: true, ellipsis: true, render: (text) => text || '-' },
     {
       title: t('studentGradeGrid.columns.actions', 'Actions'),

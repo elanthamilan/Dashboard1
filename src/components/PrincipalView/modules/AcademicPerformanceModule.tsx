@@ -1,6 +1,6 @@
 // src/components/PrincipalView/modules/AcademicPerformanceModule.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { Typography, Breadcrumb, Row, Col, Card, Statistic, Spin, Descriptions, Table, Button, List, Tag } from 'antd'; // Added Button, List, Tag
+import { Typography, Breadcrumb, Row, Col, Card, Statistic, Spin, Descriptions, Table, Button, List, Tag, Space, DescriptionsProps, BreadcrumbProps } from 'antd'; // Added Button, List, Tag, Space, DescriptionsProps, BreadcrumbProps
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ import { generateMockInstitutions, generateMockAcademicRecords, generateMockStud
 import { generateMockStudents, generateMockAttendanceRecords } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added generateMockAttendanceRecords
 import { Institution, StudentSummary, AcademicYear as AcademicYearType, StudentAcademicRecord, Department, CourseEnrollment, Program, FacultyMember } from '../../../types/hierarchy';
 import { Student, AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Added AttendanceRecord
-import { PrincipalStudentDetailView } from '../../PrincipalView/PrincipalStudentDetailView'; // Corrected import path
+import PrincipalStudentDetailView from '../../PrincipalView/PrincipalStudentDetailView'; // Corrected import path
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -72,29 +72,45 @@ const AcademicPerformanceModule: React.FC = () => {
     { titleKey: 'module.academics.kpi.backlogRate', value: backlogRate, suffix: '%', icon: React.createElement(WarningOutlined), precision: 2 },
   ];
 
-  const baseBreadcrumbItems = [
+  const baseBreadcrumbItems: BreadcrumbProps['items'] = [
     { title: React.createElement(Link, { to: "/principal-view"}, React.createElement(HomeOutlined)) },
     { title: React.createElement(Link, { to: "/principal-view", onClick: () => { setSelectedDepartmentForCourses(null); setSelectedCourseForBatches(null); setSelectedStudentForPerformance(null); setViewingFacultyPerformance(false); } }, t('principalView.dashboardTitle', "Principal's Dashboard")) },
     { title: React.createElement(Link, { to: ".", onClick: () => { setSelectedDepartmentForCourses(null); setSelectedCourseForBatches(null); setSelectedStudentForPerformance(null); setViewingFacultyPerformance(false); } }, t(`module.${MODULE_KEY}.title`))},
   ];
 
-  const breadcrumbItems = useMemo(() => {
-    let items = [...baseBreadcrumbItems];
+  const breadcrumbItems = useMemo<BreadcrumbProps['items']>(() => {
+    const items: BreadcrumbProps['items'] = [...baseBreadcrumbItems];
     if (viewingFacultyPerformance) {
         items.push({ title: t('module.academics.facultyPerformanceSectionTitle') });
     } else if (selectedDepartmentForCourses) {
       items.push({ title: React.createElement(Link, { to:".", onClick: () => { setSelectedCourseForBatches(null); setSelectedStudentForPerformance(null); } }, selectedDepartmentForCourses.departmentName) });
       if (selectedCourseForBatches) {
         items.push({ title: React.createElement(Link, { to: ".", onClick: () => setSelectedStudentForPerformance(null) }, selectedCourseForBatches.courseName) });
-        if (selectedStudentForPerformance) {
-          items.push({ title: React.createElement(Space, null, React.createElement(StudentIcon), selectedStudentForPerformance.studentName) });
+        if (selectedStudentForPerformance && selectedStudentForPerformance.studentName) {
+          items.push({ title: selectedStudentForPerformance.studentName }); // Simple string for non-link
         }
       }
     }
     return items;
   }, [selectedDepartmentForCourses, selectedCourseForBatches, selectedStudentForPerformance, viewingFacultyPerformance, t, baseBreadcrumbItems]);
 
-  const filterDescriptionItems = Object.entries(filters).filter(([key]) => !['setAcademicYear', 'setCampus', 'setDegreeType', 'setDepartment', 'setDateRange', 'clearFilters'].includes(key)).map(([key, value]) => React.createElement(Descriptions.Item, { label: t(`filters.${key}`, key.replace(/([A-Z])/g, " $1").replace(/^_/, "").trim()), key: key }, React.createElement(Text, null, value || t('common.notSet', "Not Set"))));
+  const filterDescriptionItems: DescriptionsProps['items'] = Object.entries(filters)
+    .filter(([key]) => !['setAcademicYear', 'setCampus', 'setDegreeType', 'setDepartment', 'setDateRange', 'clearFilters'].includes(key))
+    .map(([key, value]) => {
+      let stringValue: string;
+      if (key === 'dateRange' && Array.isArray(value)) {
+        stringValue = value.join(' - ');
+      } else if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) {
+        stringValue = t('common.notSet', "Not Set");
+      } else {
+        stringValue = String(value);
+      }
+      return {
+        label: t(`filters.${key}`, key.replace(/([A-Z])/g, " $1").replace(/^_/, "").trim()),
+        key: key,
+        children: React.createElement(Text, null, stringValue)
+      };
+    });
   const topDepartmentsData = useMemo(() => { if (!institutionData?.departments) return []; return [...institutionData.departments].sort((a, b) => (b.performanceScore || 0) - (a.performanceScore || 0)).slice(0, 5);}, [institutionData?.departments]);
   const handleViewDepartmentCourses = (department: Department) => { setSelectedDepartmentForCourses(department); setSelectedCourseForBatches(null); setSelectedStudentForPerformance(null); setViewingFacultyPerformance(false); };
   const departmentTableColumns = [ { title: t('module.academics.table.departmentName'), dataIndex: 'departmentName', key: 'departmentName', sorter: (a: Department, b: Department) => a.departmentName.localeCompare(b.departmentName) }, { title: t('module.academics.table.performanceScore'), dataIndex: 'performanceScore', key: 'performanceScore', render: (score?: number) => score !== undefined ? `${score.toFixed(1)}/100` : t('common.notApplicableShort'), sorter: (a: Department, b: Department) => (a.performanceScore || 0) - (b.performanceScore || 0), align: 'right' as const }, { title: t('module.academics.table.avgGPA'), dataIndex: 'averageGPA', key: 'averageGPA', render: (gpa?: number) => gpa !== undefined ? gpa.toFixed(2) : t('common.notApplicableShort'), sorter: (a: Department, b: Department) => (a.averageGPA || 0) - (b.averageGPA || 0), align: 'right' as const }, { title: t('module.academics.table.avgPassRate'), dataIndex: 'averagePassRate', key: 'averagePassRate', render: (rate?: number) => rate !== undefined ? `${rate.toFixed(2)}%` : t('common.notApplicableShort'), sorter: (a: Department, b: Department) => (a.averagePassRate || 0) - (b.averagePassRate || 0), align: 'right' as const }, { title: t('common.actions'), key: 'actions', render: (_: any, record: Department) => React.createElement(Button, { type: "link", icon: React.createElement(EyeOutlined), onClick: () => handleViewDepartmentCourses(record) }, t('common.viewCourses', "View Courses")) }];
@@ -124,6 +140,19 @@ const AcademicPerformanceModule: React.FC = () => {
   const selectedDeptCourseTableColumnsUpdated = [ { title: t('module.academics.courseTable.courseName', "Course Name"), dataIndex: 'courseName', key: 'courseName', sorter: (a: CoursePerformance, b: CoursePerformance) => a.courseName.localeCompare(b.courseName) }, { title: t('module.academics.courseTable.passRate', "Pass Rate"), dataIndex: 'passRate', key: 'passRate', render: (rate?: number) => rate !== undefined ? `${rate.toFixed(2)}%` : t('common.notApplicableShort'), sorter: (a: CoursePerformance, b: CoursePerformance) => (a.passRate || 0) - (b.passRate || 0), align: 'right' as const }, { title: t('module.academics.courseTable.avgGPA', "Average GPA"), dataIndex: 'avgGpa', key: 'avgGpa', render: (gpa?: number) => gpa !== undefined ? gpa.toFixed(2) : t('common.notApplicableShort'), sorter: (a: CoursePerformance, b: CoursePerformance) => (a.avgGpa || 0) - (b.avgGpa || 0), align: 'right' as const }, { title: t('module.academics.courseTable.enrolledStudents', "Enrolled"), dataIndex: 'enrolledCount', key: 'enrolledCount', sorter: (a: CoursePerformance, b: CoursePerformance) => (a.enrolledCount || 0) - (b.enrolledCount || 0), align: 'right' as const }, { title: t('common.actions'), key: 'actions', render: (_: any, record: SimpleCourseInfo) => React.createElement(Button, { type: "link", icon: React.createElement(EyeOutlined), onClick: () => handleViewCourseOfferings(record) }, t('common.viewOfferings', "View Offerings")) }];
 
   const offeringsForSelectedCourse = useMemo((): CourseOfferingInfo[] => { /* ... as before ... */ return []; }, [selectedCourseForBatches, selectedDepartmentForCourses, institutionData?.academicYears, allAcademicRecords, filters.academicYear]);
+
+  const currentStudentAcademicRecord = useMemo(() => {
+    if (!selectedStudentForPerformance || !allAcademicRecords) return null;
+    return allAcademicRecords.find(ar => ar.studentId === selectedStudentForPerformance.studentId) || null;
+  }, [selectedStudentForPerformance, allAcademicRecords]);
+
+  const studentOverallAttendancePercentage = useMemo(() => {
+    if (!selectedStudentForPerformance || !allAttendanceRecords || allAttendanceRecords.length === 0) return 0;
+    const studentRecords = allAttendanceRecords.filter(ar => ar.studentId === selectedStudentForPerformance.studentId);
+    if (studentRecords.length === 0) return 0;
+    const presentCount = studentRecords.filter(ar => ar.status === 'Present').length;
+    return parseFloat(((presentCount / studentRecords.length) * 100).toFixed(1));
+  }, [selectedStudentForPerformance, allAttendanceRecords]);
 
   const handleViewStudentPerformance = (student: StudentInOfferingData, offeringContext: CourseOfferingInfo) => {
     setSelectedStudentForPerformance({
@@ -209,7 +238,7 @@ const AcademicPerformanceModule: React.FC = () => {
       React.createElement(Title, { level: 2 }, t(`module.${MODULE_KEY}.title`)),
       React.createElement(Paragraph, null, t(`module.${MODULE_KEY}.descriptionPlaceholder`)),
       currentView,
-      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small" }, filterDescriptionItems)),
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: filterDescriptionItems })),
       React.createElement(Paragraph, { style: { marginTop: '20px', fontStyle: 'italic', textAlign: 'center', color: '#888' } }, t('common.moduleSpecificContentPlaceholder'))
     )
   );

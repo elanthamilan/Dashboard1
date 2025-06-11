@@ -9,7 +9,8 @@ const { Title, Text } = Typography;
 interface KPICardProps {
   titleKey: string; // Translation key for the title
   value: string | number;
-  tooltipKey: string; // Translation key for the tooltip
+  tooltipKey?: string; // Translation key for the tooltip
+  tooltipText?: string; // Direct text for the tooltip
   icon?: React.ReactNode;
   trend?: 'up' | 'down' | 'neutral';
   onClick?: () => void;
@@ -21,6 +22,7 @@ const KPICard: React.FC<KPICardProps> = ({
   titleKey,
   value,
   tooltipKey,
+  tooltipText,
   icon,
   trend,
   onClick,
@@ -44,8 +46,10 @@ const KPICard: React.FC<KPICardProps> = ({
     />
   );
 
+  const tooltipTitle = tooltipText ? tooltipText : (tooltipKey ? t(tooltipKey) : '');
+
   return (
-    <Tooltip title={t(tooltipKey) + (loading ? "" : ` - Last updated: ${new Date().toLocaleDateString()}` )}>
+    <Tooltip title={tooltipTitle + (loading || !tooltipTitle ? "" : ` - Last updated: ${new Date().toLocaleDateString()}` )}>
       <Card hoverable={!!onClick} onClick={onClick} style={{ borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.09)' }}>
         {cardContent}
       </Card>

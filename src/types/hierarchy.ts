@@ -1,4 +1,4 @@
-import { Term, CourseEnrollment } from '../components/StudentPerformanceDashboard/types';
+import { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
 import { PlacementRecord } from './placement';
 import {
     ReEvaluationRequest, GrievanceTicket,
@@ -7,6 +7,14 @@ import {
 } from './academics';
 import { Department } from './departments';
 import { Alumnus, AlumniActivity } from './alumni';
+
+export type { Department } from './departments';
+export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
+export type {
+    ReEvaluationRequest, GrievanceTicket,
+    ComplianceItem, AccreditationStatusSummary, AccreditingBody,
+    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject
+} from './academics';
 
 export interface StudentSummary {
   studentId: string;

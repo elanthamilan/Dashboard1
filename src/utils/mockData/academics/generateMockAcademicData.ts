@@ -69,7 +69,8 @@ const generateMockCourseEnrollment = (termId: string): CourseEnrollment => {
         courseCode: `${subject} ${courseNum}`,
         courseName: faker.lorem.words(3).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '), // Title Case
         credits: faker.helpers.arrayElement([3, 4]),
-        instructor: faker.person.fullName(),
+        instructorName: faker.person.fullName(), // Changed from instructor to instructorName
+        instructorId: `INST-${faker.string.uuid()}`, // Added mock instructorId
         grade: {
             letterGrade,
             numericalScore,
@@ -935,7 +936,68 @@ export const generateMockInstitutions = (
         ? parseFloat((totalResolutionDays / resolvedGrievances.length).toFixed(1))
         : 0;
 
-    const complianceItems = generateMockComplianceItems(institutionDepartments, 50); // Depends on institutionDepartments
+    // Moved department population before its use
+    const institutionDepartments: Department[] = [];
+    const allProgramsGeneratedForDepartments: Program[] = [];
+
+    departmentDefinitions.forEach(deptDef => {
+        const programsInThisDepartmentConfig = programs.filter(p => deptDef.programIds.includes(p.id));
+        const departmentProgramInstances: Program[] = [];
+
+        programsInThisDepartmentConfig.forEach(progConfig => {
+            const programInstance = generateMockProgram(
+                progConfig.id,
+                progConfig.name,
+                mockDegrees.find(d => degreeProgramMappings[d.degreeId]?.some(dp => dp.programId === progConfig.id))?.degreeId || "UNKNOWN_DEG",
+                deptDef.departmentId,
+                progConfig.requiredCredits,
+                allStudents,
+                allAcademicRecords,
+                allAttendanceRecords,
+                allInvoices,
+                allApplicants,
+                allPlacementRecords,
+                allTermsAcrossYears
+            );
+            departmentProgramInstances.push(programInstance);
+            allProgramsGeneratedForDepartments.push(programInstance);
+        });
+
+        const deptStudentSummaries = institutionWideStudentSummaries.filter(summary =>
+            departmentProgramInstances.some(p => p.programId === summary.programId)
+        );
+        const deptStudentIds = deptStudentSummaries.map(s => s.studentId);
+
+        let deptGpaSum = 0;
+        deptStudentSummaries.forEach(s => { if (s.cumulativeGPA) deptGpaSum += s.cumulativeGPA; });
+        const deptAverageGPA = deptStudentSummaries.length > 0 && deptStudentSummaries.filter(s => s.cumulativeGPA !== undefined).length > 0
+            ? parseFloat((deptGpaSum / deptStudentSummaries.filter(s => s.cumulativeGPA !== undefined).length).toFixed(2))
+            : undefined;
+
+        const deptPlacementKPIs = calculatePlacementKPIs(deptStudentIds, deptStudentSummaries, allPlacementRecords);
+        const deptMockStudentSatisfactionScore = faker.number.float({ min: 70, max: 95, multipleOf: 0.1 });
+
+        let deptPerformanceScore = 0;
+        const normalizedGPA = deptAverageGPA ? (deptAverageGPA / 4.0) * 100 : 0;
+        const placementRate = deptPlacementKPIs.rate || 0;
+        deptPerformanceScore = (normalizedGPA * 0.4) + (placementRate * 0.4) + (deptMockStudentSatisfactionScore * 0.2);
+
+        institutionDepartments.push({
+            departmentId: deptDef.departmentId,
+            departmentName: deptDef.departmentName,
+            programIds: departmentProgramInstances.map(p => p.programId),
+            totalStudents: deptStudentSummaries.length,
+            averageGPA: deptAverageGPA,
+            placementRate: deptPlacementKPIs.rate,
+            averagePassRate: departmentProgramInstances.length > 0
+                ? parseFloat((departmentProgramInstances.reduce((acc, p) => acc + (p.programPassRate || 0), 0) / departmentProgramInstances.filter(p => p.programPassRate !== undefined).length || 0).toFixed(2))
+                : 0,
+            mockStudentSatisfactionScore: deptMockStudentSatisfactionScore,
+            performanceScore: parseFloat(deptPerformanceScore.toFixed(2)),
+        });
+    });
+
+    const complianceItems = generateMockComplianceItems(institutionDepartments, 50);
     const accreditationStatuses = generateMockAccreditationStatusSummary(2);
 
     const compliantItemsCount = complianceItems.filter(item => item.status === 'Compliant').length;
@@ -967,72 +1029,6 @@ export const generateMockInstitutions = (
             nextAccreditationReviewDate = futureDates.sort((a,b) => dayjs(a).valueOf() - dayjs(b).valueOf())[0];
         }
     }
-
-    // 2. Generate Departments and Their Programs + Departmental KPIs
-    const institutionDepartments: Department[] = [];
-    const allProgramsGeneratedForDepartments: Program[] = [];
-
-    departmentDefinitions.forEach(deptDef => {
-        const programsInThisDepartmentConfig = programs.filter(p => deptDef.programIds.includes(p.id));
-        const departmentProgramInstances: Program[] = [];
-
-        programsInThisDepartmentConfig.forEach(progConfig => {
-            // Determine relevant terms for this program (e.g., based on typical duration or all terms)
-            // For simplicity, using allTermsAcrossYears, but could be refined
-            const programInstance = generateMockProgram(
-                progConfig.id,
-                progConfig.name,
-                // Infer degreeId - this mapping might need to be more robust or part of programConfig
-                mockDegrees.find(d => degreeProgramMappings[d.degreeId]?.some(dp => dp.programId === progConfig.id))?.degreeId || "UNKNOWN_DEG",
-                deptDef.departmentId, // Assign departmentId
-                progConfig.requiredCredits,
-                allStudents,
-                allAcademicRecords,
-                allAttendanceRecords,
-                allInvoices,
-                allApplicants,
-                allPlacementRecords,
-                allTermsAcrossYears
-            );
-            departmentProgramInstances.push(programInstance);
-            allProgramsGeneratedForDepartments.push(programInstance);
-        });
-
-        const deptStudentSummaries = institutionWideStudentSummaries.filter(summary =>
-            departmentProgramInstances.some(p => p.programId === summary.programId)
-        );
-        const deptStudentIds = deptStudentSummaries.map(s => s.studentId);
-
-        let deptGpaSum = 0;
-        deptStudentSummaries.forEach(s => { if (s.cumulativeGPA) deptGpaSum += s.cumulativeGPA; });
-        const deptAverageGPA = deptStudentSummaries.length > 0 && deptStudentSummaries.filter(s => s.cumulativeGPA !== undefined).length > 0
-            ? parseFloat((deptGpaSum / deptStudentSummaries.filter(s => s.cumulativeGPA !== undefined).length).toFixed(2))
-            : undefined;
-
-        const deptPlacementKPIs = calculatePlacementKPIs(deptStudentIds, deptStudentSummaries, allPlacementRecords);
-        const deptMockStudentSatisfactionScore = faker.number.float({ min: 70, max: 95, multipleOf: 0.1 });
-
-        let deptPerformanceScore = 0;
-        const normalizedGPA = deptAverageGPA ? (deptAverageGPA / 4.0) * 100 : 0;
-        const placementRate = deptPlacementKPIs.rate || 0;
-        // Weights: GPA 40%, Placement 40%, Satisfaction 20%
-        deptPerformanceScore = (normalizedGPA * 0.4) + (placementRate * 0.4) + (deptMockStudentSatisfactionScore * 0.2);
-
-        institutionDepartments.push({
-            departmentId: deptDef.departmentId,
-            departmentName: deptDef.departmentName,
-            programIds: departmentProgramInstances.map(p => p.programId),
-            totalStudents: deptStudentSummaries.length,
-            averageGPA: deptAverageGPA,
-            placementRate: deptPlacementKPIs.rate,
-            // Calculate averagePassRate for the department
-            averagePassRate: departmentProgramInstances.length > 0
-                ? parseFloat((departmentProgramInstances.reduce((acc, p) => acc + (p.programPassRate || 0), 0) / departmentProgramInstances.filter(p => p.programPassRate !== undefined).length || 0).toFixed(2))
-                : 0,
-            mockStudentSatisfactionScore: deptMockStudentSatisfactionScore,
-            performanceScore: parseFloat(deptPerformanceScore.toFixed(2)),
-        });
-    });
 
     // 3. Generate Academic Years and Degrees (using programs generated under departments)
     // This part needs to be adapted to use `allProgramsGeneratedForDepartments`

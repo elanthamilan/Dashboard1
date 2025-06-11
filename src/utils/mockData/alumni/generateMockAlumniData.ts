@@ -14,7 +14,7 @@ export const generateMockAlumni = (
     currentCountry: faker.location.country(),
     currentEmployer: faker.company.name(),
     currentRole: faker.person.jobTitle(),
-    geoCoordinates: { lat: parseFloat(faker.location.latitude()), lng: parseFloat(faker.location.longitude()) },
+    geoCoordinates: { lat: faker.location.latitude(), lng: faker.location.longitude() }, // Removed parseFloat
   }));
 };
 
