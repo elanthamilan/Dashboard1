@@ -5,15 +5,20 @@ import GlobalFilters from './GlobalFilters';
 import KPICard from './KPICard';
 import {
     UserOutlined, DollarCircleOutlined, CheckCircleOutlined, UserDeleteOutlined,
-    SolutionOutlined, RiseOutlined // Added RiseOutlined for Placement
+    SolutionOutlined, RiseOutlined, FileTextOutlined, TeamOutlined, AlertOutlined, SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { useGlobalFilters } from '../../contexts/GlobalFilterContext';
 import { generateMockInstitutions } from '../../utils/mockData/academics/generateMockAcademicData';
-import { Institution, StudentSummary } from '../../types/hierarchy';
+import { Institution, StudentSummary, Department } from '../../types/hierarchy'; // Added Department
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import dayjs from 'dayjs'; // Import dayjs for date formatting
 
 const { Title, Text, Paragraph } = Typography;
 
 const PrincipalDashboardLandingPage: React.FC = () => {
+  const { t } = useTranslation();
+  const navigate = useNavigate(); // Initialize navigate
   const filters = useGlobalFilters();
   const [institutionData, setInstitutionData] = useState<Institution | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -26,10 +31,10 @@ const PrincipalDashboardLandingPage: React.FC = () => {
         setInstitutionData(data[0]);
       } else {
         setInstitutionData(null);
-        console.error("No institution data generated.");
+        // console.error("No institution data generated.");
       }
     } catch (error) {
-      console.error("Error generating institution data:", error);
+      // console.error("Error generating institution data:", error);
       setInstitutionData(null);
     } finally {
       setLoading(false);
@@ -38,25 +43,23 @@ const PrincipalDashboardLandingPage: React.FC = () => {
 
   const allStudentsInInstitution = useMemo((): StudentSummary[] => {
     if (!institutionData) return [];
-    const students: StudentSummary[] = [];
+    const studentsMap = new Map<string, StudentSummary>();
     institutionData.academicYears.forEach(year => {
       year.degrees.forEach(degree => {
         degree.programs.forEach(program => {
           program.semesters.forEach(semester => {
-            // Ensure students within a semester are part of the list
-            // If semester.students is already populated with StudentSummary, this is fine
-            students.push(...semester.students);
+            if (semester.students) {
+                semester.students.forEach(s => {
+                    if(s && s.studentId && !studentsMap.has(s.studentId)) {
+                         studentsMap.set(s.studentId,s);
+                    }
+                });
+            }
           });
         });
       });
     });
-    const uniqueStudentsMap = new Map<string, StudentSummary>();
-    students.forEach(s => {
-        if (s && s.studentId && !uniqueStudentsMap.has(s.studentId)) { // Check if studentId is defined
-            uniqueStudentsMap.set(s.studentId, s);
-        }
-    });
-    return Array.from(uniqueStudentsMap.values());
+    return Array.from(studentsMap.values());
   }, [institutionData]);
 
   const dropoutRate = useMemo(() => {
@@ -68,7 +71,7 @@ const PrincipalDashboardLandingPage: React.FC = () => {
       student => student.enrollmentStatus === 'Graduated'
     ).length;
     const potentialBase = allStudentsInInstitution.length - graduatedStudents;
-    if (potentialBase === 0) return 0;
+    if (potentialBase <= 0) return 0;
     const calculatedRate = (inactiveStudents / potentialBase) * 100;
     return parseFloat(calculatedRate.toFixed(2));
   }, [institutionData, allStudentsInInstitution]);
@@ -78,6 +81,7 @@ const PrincipalDashboardLandingPage: React.FC = () => {
     const passingStudents = allStudentsInInstitution.filter(
       student => student.cumulativeGPA !== undefined && student.cumulativeGPA >= 2.0
     ).length;
+    if (allStudentsInInstitution.length === 0) return 0;
     const calculatedRate = (passingStudents / allStudentsInInstitution.length) * 100;
     return parseFloat(calculatedRate.toFixed(2));
   }, [institutionData, allStudentsInInstitution]);
@@ -86,107 +90,74 @@ const PrincipalDashboardLandingPage: React.FC = () => {
   const feeCollectionPercentage = institutionData?.institutionFeesPaidPercentage ?? 0;
   const averageAttendancePercentage = institutionData?.institutionAttendancePercentage ?? 0;
   const placementSuccessRate = institutionData?.overallPlacementRate ?? 0;
-  // const averagePackage = institutionData?.overallAveragePackage ?? 0; // For tooltip or secondary display
+  const pendingReEvaluations = institutionData?.pendingReEvaluationsCount ?? 0;
+
+  const departmentScores = institutionData?.departments?.map(dept => dept.performanceScore).filter(score => score !== undefined) as number[];
+  const avgDeptPerfScore = departmentScores && departmentScores.length > 0
+    ? parseFloat((departmentScores.reduce((sum, score) => sum + score, 0) / departmentScores.length).toFixed(1))
+    : 0;
+
+  const openGrievances = institutionData?.openGrievancesCount ?? 0;
+  const compliancePercentage = institutionData?.overallCompliancePercentage ?? 0;
+
+  const complianceTooltipText = `${t('kpi.complianceStatus.tooltip')} ${institutionData?.nextAccreditationReviewDate ? `${t('kpi.complianceStatus.nextReview')}: ${dayjs(institutionData.nextAccreditationReviewDate).format('MMM YYYY')}` : '(' + t('kpi.complianceStatus.nextReviewMissing') + ')'}`;
+
+  const finalColProps = { xs:12, sm:12, md:8, lg:4, xl:4};
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Title level={2}>Principal's Bird’s-Eye Dashboard</Title>
-      <Paragraph>High-level institutional health at a glance, with interactive KPI cards that reveal deeper modules.</Paragraph>
-
-      <GlobalFilters />
-
-      <Divider />
-      <Title level={3} style={{ marginTop: '20px' }}>Institutional KPIs</Title>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>
+    React.createElement("div", { style: { padding: '20px' } },
+      React.createElement(Title, { level: 2 }, t('dashboard.title')),
+      React.createElement(Paragraph, null, t('dashboard.subtitle')),
+      React.createElement(GlobalFilters, null),
+      React.createElement(Divider, null),
+      React.createElement(Title, { level: 3, style: { marginTop: '20px' } }, t('dashboard.kpiSectionTitle')),
+      loading ? (
+        React.createElement("div", { style: { textAlign: 'center', padding: '50px' } }, React.createElement(Spin, { size: "large" }))
       ) : institutionData ? (
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8} lg={6} xl={4}>
-            <KPICard
-              titleKey="kpi.totalEnrollments.title"
-              value={totalEnrollments}
-              tooltipKey="kpi.totalEnrollments.tooltip"
-              icon={<UserOutlined />}
-              onClick={() => console.log('Total Enrollments Clicked')}
-              loading={loading}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6} xl={4}>
-            <KPICard
-              titleKey="kpi.dropoutRate.title"
-              value={dropoutRate}
-              valueSuffix="%"
-              tooltipKey="kpi.dropoutRate.tooltip"
-              icon={<UserDeleteOutlined />}
-              onClick={() => console.log('Dropout Rate Clicked')}
-              loading={loading}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6} xl={4}>
-            <KPICard
-              titleKey="kpi.academicPassRate.title"
-              value={academicPassRate}
-              valueSuffix="%"
-              tooltipKey="kpi.academicPassRate.tooltip"
-              icon={<SolutionOutlined />}
-              onClick={() => console.log('Academic Pass Rate Clicked')}
-              loading={loading}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6} xl={4}>
-            <KPICard
-              titleKey="kpi.placementSuccessRate.title"
-              value={placementSuccessRate}
-              valueSuffix="%"
-              tooltipKey="kpi.placementSuccessRate.tooltip"
-              // Example: Tooltip could include avg package:
-              // tooltipText={`${t('kpi.placementSuccessRate.tooltip')} Avg Pkg: ${averagePackage > 0 ? (averagePackage/100000).toFixed(1) + 'LPA' : 'N/A'}`}
-              icon={<RiseOutlined />}
-              onClick={() => console.log('Placement Success Rate Clicked')}
-              loading={loading}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6} xl={4}>
-            <KPICard
-              titleKey="kpi.feeCollection.title"
-              value={feeCollectionPercentage}
-              valueSuffix="%"
-              tooltipKey="kpi.feeCollection.tooltip"
-              icon={<DollarCircleOutlined />}
-              onClick={() => console.log('Fee Collection Clicked')}
-              loading={loading}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={8} lg={6} xl={4}>
-            <KPICard
-              titleKey="kpi.avgAttendance.title"
-              value={averageAttendancePercentage}
-              valueSuffix="%"
-              tooltipKey="kpi.avgAttendance.tooltip"
-              icon={<CheckCircleOutlined />}
-              onClick={() => console.log('Average Attendance Clicked')}
-              loading={loading}
-            />
-          </Col>
-          {/* Remaining KPI cards will be added here */}
-        </Row>
+        React.createElement(Row, { gutter: [16, 24] },
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.totalEnrollments.title", value: totalEnrollments, tooltipKey: "kpi.totalEnrollments.tooltip", icon: React.createElement(UserOutlined), loading: loading, onClick: () => navigate('admissions') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.dropoutRate.title", value: dropoutRate, valueSuffix: "%", tooltipKey: "kpi.dropoutRate.tooltip", icon: React.createElement(UserDeleteOutlined), loading: loading, onClick: () => navigate('admissions') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.academicPassRate.title", value: academicPassRate, valueSuffix: "%", tooltipKey: "kpi.academicPassRate.tooltip", icon: React.createElement(SolutionOutlined), loading: loading, onClick: () => navigate('academic-performance') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.reEvaluationTrends.title", value: pendingReEvaluations, tooltipKey: "kpi.reEvaluationTrends.tooltip", icon: React.createElement(FileTextOutlined), loading: loading, onClick: () => navigate('academic-performance') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.placementSuccessRate.title", value: placementSuccessRate, valueSuffix: "%", tooltipKey: "kpi.placementSuccessRate.tooltip", icon: React.createElement(RiseOutlined), loading: loading, onClick: () => navigate('placement-alumni') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.feeCollection.title", value: feeCollectionPercentage, valueSuffix: "%", tooltipKey: "kpi.feeCollection.tooltip", icon: React.createElement(DollarCircleOutlined), loading: loading, onClick: () => navigate('billing-fee-collection') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.avgAttendance.title", value: averageAttendancePercentage, valueSuffix: "%", tooltipKey: "kpi.avgAttendance.tooltip", icon: React.createElement(CheckCircleOutlined), loading: loading, onClick: () => navigate('attendance-engagement') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.deptPerformance.title", value: avgDeptPerfScore, valueSuffix: "/100", tooltipKey: "kpi.deptPerformance.tooltip", icon: React.createElement(TeamOutlined), loading: loading, onClick: () => navigate('department-faculty') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.openGrievances.title", value: openGrievances, tooltipKey: "kpi.openGrievances.tooltip", icon: React.createElement(AlertOutlined), loading: loading, onClick: () => navigate('grievances-feedback') })
+          ),
+          React.createElement(Col, finalColProps,
+            React.createElement(KPICard, { titleKey: "kpi.complianceStatus.title", value: compliancePercentage, valueSuffix: "%", tooltipText: complianceTooltipText, icon: React.createElement(SafetyCertificateOutlined), loading: loading, onClick: () => navigate('compliance-accreditation') })
+          )
+        )
       ) : (
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Text>No data available to display KPIs.</Text>
-        </div>
-      )}
-
-      {/* Optional: Display selected filters for verification */}
-      <div style={{ marginTop: '20px', padding: '10px', background: '#f9f9f9' }}>
-        <Title level={4}>Current Filter State (for debugging):</Title>
-        <Text>Academic Year: {filters.academicYear || 'Not set'}</Text><br />
-        <Text>Campus: {filters.campus || 'Not set'}</Text><br />
-        <Text>Degree Type: {filters.degreeType || 'Not set'}</Text><br />
-        <Text>Department: {filters.department || 'Not set'}</Text><br />
-        <Text>Date Range: {filters.dateRange ? `${filters.dateRange[0]} - ${filters.dateRange[1]}` : 'Not set'}</Text>
-      </div>
-    </div>
+        React.createElement("div", { style: { textAlign: 'center', padding: '50px' } }, React.createElement(Text, null, t('dashboard.noDataKpis')))
+      ),
+      React.createElement("div", { style: { marginTop: '20px', padding: '10px', background: '#f9f9f9', display: 'none' } },
+        React.createElement(Title, { level: 4 }, "Current Filter State (for debugging):"),
+        React.createElement(Text, null, "Academic Year: ", filters.academicYear || 'Not set'), React.createElement("br"),
+        React.createElement(Text, null, "Campus: ", filters.campus || 'Not set'), React.createElement("br"),
+        React.createElement(Text, null, "Degree Type: ", filters.degreeType || 'Not set'), React.createElement("br"),
+        React.createElement(Text, null, "Department: ", filters.department || 'Not set'), React.createElement("br"),
+        React.createElement(Text, null, "Date Range: ", filters.dateRange ? `${filters.dateRange[0]} - ${filters.dateRange[1]}` : 'Not set')
+      )
+    )
   );
 };
 

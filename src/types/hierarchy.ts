@@ -1,6 +1,9 @@
 import { Term, CourseEnrollment } from '../components/StudentPerformanceDashboard/types';
 import { PlacementRecord } from './placement';
-import { ReEvaluationRequest } from './academics';
+import {
+    ReEvaluationRequest, GrievanceTicket,
+    ComplianceItem, AccreditationStatusSummary, AccreditingBody
+} from './academics'; // Added Compliance and Accreditation types
 import { Department } from './departments';
 
 export interface StudentSummary {
@@ -121,4 +124,12 @@ export interface Institution {
   pendingReEvaluationsCount?: number;
   totalReEvaluationsLastMonth?: number;
   departments?: Department[]; // Institution has a list of departments
+  openGrievancesCount?: number;
+  avgGrievanceResolutionTimeDays?: number;
+  overallCompliancePercentage?: number;
+  pendingComplianceItemsCount?: number;
+  nextAccreditationReviewDate?: string;
+  accreditationBody?: AccreditingBody;
+  complianceItems?: ComplianceItem[];
+  accreditationStatuses?: AccreditationStatusSummary[];
 }

@@ -1,3 +1,25 @@
+// Grievance System Types
+export type GrievanceStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
+export type GrievancePriority = 'High' | 'Medium' | 'Low';
+export type GrievanceCategory = 'Infrastructure' | 'Academic' | 'Examination' | 'Faculty' | 'Student Welfare' | 'Other';
+
+export interface GrievanceTicket {
+  ticketId: string;
+  submittedByStudentId?: string;
+  submittedByStaffId?: string;
+  category: GrievanceCategory;
+  title: string;
+  description: string;
+  status: GrievanceStatus;
+  priority: GrievancePriority;
+  submittedDate: string;
+  lastUpdatedDate: string;
+  resolvedDate?: string;
+  assignedToStaffId?: string;
+  resolutionDetails?: string;
+}
+
+// Re-evaluation System Types (existing)
 export interface ReEvaluationRequest {
   requestId: string;
   studentId: string;
@@ -11,4 +33,32 @@ export interface ReEvaluationRequest {
   resolutionDate?: string;
   reasonForRequest: string;
   commentsByEvaluator?: string;
+}
+
+// Compliance and Accreditation Types
+export type ComplianceStatus = 'Compliant' | 'Non-Compliant' | 'In Progress' | 'Pending Review' | 'Not Assessed';
+export type AccreditingBody = 'NAAC' | 'NBA' | 'UGC' | 'AICTE' | 'Other';
+export type AccreditationOverallStatus = 'Accredited' | 'Not Accredited' | 'Cycle Ongoing' | 'Expired';
+
+export interface ComplianceItem {
+  itemId: string;
+  criterionId: string;
+  criterionName: string;
+  description?: string;
+  status: ComplianceStatus;
+  lastAuditDate: string;
+  nextAuditDate?: string;
+  ownerDeptId?: string; // Links to Department.departmentId
+  evidenceDocUrl?: string;
+}
+
+export interface AccreditationStatusSummary {
+  accreditationId: string;
+  body: AccreditingBody;
+  overallStatus: AccreditationOverallStatus;
+  validFrom?: string;
+  validUntil?: string;
+  lastCycleDate: string;
+  nextMajorReviewCycle: string;
+  applicationStatus?: 'Submitted' | 'Queried' | 'Visit Scheduled' | 'Awaiting Results';
 }

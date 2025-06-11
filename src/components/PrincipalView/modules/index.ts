@@ -1,0 +1,10 @@
+export { default as AdmissionsModule } from './AdmissionsModule';
+export { default as AcademicPerformanceModule } from './AcademicPerformanceModule';
+export { default as AttendanceEngagementModule } from './AttendanceEngagementModule';
+export { default as BillingFeeCollectionModule } from './BillingFeeCollectionModule';
+export { default as PlacementAlumniModule } from './PlacementAlumniModule';
+export { default as DepartmentFacultyModule } from './DepartmentFacultyModule';
+export { default as GrievancesFeedbackModule } from './GrievancesFeedbackModule';
+export { default as ComplianceAccreditationModule } from './ComplianceAccreditationModule';
+export { default as InfrastructureFacilitiesModule } from './InfrastructureFacilitiesModule';
+export { default as CustomReportsModule } from './CustomReportsModule';

@@ -1,4 +1,23 @@
 {
+  "appTitle": "Sistema de Información Estudiantil",
+  "nav": {
+    "home": "Inicio",
+    "admissions": "Admisiones",
+    "attendance": "Asistencia",
+    "billing": "Facturación",
+    "performance": "Rendimiento",
+    "principalView": "Vista Principal"
+  },
+  "header": {
+    "personaSwitcher": "Cambiar Persona",
+    "notifications": "Notificaciones",
+    "profileSettings": "Perfil y Configuración",
+    "helpSupport": "Ayuda/Soporte",
+    "language": "Idioma"
+  },
+  "principalView": {
+    "dashboardTitle": "Tablero del Director"
+  },
   "filters": {
     "academicYear": "Año Académico",
     "selectAcademicYear": "Seleccionar Año",
@@ -10,6 +29,12 @@
     "selectDepartment": "Seleccionar Departamento",
     "dateRange": "Rango de Fechas",
     "clear": "Limpiar Filtros"
+  },
+  "dashboard": {
+    "title": "Tablero Principal Vista de Pájaro",
+    "subtitle": "Salud institucional de alto nivel de un vistazo, con tarjetas KPI interactivas que revelan módulos más profundos.",
+    "kpiSectionTitle": "KPIs Institucionales",
+    "noDataKpis": "No hay datos disponibles para mostrar KPIs."
   },
   "kpi": {
     "totalEnrollments": {
@@ -39,25 +64,89 @@
         "placementSuccessRate": {
           "title": "Tasa de Éxito en Colocación",
           "tooltip": "Porcentaje de estudiantes elegibles (graduados) que aseguraron una colocación a tiempo completo."
+        },
+        "deptPerformance": {
+          "title": "Rendimiento Prom. Departamental",
+          "tooltip": "Puntuación media del rendimiento de los departamentos académicos (compuesto de académicos, colocaciones, feedback estudiantil)."
+        },
+        "openGrievances": {
+          "title": "Quejas Abiertas",
+          "tooltip": "Número de quejas de estudiantes/personal actualmente abiertas o en curso."
+        },
+        "complianceStatus": {
+          "title": "Estado de Cumplimiento",
+          "tooltip": "Porcentaje general de cumplimiento institucional con los organismos reguladores y de acreditación.",
+          "nextReview": "Próx. Revisión",
+          "nextReviewMissing": "Fecha N/D"
+        }
     }
   },
-  "appTitle": "Sistema de Información Estudiantil",
-  "nav": {
-    "home": "Inicio",
+  "module": {
     "admissions": {
-      "home": "Inicio",
-      "admissions": "Admisiones",
-      "attendance": "Asistencia",
-      "billing": "Facturación",
-      "performance": "Rendimiento"
+      "title": "Análisis de Admisiones e Inscripciones",
+      "descriptionPlaceholder": "Información detallada sobre tendencias de solicitudes, tasas de conversión y estadísticas de inscripción.",
+      "summaryTilesTitle": "Resumen de Admisiones",
+      "keyDeadlinesTitle": "Fechas Clave y Eventos",
+      "kpi": {
+        "totalApplications": "Solicitudes Totales",
+        "admissionRate": "Tasa de Admisión",
+        "conversionRate": "Tasa de Conversión (Inscritos/Solicitudes)",
+        "yieldRate": "Tasa de Rendimiento (Inscritos/Ofertas)"
+      },
+      "reservedCategoryTitle": "Desglose por Categoría Reservada",
+      "funnelChartTitle": "Embudo de Admisión",
+      "funnel": {
+        "applied": "Solicitudes Recibidas",
+        "screened": "Preseleccionados",
+        "interviewScheduled": "Entrevista Programada",
+        "interviewComplete": "Entrevista Completada",
+        "offerMade": "Oferta Realizada",
+        "offerAccepted": "Oferta Aceptada",
+        "enrolled": "Inscritos",
+        "applicantsSuffix": "Solicitantes"
+      },
+      "mapTitle": "Mapa de Origen de Solicitantes",
+      "map": {
+        "city": "Ciudad",
+        "country": "País"
+      }
+    },
+    "academics": {
+      "title": "Resumen del Rendimiento Académico",
+      "descriptionPlaceholder": "Análisis del rendimiento estudiantil, distribuciones de GPA y resultados de cursos."
+    },
+    "attendance": {
+      "title": "Seguimiento de Asistencia y Participación",
+      "descriptionPlaceholder": "Monitoreo de patrones de asistencia estudiantil, niveles de participación y ausentismo."
+    },
+    "billing": {
+      "title": "Información de Facturación y Recaudación",
+      "descriptionPlaceholder": "Resumen del estado de recaudación, pagos pendientes y salud financiera."
+    },
+    "placements": {
+      "title": "Colocación y Éxito de Egresados",
+      "descriptionPlaceholder": "Seguimiento de tasas de colocación, participación de empleadores y logros de egresados."
+    },
+    "departmentFaculty": {
+      "title": "Rendimiento Departamental y Docente",
+      "descriptionPlaceholder": "Información sobre puntajes de rendimiento departamental, carga docente y producción investigadora."
+    },
+    "grievances": {
+      "title": "Gestión de Quejas y Retroalimentación",
+      "descriptionPlaceholder": "Seguimiento y análisis de quejas y retroalimentación de estudiantes y personal."
+    },
+    "compliance": {
+      "title": "Estado de Cumplimiento y Acreditación",
+      "descriptionPlaceholder": "Monitoreo del cumplimiento institucional con estándares regulatorios y estado de acreditación."
+    },
+    "infrastructure": {
+      "title": "Utilización de Infraestructura e Instalaciones",
+      "descriptionPlaceholder": "Análisis de la infraestructura del campus, utilización de recursos y gestión de instalaciones."
+    },
+    "customReports": {
+      "title": "Informes Personalizados y Análisis",
+      "descriptionPlaceholder": "Genere y vea informes personalizados basados en diversos puntos de datos institucionales."
     }
-  },
-  "header": {
-    "personaSwitcher": "Cambiar Persona",
-    "notifications": "Notificaciones",
-    "profileSettings": "Perfil y Configuración",
-    "helpSupport": "Ayuda/Soporte",
-    "language": "Idioma"
   },
   "admissionsDashboard": {
     "title": "Tablero de Admisiones",
@@ -394,6 +483,11 @@
     "loadingStudentData": "Cargando datos del estudiante...",
     "notEnrolled": "No Inscrito/a",
     "noDataAvailable": "Datos no disponibles.",
-    "unknownProgram": "Programa Desconocido"
+    "unknownProgram": "Programa Desconocido",
+    "currentGlobalFilters": "Filtros Globales Actuales",
+    "notSet": "No Establecido",
+    "moduleSpecificContentPlaceholder": "El contenido específico del módulo, gráficos y tablas se mostrarán aquí.",
+    "noDataAvailable": "No hay datos disponibles.",
+    "unknown": "Desconocido"
   }
 }

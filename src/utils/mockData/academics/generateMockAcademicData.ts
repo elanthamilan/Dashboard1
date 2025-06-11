@@ -22,8 +22,16 @@ import { Applicant } from '../../../components/AdmissionsDashboard/types'; // Ad
 import { generateMockApplicants } from '../admissions/generateMockApplicants'; // Added
 import { PlacementRecord } from '../../../types/placement';
 import { generateMockPlacementData } from '../placements/generateMockPlacementData';
-import { ReEvaluationRequest } from '../../../types/academics';
+import {
+    ReEvaluationRequest, GrievanceTicket,
+    ComplianceItem, AccreditationStatusSummary, AccreditingBody
+} from '../../../types/academics'; // Added Compliance and Accreditation types
 import { generateMockReEvaluationData } from './generateMockReEvaluationData';
+import { generateMockGrievanceData } from '../grievances/generateMockGrievanceData';
+import {
+    generateMockComplianceItems,
+    generateMockAccreditationStatusSummary
+} from '../compliance/generateMockComplianceData'; // New Imports
 import { Department } from '../../../types/departments';
 
 
@@ -888,6 +896,56 @@ export const generateMockInstitutions = (
     const oneMonthAgo = dayjs().subtract(1, 'month');
     const totalReEvaluationsLastMonth = allReEvaluationRequests.filter(r => dayjs(r.requestDate).isAfter(oneMonthAgo)).length;
 
+    const mockStaffIds = ['STAFF001', 'STAFF002', 'STAFF003', 'STAFF004', 'STAFF005'];
+    const allGrievanceTickets = generateMockGrievanceData(institutionWideStudentSummaries, mockStaffIds, 75);
+    const openGrievancesCount = allGrievanceTickets.filter(
+        t => t.status === 'Open' || t.status === 'In Progress'
+    ).length;
+
+    const resolvedGrievances = allGrievanceTickets.filter(
+        t => (t.status === 'Resolved' || t.status === 'Closed') && t.resolvedDate && t.submittedDate
+    );
+    let totalResolutionDays = 0;
+    resolvedGrievances.forEach(t => {
+        totalResolutionDays += dayjs(t.resolvedDate).diff(dayjs(t.submittedDate), 'day');
+    });
+    const avgGrievanceResolutionTimeDays = resolvedGrievances.length > 0
+        ? parseFloat((totalResolutionDays / resolvedGrievances.length).toFixed(1))
+        : 0;
+
+    const complianceItems = generateMockComplianceItems(institutionDepartments, 50); // Depends on institutionDepartments
+    const accreditationStatuses = generateMockAccreditationStatusSummary(2);
+
+    const compliantItemsCount = complianceItems.filter(item => item.status === 'Compliant').length;
+    const overallCompliancePercentage = complianceItems.length > 0
+        ? parseFloat(((compliantItemsCount / complianceItems.length) * 100).toFixed(1))
+        : 100;
+    const pendingComplianceItemsCount = complianceItems.filter(
+        item => item.status === 'In Progress' || item.status === 'Pending Review'
+    ).length;
+
+    let nextAccreditationReviewDate: string | undefined = undefined;
+    let primaryAccreditationBody: AccreditingBody | undefined = undefined;
+
+    if (accreditationStatuses.length > 0) {
+        primaryAccreditationBody = accreditationStatuses[0].body;
+        // Find the earliest future date from validUntil or nextMajorReviewCycle
+        const futureDates: string[] = [];
+        accreditationStatuses.forEach(as => {
+            if (as.validUntil && dayjs(as.validUntil).isAfter(dayjs())) {
+                futureDates.push(as.validUntil);
+            }
+            // Assuming nextMajorReviewCycle is a year, convert to a date for comparison
+            const reviewCycleDate = dayjs(as.nextMajorReviewCycle, 'YYYY').endOf('year');
+            if (reviewCycleDate.isAfter(dayjs())) {
+                futureDates.push(reviewCycleDate.toISOString());
+            }
+        });
+        if (futureDates.length > 0) {
+            nextAccreditationReviewDate = futureDates.sort((a,b) => dayjs(a).valueOf() - dayjs(b).valueOf())[0];
+        }
+    }
+
     // 2. Generate Departments and Their Programs + Departmental KPIs
     const institutionDepartments: Department[] = [];
     const allProgramsGeneratedForDepartments: Program[] = [];
@@ -1060,6 +1118,14 @@ export const generateMockInstitutions = (
         departments: institutionDepartments, // Newly added departments
         pendingReEvaluationsCount: pendingReEvaluationsCount,
         totalReEvaluationsLastMonth: totalReEvaluationsLastMonth,
+        openGrievancesCount: openGrievancesCount,
+        avgGrievanceResolutionTimeDays: avgGrievanceResolutionTimeDays,
+        overallCompliancePercentage: overallCompliancePercentage,
+        pendingComplianceItemsCount: pendingComplianceItemsCount,
+        nextAccreditationReviewDate: nextAccreditationReviewDate,
+        accreditationBody: primaryAccreditationBody,
+        complianceItems: complianceItems,
+        accreditationStatuses: accreditationStatuses,
         institutionAttendancePercentage: instAttendancePercentage,
         totalInstitutionAbsences: instTotalAbsences,
         institutionFeesPaidPercentage: instFeesPaidPercentage,

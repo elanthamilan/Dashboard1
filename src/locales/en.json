@@ -1,4 +1,23 @@
 {
+  "appTitle": "Student Information System",
+  "nav": {
+    "home": "Home",
+    "admissions": "Admissions",
+    "attendance": "Attendance",
+    "billing": "Billing",
+    "performance": "Performance",
+    "principalView": "Principal View"
+  },
+  "header": {
+    "personaSwitcher": "Switch Persona",
+    "notifications": "Notifications",
+    "profileSettings": "Profile & Settings",
+    "helpSupport": "Help/Support",
+    "language": "Language"
+  },
+  "principalView": {
+    "dashboardTitle": "Principal's Dashboard"
+  },
   "filters": {
     "academicYear": "Academic Year",
     "selectAcademicYear": "Select Year",
@@ -10,6 +29,12 @@
     "selectDepartment": "Select Department",
     "dateRange": "Date Range",
     "clear": "Clear Filters"
+  },
+  "dashboard": {
+    "title": "Principal's Bird’s-Eye Dashboard",
+    "subtitle": "High-level institutional health at a glance, with interactive KPI cards that reveal deeper modules.",
+    "kpiSectionTitle": "Institutional KPIs",
+    "noDataKpis": "No data available to display KPIs."
   },
   "kpi": {
     "totalEnrollments": {
@@ -39,22 +64,89 @@
         "placementSuccessRate": {
           "title": "Placement Success Rate",
           "tooltip": "Percentage of eligible (graduated) students who secured full-time placement."
+        },
+        "deptPerformance": {
+          "title": "Avg. Dept. Performance",
+          "tooltip": "Average performance score of academic departments (composite of academics, placements, student feedback)."
+        },
+        "openGrievances": {
+          "title": "Open Grievances",
+          "tooltip": "Number of currently open or in-progress student/staff grievances."
+        },
+        "complianceStatus": {
+          "title": "Compliance Status",
+          "tooltip": "Overall institutional compliance percentage with regulatory and accrediting bodies.",
+          "nextReview": "Next Review",
+          "nextReviewMissing": "Date N/A"
+        }
     }
   },
-  "appTitle": "Student Information System",
-  "nav": {
-    "home": "Home",
-    "admissions": "Admissions",
-    "attendance": "Attendance",
-    "billing": "Billing",
-    "performance": "Performance"
-  },
-  "header": {
-    "personaSwitcher": "Switch Persona",
-    "notifications": "Notifications",
-    "profileSettings": "Profile & Settings",
-    "helpSupport": "Help/Support",
-    "language": "Language"
+  "module": {
+    "admissions": {
+      "title": "Admissions & Enrollment Analytics",
+      "descriptionPlaceholder": "Detailed insights into application trends, conversion rates, and enrollment statistics.",
+      "summaryTilesTitle": "Admission Summary",
+      "keyDeadlinesTitle": "Key Deadlines & Events",
+      "kpi": {
+        "totalApplications": "Total Applications",
+        "admissionRate": "Admission Rate",
+        "conversionRate": "Conversion Rate (Enrolled/Applied)",
+        "yieldRate": "Yield Rate (Enrolled/Offered)"
+      },
+      "reservedCategoryTitle": "Reserved Category Breakdown",
+      "funnelChartTitle": "Admission Funnel",
+      "funnel": {
+        "applied": "Applied",
+        "screened": "Screened",
+        "interviewScheduled": "Interview Scheduled",
+        "interviewComplete": "Interview Complete",
+        "offerMade": "Offer Made",
+        "offerAccepted": "Offer Accepted",
+        "enrolled": "Enrolled",
+        "applicantsSuffix": "Applicants"
+      },
+      "mapTitle": "Applicant Origins Map",
+      "map": {
+        "city": "City",
+        "country": "Country"
+      }
+    },
+    "academics": {
+      "title": "Academic Performance Overview",
+      "descriptionPlaceholder": "Analysis of student performance, GPA distributions, and course outcomes."
+    },
+    "attendance": {
+      "title": "Attendance & Engagement Tracking",
+      "descriptionPlaceholder": "Monitoring student attendance patterns, engagement levels, and absenteeism."
+    },
+    "billing": {
+      "title": "Billing & Fee Collection Insights",
+      "descriptionPlaceholder": "Overview of fee collection status, outstanding payments, and financial health."
+    },
+    "placements": {
+      "title": "Placement & Alumni Success",
+      "descriptionPlaceholder": "Tracking placement rates, employer engagement, and alumni achievements."
+    },
+    "departmentFaculty": {
+      "title": "Department & Faculty Performance",
+      "descriptionPlaceholder": "Insights into departmental performance scores, faculty workload, and research output."
+    },
+    "grievances": {
+      "title": "Grievances & Feedback Management",
+      "descriptionPlaceholder": "Tracking and analysis of student and staff grievances and feedback."
+    },
+    "compliance": {
+      "title": "Compliance & Accreditation Status",
+      "descriptionPlaceholder": "Monitoring institutional compliance with regulatory standards and accreditation status."
+    },
+    "infrastructure": {
+      "title": "Infrastructure & Facilities Utilization",
+      "descriptionPlaceholder": "Analysis of campus infrastructure, resource utilization, and facility management."
+    },
+    "customReports": {
+      "title": "Custom Reporting & Analytics",
+      "descriptionPlaceholder": "Generate and view custom reports based on various institutional data points."
+    }
   },
   "admissionsDashboard": {
     "title": "Admissions Dashboard",
@@ -421,7 +513,12 @@
     "loadingStudentData": "Loading student data...",
     "notEnrolled": "Not Enrolled",
     "noDataAvailable": "Data not available.",
-    "unknownProgram": "Unknown Program"
+    "unknownProgram": "Unknown Program",
+    "currentGlobalFilters": "Current Global Filters",
+    "notSet": "Not Set",
+    "moduleSpecificContentPlaceholder": "Module-specific content, charts, and tables will be displayed here.",
+    "noDataAvailable": "No data available.",
+    "unknown": "Unknown"
   },
    "studentGradeGrid": {
     "title": "Student Grade Grid",

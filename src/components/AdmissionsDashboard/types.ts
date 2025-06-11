@@ -77,6 +77,7 @@ export interface Applicant {
   };
   // For funnel chart, could derive or add a specific stage field
   funnelStage: number; // e.g., 1: Applied, 2: Shortlisted, ... 5: Accepted
+  reservationCategory?: 'General' | 'SC' | 'ST' | 'OBC' | 'EWS' | 'Other';
 }
 
 export interface KeyDeadline {

@@ -22,6 +22,8 @@ const applicationStatuses: ApplicationStatus[] = [
   'Application Withdrawn',
 ];
 
+const reservationCategories: Applicant['reservationCategory'][] = ['General', 'General', 'General', 'OBC', 'SC', 'ST', 'EWS', 'Other', 'General'];
+
 const documentTypes: Array<'Transcript' | 'Resume/CV' | 'Reference Letter' | 'Essay' | 'Passport Copy' | 'Visa Document'> = ['Transcript', 'Resume/CV', 'Reference Letter', 'Essay', 'Passport Copy'];
 
 // Helper to get a realistic funnel stage based on the new statuses
@@ -112,6 +114,7 @@ export const generateMockApplicant = (id: number): Applicant => {
     } : undefined,
     originCoordinates: getRandomCoordinates(),
     funnelStage: getFunnelStage(status),
+    reservationCategory: faker.helpers.arrayElement(reservationCategories),
   };
 };
 
