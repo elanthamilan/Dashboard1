@@ -1,8 +1,10 @@
 // src/components/PrincipalView/ProgramList.tsx
 import React, { useState } from 'react';
 import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox } from 'antd';
+import { FilePdfOutlined } from '@ant-design/icons'; // Added import
 import { Program } from '../../types/hierarchy';
-import { downloadCSV } from '../../utils/exportUtils'; // Adjust path if necessary
+import { downloadCSV, sanitizeFilename } from '../../utils/exportUtils'; // Updated import
+import { downloadProgramSummaryPDF } from '../../utils/exportUtils'; // Added import
 
 // Title is not needed here as it's handled by the parent dashboard
 // const { Title } = Typography;
@@ -11,8 +13,8 @@ interface ProgramListProps {
   programs: Program[];
   onSelectProgram: (programId: string) => void;
   onComparePrograms: (selectedProgramIds: string[]) => void;
-  degreeName?: string; // Optional: for naming the report
-  academicYearName?: string; // Optional: for naming the report
+  degreeName?: string;
+  academicYearName?: string;
 }
 
 const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, onComparePrograms, degreeName, academicYearName }) => {
@@ -28,7 +30,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
     onComparePrograms(selectedForComparison);
   };
 
-  const handleGenerateReport = () => {
+  const handleGenerateCsvReport = () => { // Renamed to be specific
     const columns = [
       { key: 'programId', title: 'Program ID' },
       { key: 'programName', title: 'Program Name' },
@@ -36,23 +38,34 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
       { key: 'averageProgramGPA', title: 'Average GPA' },
       { key: 'requiredCredits', title: 'Required Credits' },
       { key: 'graduationRate', title: 'Graduation Rate (%)' },
+      { key: 'avgAttendancePercentage', title: 'Avg. Attendance (%)' },
+      { key: 'totalProgramAbsences', title: 'Total Absences' },
+      { key: 'avgFeesPaidPercentage', title: 'Avg. Fees Paid (%)' },
+      { key: 'totalStudentsWithOverdueFees', title: 'Students w/ Overdue Fees' },
+      { key: 'applicants', title: 'Applicants' },
+      { key: 'acceptanceRate', title: 'Acceptance Rate (%)' },
+      { key: 'enrolledCount', title: 'Enrolled Count' },
+      { key: 'atRiskStudents', title: 'At-Risk Students' },
     ];
 
-    // Transform data slightly for report
     const reportData = programs.map(p => ({
       ...p,
       averageProgramGPA: p.averageProgramGPA?.toFixed(2) || 'N/A',
-      // Corrected: graduationRate is already a percentage value like 85.25
-      // For CSV, we just want the number, e.g., "85" or "85.25"
-      graduationRate: p.graduationRate ? p.graduationRate.toFixed(2) : 'N/A',
+      graduationRate: p.graduationRate ? p.graduationRate.toFixed(1) : 'N/A', // Keep as percentage string
+      avgAttendancePercentage: p.avgAttendancePercentage ? p.avgAttendancePercentage.toFixed(1) : 'N/A',
+      avgFeesPaidPercentage: p.avgFeesPaidPercentage ? p.avgFeesPaidPercentage.toFixed(1) : 'N/A',
+      acceptanceRate: p.acceptanceRate ? p.acceptanceRate.toFixed(1) : 'N/A',
+      semesters: undefined, // Remove complex objects for CSV
+      gradeDistribution: undefined, // Remove complex objects for CSV
     }));
 
     let fileName = "programs_report";
-    // Sanitize names for filename
-    const sanitize = (name: string) => name.replace(/\s+/g, '_').replace(/[^\w-]/g, '');
+    // const sanitize = (name: string | undefined) => name?.replace(/\s+/g, '_').replace(/[^\w-]/g, '') || ''; // Removed local sanitize
 
-    if (degreeName) fileName = `${sanitize(degreeName)}_programs_report`;
-    if (academicYearName) fileName = `${sanitize(academicYearName)}_${fileName}`;
+    if (degreeName) fileName = `${sanitizeFilename(degreeName)}_programs_report`;
+    if (academicYearName && degreeName) fileName = `${sanitizeFilename(academicYearName)}_${sanitizeFilename(degreeName)}_programs_report`;
+    else if (academicYearName) fileName = `${sanitizeFilename(academicYearName)}_programs_report`;
+
 
     downloadCSV(reportData, columns, fileName);
   };
@@ -72,7 +85,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
           </Button>
         </Col>
         <Col>
-          <Button onClick={handleGenerateReport} type="default">
+          <Button onClick={handleGenerateCsvReport} type="default"> {/* Changed handler name */}
             Generate Report (CSV)
           </Button>
         </Col>
@@ -102,7 +115,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                   <Statistic title="Required Credits" value={program.requiredCredits ?? 'N/A'} />
                 </Col>
                  <Col span={12}>
-                  <Statistic title="Graduation Rate" value={program.graduationRate !== undefined ? `${program.graduationRate.toFixed(0)}%` : 'N/A'} />
+                  <Statistic title="Graduation Rate" value={program.graduationRate !== undefined ? `${program.graduationRate.toFixed(1)}%` : 'N/A'} />
                 </Col>
               </Row>
 
@@ -157,7 +170,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
               {/* Student Risk and Grades */}
               <Row gutter={16} style={{ marginTop: '10px' }}>
                  <Col span={12}>
-                  <Statistic title="At-Risk Students" value={program.atRiskStudents ?? 'N/A'} />
+                  <Statistic title="Total At-Risk Students" value={program.atRiskStudents ?? 'N/A'} />
                 </Col>
                 <Col span={12}>
                   <Typography.Text strong style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)'}}>Grade Distribution</Typography.Text>
@@ -169,13 +182,26 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                 </Col>
               </Row>
 
-              <Button
-                type="primary"
-                style={{ marginTop: '20px' }}
-                onClick={() => onSelectProgram(program.programId)}
-              >
-                View Semesters
-              </Button>
+              <Row gutter={8} style={{ marginTop: '20px' }} align="middle">
+                <Col>
+                  <Button
+                    type="primary"
+                    onClick={() => onSelectProgram(program.programId)}
+                  >
+                    View Semesters
+                  </Button>
+                </Col>
+                <Col>
+                  <Button
+                    type="default"
+                    icon={<FilePdfOutlined />}
+                    onClick={() => downloadProgramSummaryPDF(program, degreeName, academicYearName)}
+                    style={{ marginLeft: '8px' }}
+                  >
+                    Export PDF Summary
+                  </Button>
+                </Col>
+              </Row>
             </Card>
           </List.Item>
         )}

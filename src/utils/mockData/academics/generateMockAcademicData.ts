@@ -102,16 +102,41 @@ const getRandomEnrollmentStatus = (): StudentSummary['enrollmentStatus'] => {
     return faker.helpers.arrayElement(enrollmentStatuses);
 };
 
-export const generateMockStudentSummary = (student: Student, studentAcademicRecord: StudentAcademicRecord): StudentSummary => {
+export const generateMockStudentSummary = (student: Student, studentAcademicRecord: StudentAcademicRecord): StudentSummary & { attendanceRate?: number; atRiskStatus?: 'Low' | 'Medium' | 'High' | 'None' }=> {
+    const attendanceRate = faker.number.float({ min: 70, max: 100, precision: 1 });
+    let atRiskStatus: 'Low' | 'Medium' | 'High' | 'None' = 'None'; // Default to None or Low
+    const gpa = studentAcademicRecord.cumulativeGPA;
+
+    if (gpa !== undefined) { // Ensure GPA is defined before using it
+        if (gpa < 2.0 || attendanceRate < 75) {
+            atRiskStatus = 'High';
+        } else if (gpa < 2.5 || attendanceRate < 85) {
+            atRiskStatus = 'Medium';
+        } else {
+            atRiskStatus = 'Low';
+        }
+    } else {
+        // If GPA is undefined, base risk on attendance or set to a default
+        if (attendanceRate < 75) {
+            atRiskStatus = 'High';
+        } else if (attendanceRate < 85) {
+            atRiskStatus = 'Medium';
+        } else {
+            atRiskStatus = 'Low'; // Or 'None' if preferred when GPA is unknown but attendance is good
+        }
+    }
+
     return {
         studentId: student.id,
         firstName: student.firstName,
         lastName: student.lastName,
         programId: studentAcademicRecord.programId || 'UNDEF_PROG', // Default if not defined
         programName: studentAcademicRecord.programName || 'Undefined Program', // Default if not defined
-        cumulativeGPA: studentAcademicRecord.cumulativeGPA,
+        cumulativeGPA: gpa,
         totalCreditsEarned: studentAcademicRecord.totalCreditsEarned,
         enrollmentStatus: getRandomEnrollmentStatus(),
+        attendanceRate: attendanceRate,
+        atRiskStatus: atRiskStatus,
     };
 };
 

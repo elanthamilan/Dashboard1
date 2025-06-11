@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox } from 'antd';
 import { Degree } from '../../types/hierarchy'; // Adjust path
+import { downloadCSV } from '../../utils/exportUtils'; // Added import
 
 const { Title } = Typography;
 
 interface DegreeListProps {
   degrees: Degree[];
   onSelectDegree: (degreeId: string) => void;
-  onCompareDegrees: (selectedDegreeIds: string[]) => void; // New prop
+  onCompareDegrees: (selectedDegreeIds: string[]) => void;
 }
 
 const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onCompareDegrees }) => {
@@ -28,6 +29,38 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onComp
     onCompareDegrees(selectedForComparison);
   };
 
+  const handleGenerateReport = () => {
+    const columns = [
+      { key: 'degreeId', title: 'Degree ID' },
+      { key: 'degreeName', title: 'Degree Name' },
+      { key: 'totalStudents', title: 'Total Students' },
+      { key: 'averageDegreeGPA', title: 'Avg. GPA' },
+      { key: 'avgAttendancePercentage', title: 'Avg. Attendance (%)' },
+      { key: 'totalDegreeAbsences', title: 'Total Absences' },
+      { key: 'avgFeesPaidPercentage', title: 'Avg. Fees Paid (%)' },
+      { key: 'totalStudentsWithOverdueFeesInDegree', title: 'Students w/ Overdue Fees' },
+      { key: 'totalApplicants', title: 'Total Applicants' },
+      { key: 'avgAcceptanceRate', title: 'Avg. Acceptance Rate (%)' },
+      { key: 'totalEnrolledCount', title: 'Total Enrolled' },
+      { key: 'totalAtRiskStudents', title: 'At-Risk Students' },
+      // overallGradeDistribution is omitted for CSV simplicity for now.
+    ];
+
+    const reportData = degrees.map(d => ({
+      ...d,
+      averageDegreeGPA: d.averageDegreeGPA?.toFixed(2) || 'N/A',
+      avgAttendancePercentage: d.avgAttendancePercentage?.toFixed(1) || 'N/A',
+      avgFeesPaidPercentage: d.avgFeesPaidPercentage?.toFixed(1) || 'N/A',
+      avgAcceptanceRate: d.avgAcceptanceRate?.toFixed(1) || 'N/A',
+      programs: undefined, // Ensure 'programs' array is not directly included
+      overallGradeDistribution: undefined, // Explicitly remove or flatten if needed
+    }));
+
+    const fileName = "degrees_report";
+
+    downloadCSV(reportData, columns, fileName);
+  };
+
   const canCompare = selectedForComparison.length >= 2 && selectedForComparison.length <= 3;
 
   return (
@@ -40,7 +73,11 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onComp
             Compare Selected ({selectedForComparison.length})
           </Button>
         </Col>
-        {/* Optional: <Col><Button>Generate Report</Button></Col> if needed later */}
+        <Col>
+          <Button onClick={handleGenerateReport} type="default">
+            Generate Report (CSV)
+          </Button>
+        </Col>
       </Row>
 
       <List

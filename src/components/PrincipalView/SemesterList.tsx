@@ -2,12 +2,15 @@
 import React from 'react';
 import { List, Card, Statistic, Button, Row, Col, Typography } from 'antd';
 import { Semester } from '../../types/hierarchy'; // Adjust path
+import { downloadCSV } from '../../utils/exportUtils'; // Added import
 
 const { Title } = Typography;
 
 interface SemesterListProps {
   semesters: Semester[];
   onSelectSemester: (semesterId: string) => void;
+  // programName?: string; // Omitted for this subtask
+  // semesterName?: string; // Omitted for this subtask (as this list shows multiple semesters)
 }
 
 const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester }) => {
@@ -15,9 +18,56 @@ const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester
     return <p>No semesters available for this program.</p>;
   }
 
+  const handleGenerateReport = () => {
+    const columns = [
+      { key: 'semesterName', title: 'Semester Name' },
+      { key: 'studentId', title: 'Student ID' },
+      { key: 'firstName', title: 'First Name' },
+      { key: 'lastName', title: 'Last Name' },
+      { key: 'programName', title: 'Program Name (Student)' },
+      { key: 'cumulativeGPA', title: 'Cumulative GPA' },
+      { key: 'totalCreditsEarned', title: 'Credits Earned' },
+      { key: 'enrollmentStatus', title: 'Enrollment Status' },
+    ];
+
+    const reportData: any[] = []; // Initialize as any[] to allow flexible object structure
+    for (const semester of semesters) {
+      if (semester.students && semester.students.length > 0) {
+        for (const student of semester.students) {
+          reportData.push({
+            semesterName: semester.semesterName,
+            studentId: student.studentId,
+            firstName: student.firstName,
+            lastName: student.lastName,
+            programName: student.programName, // This is student.programName from StudentSummary
+            cumulativeGPA: student.cumulativeGPA?.toFixed(2) || 'N/A',
+            totalCreditsEarned: student.totalCreditsEarned ?? 'N/A',
+            enrollmentStatus: student.enrollmentStatus || 'N/A',
+          });
+        }
+      }
+    }
+
+    // No specific handling for reportData.length === 0 here,
+    // downloadCSV might handle it or show a warning.
+    // An Ant Design notification could be added here if desired.
+
+    const fileName = "semesters_student_summary_report";
+
+    downloadCSV(reportData, columns, fileName);
+  };
+
+
   return (
     <div style={{ marginTop: '24px' }}>
       <Title level={4} style={{ marginBottom: '16px' }}>Semesters</Title>
+      <Row justify="end" style={{ marginBottom: '16px' }}>
+        <Col>
+          <Button onClick={handleGenerateReport} type="default">
+            Generate Student Summary Report (CSV)
+          </Button>
+        </Col>
+      </Row>
       <List
         grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 2, xxl: 2 }}
         dataSource={semesters}

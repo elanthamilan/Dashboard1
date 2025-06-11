@@ -1,20 +1,23 @@
 // src/components/PrincipalView/PrincipalViewDashboard.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import { Typography, Spin, Empty, Button, Breadcrumb } from 'antd';
+import { Typography, Spin, Empty, Button, Breadcrumb, Row, Col } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
-import { Institution, AcademicYear, Degree, Program, Semester } from '../../types/hierarchy';
-import { generateMockInstitutions } from '../../utils/mockData/academics/generateMockAcademicData';
+import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary } from '../../types/hierarchy';
+import { StudentAcademicRecord } from '../../components/StudentPerformanceDashboard/types'; // Added import
+import { generateMockInstitutions, generateMockAcademicRecords, generateMockStudents } from '../../utils/mockData/academics/generateMockAcademicData'; // Added more imports
 import InstitutionDisplay from './InstitutionDisplay';
 import AcademicYearList from './AcademicYearList';
 import DegreeList from './DegreeList';
 import ProgramList from './ProgramList';
 import SemesterList from './SemesterList';
 import StudentSummaryList from './StudentSummaryList';
-import ComparisonModal, { ComparisonItem, ComparisonItemType } from './ComparisonModal'; // Updated import
+import PrincipalStudentDetailView from './PrincipalStudentDetailView'; // Added import
+import ComparisonModal, { ComparisonItem } from './ComparisonModal';
+import { downloadCSV } from '../../utils/exportUtils';
 
 const { Title } = Typography;
 
-type ViewLevel = 'institution' | 'academic_year' | 'degree' | 'program' | 'semester' | 'student';
+type ViewLevel = 'institution' | 'academic_year' | 'degree' | 'program' | 'semester' | 'student' | 'student_detail';
 
 const PrincipalViewDashboard: React.FC = () => {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -23,29 +26,59 @@ const PrincipalViewDashboard: React.FC = () => {
   const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
   const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
+  const [selectedStudentIdForDetail, setSelectedStudentIdForDetail] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [viewLevel, setViewLevel] = useState<ViewLevel>('institution');
 
   const [comparisonModalVisible, setComparisonModalVisible] = useState<boolean>(false);
-  // Updated state for comparison items
   const [itemsToCompare, setItemsToCompare] = useState<ComparisonItem[]>([]);
+
+  const [currentStudentAcademicRecord, setCurrentStudentAcademicRecord] = useState<StudentAcademicRecord | null>(null); // New state
+  const [studentDetailLoading, setStudentDetailLoading] = useState<boolean>(false); // New state
+
+  // Memoize all students and their academic records to avoid re-generating on every render
+  // This is still mock data generation, but more efficient than doing it in the useEffect.
+  const allMockStudents = useMemo(() => generateMockStudents(300), []); // Increased student count slightly
+  const allMockAcademicRecords = useMemo(() => generateMockAcademicRecords(allMockStudents), [allMockStudents]);
 
 
   useEffect(() => {
     setLoading(true);
-    setTimeout(() => {
-      const mockInstitutions = generateMockInstitutions(250, 3);
-      setInstitutions(mockInstitutions);
-      setLoading(false);
-    }, 500);
-  }, []);
+    // Use the memoized records for initializing institutions to ensure consistency
+    const mockInstitutions = generateMockInstitutions(250, 3, 50, allMockStudents, allMockAcademicRecords);
+    setInstitutions(mockInstitutions);
+    setLoading(false);
+  }, [allMockStudents, allMockAcademicRecords]);
+
+
+  useEffect(() => {
+    if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
+      setStudentDetailLoading(true);
+      // Simulate fetching data
+      setTimeout(() => {
+        const record = allMockAcademicRecords.find(r => r.studentId === selectedStudentIdForDetail);
+        setCurrentStudentAcademicRecord(record || null);
+        setStudentDetailLoading(false);
+      }, 300); // Reduced timeout for faster mock load
+    } else {
+      setCurrentStudentAcademicRecord(null);
+    }
+  }, [selectedStudentIdForDetail, viewLevel, allMockAcademicRecords]);
 
   const resetSelections = (upToLevel: ViewLevel) => {
     if (upToLevel === 'institution') setSelectedInstitution(null);
     if (upToLevel <= 'academic_year') setSelectedAcademicYear(null);
     if (upToLevel <= 'degree') setSelectedDegree(null);
     if (upToLevel <= 'program') setSelectedProgram(null);
-    if (upToLevel <= 'semester') setSelectedSemester(null);
+    if (upToLevel <= 'semester') {
+        setSelectedSemester(null);
+        setSelectedStudentIdForDetail(null);
+        setCurrentStudentAcademicRecord(null); // Clear student record
+    }
+    if (upToLevel <= 'student') {
+        setSelectedStudentIdForDetail(null);
+        setCurrentStudentAcademicRecord(null); // Clear student record
+    }
   };
 
   const handleSelectInstitution = (institutionId: string) => {
@@ -95,54 +128,42 @@ const PrincipalViewDashboard: React.FC = () => {
       const semester = selectedProgram.semesters.find(s => s.semesterId === semesterId);
       if (semester) {
         setSelectedSemester(semester);
+        resetSelections('student');
         setViewLevel('student');
       }
     }
   };
 
-  // Renamed and updated for generic items (specifically Programs)
+  const handleSelectStudentForDetail = (studentId: string) => {
+    setSelectedStudentIdForDetail(studentId);
+    setViewLevel('student_detail');
+  };
+
   const handleOpenProgramComparisonModal = (programIds: string[]) => {
     if (selectedDegree) {
       const selectedPrograms = selectedDegree.programs.filter(p => programIds.includes(p.programId));
       const comparisonItems: ComparisonItem[] = selectedPrograms.map(p => ({
-        id: p.programId,
-        name: p.programName,
-        type: 'Program',
-        totalStudents: p.totalStudents,
-        averageGPA: p.averageProgramGPA,
-        attendancePercentage: p.avgAttendancePercentage,
-        totalAbsences: p.totalProgramAbsences,
-        feesPaidPercentage: p.avgFeesPaidPercentage,
-        studentsWithOverdueFees: p.totalStudentsWithOverdueFees,
-        applicants: p.applicants,
-        acceptanceRate: p.acceptanceRate,
-        enrolledCount: p.enrolledCount,
-        atRiskStudents: p.atRiskStudents,
-        requiredCredits: p.requiredCredits,
-        graduationRate: p.graduationRate,
+        id: p.programId, name: p.programName, type: 'Program',
+        totalStudents: p.totalStudents, averageGPA: p.averageProgramGPA,
+        attendancePercentage: p.avgAttendancePercentage, totalAbsences: p.totalProgramAbsences,
+        feesPaidPercentage: p.avgFeesPaidPercentage, studentsWithOverdueFees: p.totalStudentsWithOverdueFees,
+        applicants: p.applicants, acceptanceRate: p.acceptanceRate, enrolledCount: p.enrolledCount,
+        atRiskStudents: p.atRiskStudents, requiredCredits: p.requiredCredits, graduationRate: p.graduationRate,
       }));
       setItemsToCompare(comparisonItems);
       setComparisonModalVisible(true);
     }
   };
 
-  // New handler for Academic Year comparison
   const handleOpenAcademicYearComparisonModal = (academicYearIds: string[]) => {
     if (selectedInstitution) {
       const selectedAcademicYears = selectedInstitution.academicYears.filter(ay => academicYearIds.includes(ay.yearId));
       const comparisonItems: ComparisonItem[] = selectedAcademicYears.map(ay => ({
-        id: ay.yearId,
-        name: ay.yearName,
-        type: 'AcademicYear',
-        totalStudents: ay.totalStudents,
-        averageGPA: ay.overallAverageGPA,
-        attendancePercentage: ay.annualAttendancePercentage,
-        totalAbsences: ay.totalAnnualAbsences,
-        feesPaidPercentage: ay.annualFeesPaidPercentage,
-        studentsWithOverdueFees: ay.totalStudentsWithOverdueFeesInYear,
-        applicants: ay.totalAnnualApplicants,
-        acceptanceRate: ay.avgAnnualAcceptanceRate,
-        enrolledCount: ay.totalAnnualEnrolledCount,
+        id: ay.yearId, name: ay.yearName, type: 'AcademicYear',
+        totalStudents: ay.totalStudents, averageGPA: ay.overallAverageGPA,
+        attendancePercentage: ay.annualAttendancePercentage, totalAbsences: ay.totalAnnualAbsences,
+        feesPaidPercentage: ay.annualFeesPaidPercentage, studentsWithOverdueFees: ay.totalStudentsWithOverdueFeesInYear,
+        applicants: ay.totalAnnualApplicants, acceptanceRate: ay.avgAnnualAcceptanceRate, enrolledCount: ay.totalAnnualEnrolledCount,
         atRiskStudents: ay.totalAnnualAtRiskStudents,
       }));
       setItemsToCompare(comparisonItems);
@@ -150,23 +171,15 @@ const PrincipalViewDashboard: React.FC = () => {
     }
   };
 
-  // New handler for Degree comparison
   const handleOpenDegreeComparisonModal = (degreeIds: string[]) => {
     if (selectedAcademicYear) {
       const selectedDegrees = selectedAcademicYear.degrees.filter(d => degreeIds.includes(d.degreeId));
       const comparisonItems: ComparisonItem[] = selectedDegrees.map(d => ({
-        id: d.degreeId,
-        name: d.degreeName,
-        type: 'Degree',
-        totalStudents: d.totalStudents,
-        averageGPA: d.averageDegreeGPA,
-        attendancePercentage: d.avgAttendancePercentage,
-        totalAbsences: d.totalDegreeAbsences,
-        feesPaidPercentage: d.avgFeesPaidPercentage,
-        studentsWithOverdueFees: d.totalStudentsWithOverdueFeesInDegree,
-        applicants: d.totalApplicants,
-        acceptanceRate: d.avgAcceptanceRate,
-        enrolledCount: d.totalEnrolledCount,
+        id: d.degreeId, name: d.degreeName, type: 'Degree',
+        totalStudents: d.totalStudents, averageGPA: d.averageDegreeGPA,
+        attendancePercentage: d.avgAttendancePercentage, totalAbsences: d.totalDegreeAbsences,
+        feesPaidPercentage: d.avgFeesPaidPercentage, studentsWithOverdueFees: d.totalStudentsWithOverdueFeesInDegree,
+        applicants: d.totalApplicants, acceptanceRate: d.avgAcceptanceRate, enrolledCount: d.totalEnrolledCount,
         atRiskStudents: d.totalAtRiskStudents,
       }));
       setItemsToCompare(comparisonItems);
@@ -174,58 +187,69 @@ const PrincipalViewDashboard: React.FC = () => {
     }
   };
 
-
   const handleCloseComparisonModal = () => {
     setComparisonModalVisible(false);
-    setItemsToCompare([]); // Use updated setter
+    setItemsToCompare([]);
+  };
+
+  const handleGenerateInstitutionsReport = () => {
+    if (!institutions || institutions.length === 0) {
+      console.warn("No institutions to export."); return;
+    }
+    const columns = [
+      { key: 'institutionId', title: 'Institution ID' }, { key: 'institutionName', title: 'Institution Name' },
+      { key: 'totalStudents', title: 'Total Students' }, { key: 'overallAverageGPA', title: 'Overall Avg. GPA' },
+      { key: 'institutionAttendancePercentage', title: 'Avg. Attendance (%)' }, { key: 'totalInstitutionAbsences', title: 'Total Absences' },
+      { key: 'institutionFeesPaidPercentage', title: 'Avg. Fees Paid (%)' }, { key: 'totalStudentsWithOverdueFeesInInstitution', title: 'Students w/ Overdue Fees' },
+      { key: 'totalInstitutionApplicants', title: 'Total Applicants' }, { key: 'avgInstitutionAcceptanceRate', title: 'Avg. Acceptance Rate (%)' },
+      { key: 'totalInstitutionEnrolledCount', title: 'Total Enrolled' }, { key: 'totalInstitutionAtRiskStudents', title: 'At-Risk Students' },
+    ];
+    const reportData = institutions.map(inst => ({
+      institutionId: inst.institutionId, institutionName: inst.institutionName,
+      totalStudents: inst.totalStudents ?? 'N/A', overallAverageGPA: inst.overallAverageGPA?.toFixed(2) || 'N/A',
+      institutionAttendancePercentage: inst.institutionAttendancePercentage?.toFixed(1) || 'N/A', totalInstitutionAbsences: inst.totalInstitutionAbsences ?? 'N/A',
+      institutionFeesPaidPercentage: inst.institutionFeesPaidPercentage?.toFixed(1) || 'N/A', totalStudentsWithOverdueFeesInInstitution: inst.totalStudentsWithOverdueFeesInInstitution ?? 'N/A',
+      totalInstitutionApplicants: inst.totalInstitutionApplicants ?? 'N/A', avgInstitutionAcceptanceRate: inst.avgInstitutionAcceptanceRate?.toFixed(1) || 'N/A',
+      totalInstitutionEnrolledCount: inst.totalInstitutionEnrolledCount ?? 'N/A', totalInstitutionAtRiskStudents: inst.totalInstitutionAtRiskStudents ?? 'N/A',
+    }));
+    downloadCSV(reportData, columns, "institutions_report");
   };
 
   const breadcrumbItems = useMemo(() => {
     const items: { key: string; title: React.ReactNode; onClick?: () => void }[] = [{
-        key: 'home',
-        title: <HomeOutlined />,
+        key: 'home', title: <HomeOutlined />,
         onClick: () => { resetSelections('institution'); setViewLevel('institution');}
     }];
-
     if (selectedInstitution) {
-      items.push({
-        key: 'institution',
-        title: selectedInstitution.institutionName,
-        onClick: viewLevel !== 'academic_year' ? () => { resetSelections('academic_year'); setViewLevel('academic_year'); } : undefined
-      });
+      items.push({ key: 'institution', title: selectedInstitution.institutionName,
+        onClick: viewLevel !== 'academic_year' ? () => { resetSelections('academic_year'); setViewLevel('academic_year'); } : undefined });
     }
     if (selectedAcademicYear) {
-      items.push({
-        key: 'academic_year',
-        title: selectedAcademicYear.yearName,
-        onClick: viewLevel !== 'degree' ? () => { resetSelections('degree'); setViewLevel('degree'); } : undefined
-      });
+      items.push({ key: 'academic_year', title: selectedAcademicYear.yearName,
+        onClick: viewLevel !== 'degree' ? () => { resetSelections('degree'); setViewLevel('degree'); } : undefined });
     }
     if (selectedDegree) {
-      items.push({
-        key: 'degree',
-        title: selectedDegree.degreeName,
-        onClick: viewLevel !== 'program' ? () => { resetSelections('program'); setViewLevel('program'); } : undefined
-      });
+      items.push({ key: 'degree', title: selectedDegree.degreeName,
+        onClick: viewLevel !== 'program' ? () => { resetSelections('program'); setViewLevel('program'); } : undefined });
     }
     if (selectedProgram) {
-      items.push({
-        key: 'program',
-        title: selectedProgram.programName,
-        onClick: viewLevel !== 'semester' ? () => { resetSelections('semester'); setViewLevel('semester'); } : undefined
-      });
+      items.push({ key: 'program', title: selectedProgram.programName,
+        onClick: viewLevel !== 'semester' ? () => { resetSelections('semester'); setViewLevel('semester'); } : undefined });
     }
-    if (selectedSemester && viewLevel === 'student') {
-        items.push({ key: 'semester', title: selectedSemester.semesterName });
+    if (selectedSemester) {
+        if (viewLevel === 'student' || viewLevel === 'student_detail') {
+            items.push({ key: 'semester', title: selectedSemester.semesterName,
+                onClick: viewLevel === 'student_detail' ? () => { setViewLevel('student'); setSelectedStudentIdForDetail(null); setCurrentStudentAcademicRecord(null); } : undefined });
+        }
     }
-
-    return items.map((item) => {
-        return {
-            title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title,
-            key: item.key,
-        };
-    });
-  }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, viewLevel]);
+    if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
+        const studentName = currentStudentAcademicRecord
+            ? `${allMockStudents.find(s => s.id === currentStudentAcademicRecord.studentId)?.firstName} ${allMockStudents.find(s => s.id === currentStudentAcademicRecord.studentId)?.lastName}`
+            : selectedStudentIdForDetail;
+        items.push({ key: 'student_detail', title: `Student: ${studentName}` });
+    }
+    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key, }));
+  }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
 
 
   if (loading) {
@@ -237,48 +261,30 @@ const PrincipalViewDashboard: React.FC = () => {
 
   if (viewLevel === 'institution') {
     currentDisplayTitle = "Institutions";
-    if (institutions.length === 0 && !loading) {
-      content = <Empty description="No institutions found." />;
-    } else {
-      content = institutions.map(inst => (
-        <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} />
-      ));
-    }
+    content = institutions.map(inst => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
+    if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
   } else if (selectedInstitution && viewLevel === 'academic_year') {
     currentDisplayTitle = selectedInstitution.institutionName;
-    content = (
-      <AcademicYearList
-        academicYears={selectedInstitution.academicYears}
-        onSelectAcademicYear={handleSelectAcademicYear}
-        onCompareAcademicYears={handleOpenAcademicYearComparisonModal} // Pass new handler
-      />
-    );
+    content = ( <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} onCompareAcademicYears={handleOpenAcademicYearComparisonModal} /> );
   } else if (selectedAcademicYear && viewLevel === 'degree') {
     currentDisplayTitle = selectedAcademicYear.yearName;
-    content = (
-      <DegreeList
-        degrees={selectedAcademicYear.degrees}
-        onSelectDegree={handleSelectDegree}
-        onCompareDegrees={handleOpenDegreeComparisonModal} // Pass new handler
-      />
-    );
+    content = ( <DegreeList degrees={selectedAcademicYear.degrees} onSelectDegree={handleSelectDegree} onCompareDegrees={handleOpenDegreeComparisonModal} /> );
   } else if (selectedDegree && viewLevel === 'program') {
     currentDisplayTitle = selectedDegree.degreeName;
-    content = (
-      <ProgramList
-        programs={selectedDegree.programs}
-        onSelectProgram={handleSelectProgram}
-        onComparePrograms={handleOpenProgramComparisonModal} // Ensure this uses the updated handler
-        degreeName={selectedDegree.degreeName}
-        academicYearName={selectedAcademicYear?.yearName}
-      />
-    );
+    content = ( <ProgramList programs={selectedDegree.programs} onSelectProgram={handleSelectProgram} onComparePrograms={handleOpenProgramComparisonModal} degreeName={selectedDegree.degreeName} academicYearName={selectedAcademicYear?.yearName} /> );
   } else if (selectedProgram && viewLevel === 'semester') {
     currentDisplayTitle = selectedProgram.programName;
     content = <SemesterList semesters={selectedProgram.semesters} onSelectSemester={handleSelectSemester} />;
   } else if (selectedSemester && viewLevel === 'student') {
     currentDisplayTitle = selectedSemester.semesterName;
-    content = <StudentSummaryList students={selectedSemester.students} />;
+    content = <StudentSummaryList students={selectedSemester.students} onSelectStudent={handleSelectStudentForDetail} />;
+  } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
+    const studentForTitle = currentStudentAcademicRecord
+        ? allMockStudents.find(s => s.id === currentStudentAcademicRecord.studentId)
+        : null;
+    const studentDisplayName = studentForTitle ? `${studentForTitle.firstName} ${studentForTitle.lastName}` : selectedStudentIdForDetail;
+    currentDisplayTitle = `Details for ${studentDisplayName}`;
+    content = ( <PrincipalStudentDetailView studentAcademicRecord={currentStudentAcademicRecord} loading={studentDetailLoading} /> );
   }
   else {
      content = <Empty description="Data not available for current selection or path." />;
@@ -287,21 +293,18 @@ const PrincipalViewDashboard: React.FC = () => {
   return (
     <div>
       <Title level={2} style={{ marginBottom: '0px' }}>Principal's Hierarchical View</Title>
-      <div style={{ margin: "10px 0px"}}>
-        <Breadcrumb items={breadcrumbItems} />
-      </div>
+      <div style={{ margin: "10px 0px"}}> <Breadcrumb items={breadcrumbItems} /> </div>
+      {viewLevel === 'institution' && institutions.length > 0 && (
+        <Row justify="end" style={{ marginTop: '10px', marginBottom: '20px' }}>
+          <Col> <Button onClick={handleGenerateInstitutionsReport} type="default"> Generate Institutions Report (CSV) </Button> </Col>
+        </Row>
+      )}
       {viewLevel !== 'institution' && currentDisplayTitle && (
          <Title level={3} type="secondary" style={{marginTop: 0, marginBottom: "16px"}}>{currentDisplayTitle}</Title>
       )}
       {content}
-
-      {/* Update ComparisonModal invocation */}
       {itemsToCompare.length > 0 && (
-        <ComparisonModal
-          open={comparisonModalVisible}
-          items={itemsToCompare}
-          onClose={handleCloseComparisonModal}
-        />
+        <ComparisonModal open={comparisonModalVisible} items={itemsToCompare} onClose={handleCloseComparisonModal} />
       )}
     </div>
   );
