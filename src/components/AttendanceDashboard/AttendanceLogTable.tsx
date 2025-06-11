@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Table, Input, Select, Button, Tag, DatePicker, Tooltip, Typography, Card, Row, Col } from 'antd';
+import { Table, Input, Select, Button, Tag, DatePicker, Tooltip, Typography, Card, Row, Col, Space } from 'antd';
 import { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { FilterValue, SorterResult } from 'antd/es/table/interface';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import { AttendanceRecord, AttendanceStatus, Student, SchoolClass } from './types'; // Adjust path
-import { EyeOutlined } from '@ant-design/icons'; // Or EditOutlined if editing is planned
+import { EyeOutlined, DownloadOutlined } from '@ant-design/icons'; // Or EditOutlined if editing is planned
+import { downloadCSV } from '../../utils/exportUtils'; // Import CSV utility
 
 const { Search } = Input;
 const { Option } = Select;
@@ -48,6 +49,27 @@ const AttendanceLogTable: React.FC<AttendanceLogTableProps> = ({
   const studentMap = useMemo(() => new Map(students.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [students]);
   const classMap = useMemo(() => new Map(schoolClasses.map(c => [c.id, c.name])), [schoolClasses]);
 
+  const handleExportCSV = () => {
+    const dataToExport = processedAndFilteredRecords.map(record => ({
+      date: dayjs(record.date).format('YYYY-MM-DD'),
+      studentName: studentMap.get(record.studentId) || record.studentId,
+      className: classMap.get(record.classId) || record.classId,
+      status: t(`attendanceStatus.${record.status}`, record.status),
+      absenceReason: record.absenceReason ? t(`attendanceReasons.${record.absenceReason.replace(/\s+/g, '')}`, record.absenceReason) : '',
+      notes: record.notes || '',
+    }));
+
+    const csvColumns = [
+      { key: 'date', title: t('attendanceLogTable.columns.date', 'Date') },
+      { key: 'studentName', title: t('attendanceLogTable.columns.studentName', 'Student Name') },
+      { key: 'className', title: t('attendanceLogTable.columns.className', 'Class/Course') },
+      { key: 'status', title: t('attendanceLogTable.columns.status', 'Status') },
+      { key: 'absenceReason', title: t('attendanceLogTable.columns.reason', 'Reason') },
+      { key: 'notes', title: t('attendanceLogTable.columns.notes', 'Notes') },
+    ];
+
+    downloadCSV(dataToExport, csvColumns, 'attendance_log');
+  };
 
   const [tableParams, setTableParams] = useState<{
     pagination: TablePaginationConfig;
@@ -159,40 +181,59 @@ const AttendanceLogTable: React.FC<AttendanceLogTableProps> = ({
 
   return (
     <Card title={t('attendanceLogTable.title', 'Attendance Log')}>
-        <Row gutter={[16,16]} style={{marginBottom: 16}}>
-            <Col xs={24} sm={12} md={8}>
-                <Search
+        <Row gutter={[16,16]} style={{marginBottom: 16}} justify="space-between">
+            <Col xs={24} sm={24} md={18}> {/* Increased width for filters row */}
+                <Row gutter={[16,16]}>
+                    <Col xs={24} sm={12} md={8}>
+                        <Search
+                            placeholder={t('attendanceLogTable.filters.searchPlaceholder', 'Search Student/Class...')}
+                            onSearch={value => setSearchText(value)}
+                            onChange={e => setSearchText(e.target.value)}
+                            allowClear
+                        />
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <Select
+                            mode="multiple"
+                            allowClear
+                            style={{ width: '100%' }}
+                            placeholder={t('attendanceLogTable.filters.statusPlaceholder', 'Filter by Status')}
+                            onChange={setStatusFilter}
+                            options={attendanceStatusesForFilter.map(status => ({
+                                label: t(`attendanceStatus.${status}`, status),
+                                value: status,
+                            }))}
+                            maxTagCount="responsive"
+                        />
+                    </Col>
+                    <Col xs={24} sm={12} md={8}>
+                        <DatePicker
+                            style={{ width: '100%' }}
+                            placeholder={t('attendanceLogTable.filters.datePlaceholder', 'Filter by Date')}
+                            onChange={date => setTableDateFilter(date)}
+                            format="YYYY-MM-DD"
+                            allowClear
+                        />
+                    </Col>
+                </Row>
+            </Col>
+            <Col xs={24} sm={24} md={6} style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
+                 <Button
+                    icon={<DownloadOutlined />}
+                    onClick={handleExportCSV}
+                    disabled={loading || processedAndFilteredRecords.length === 0}
+                >
+                    {t('common.actions.exportCsv', 'Export to CSV')}
+                </Button>
+            </Col>
+        </Row>
+      <Table
                     placeholder={t('attendanceLogTable.filters.searchPlaceholder', 'Search Student/Class...')}
                     onSearch={value => setSearchText(value)}
                     onChange={e => setSearchText(e.target.value)}
                     allowClear
                 />
             </Col>
-            <Col xs={24} sm={12} md={6}>
-                <Select
-                    mode="multiple"
-                    allowClear
-                    style={{ width: '100%' }}
-                    placeholder={t('attendanceLogTable.filters.statusPlaceholder', 'Filter by Status')}
-                    onChange={setStatusFilter}
-                    options={attendanceStatusesForFilter.map(status => ({
-                        label: t(`attendanceStatus.${status}`, status),
-                        value: status,
-                    }))}
-                    maxTagCount="responsive"
-                />
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-                <DatePicker
-                    style={{ width: '100%' }}
-                    placeholder={t('attendanceLogTable.filters.datePlaceholder', 'Filter by Date')}
-                    onChange={date => setTableDateFilter(date)}
-                    format="YYYY-MM-DD"
-                    allowClear
-                />
-            </Col>
-        </Row>
-      <Table
         columns={columns}
         dataSource={processedAndFilteredRecords}
         loading={loading}

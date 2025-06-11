@@ -13,7 +13,10 @@ dayjs.extend(isToday);
 dayjs.extend(isBetween); // Extend dayjs with isBetween
 import AttendanceCalendarHeatmap from './AttendanceCalendarHeatmap'; // Import the new component
 import AbsenceReasonChart from './AbsenceReasonChart'; // Import the new component
-import WeeklyAttendanceTrendChart from './WeeklyAttendanceTrendChart'; // Import the new component
+// import WeeklyAttendanceTrendChart from './WeeklyAttendanceTrendChart'; // Removing this
+import CourseAbsenceRateChart from './CourseAbsenceRateChart'; // Import the new chart
+import DailyAttendanceTrendChart from './DailyAttendanceTrendChart'; // Import the new daily trend chart
+import ChronicAbsenteeismTable from './ChronicAbsenteeismTable'; // Import the new table
 import AttendanceLogTable from './AttendanceLogTable'; // Import the new component
 // KpiCard and Placeholders for other components remain the same
 const KpiCard: React.FC<{ title: string; value: string | number; precision?: number; suffix?: string; loading?: boolean }> = ({ title, value, precision, suffix, loading }) => (
@@ -33,9 +36,9 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const MOCK_STUDENT_COUNT = 50;
+const MOCK_STUDENT_COUNT = 300;
 const MOCK_CLASS_COUNT = 10;
-const MOCK_ATTENDANCE_DAYS = 60;
+const MOCK_ATTENDANCE_DAYS = 90;
 
 const AttendanceDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -87,21 +90,74 @@ const AttendanceDashboard: React.FC = () => {
   const kpiData = useMemo(() => {
     const recordsToProcess = allAttendanceRecords; // Change to filteredAttendanceRecords if KPIs should be dynamic
     if (recordsToProcess.length === 0 && !loading) { // ensure we don't show 0 if still loading initial data
-      return { overallAttendanceRate: 0, absencesToday: 0, lateToday: 0, excusedToday: 0 };
+      return { overallAttendanceRate: 0, absencesToday: 0, lateToday: 0, excusedToday: 0, studentsWithHighAbsencesThisMonth: 0 };
     }
 
-    const todayRecords = recordsToProcess.filter(record => dayjs(record.date).isToday());
-    const totalPresent = recordsToProcess.filter(r => r.status === 'Present').length;
-    const totalLate = recordsToProcess.filter(r => r.status === 'Late').length;
-    const totalAbsent = recordsToProcess.filter(r => r.status === 'Absent').length;
+    let totalPresent = 0;
+    let totalLate = 0;
+    let totalAbsent = 0;
+    let absencesToday = 0;
+    let lateToday = 0;
+    let excusedToday = 0;
+
+    recordsToProcess.forEach(record => {
+      const isTodayRecord = dayjs(record.date).isToday();
+      switch (record.status) {
+        case 'Present':
+          totalPresent++;
+          break;
+        case 'Late':
+          totalLate++;
+          if (isTodayRecord) {
+            lateToday++;
+          }
+          break;
+        case 'Absent':
+          totalAbsent++;
+          if (isTodayRecord) {
+            absencesToday++;
+          }
+          break;
+        case 'Excused':
+          if (isTodayRecord) {
+            excusedToday++;
+          }
+          break;
+        default:
+          break;
+      }
+    });
+
     const relevantForRate = totalPresent + totalLate + totalAbsent;
     const overallAttendanceRate = relevantForRate > 0 ? ((totalPresent + totalLate) / relevantForRate) * 100 : 0;
 
+    // Calculate students with high absences this month
+    const currentMonthStart = dayjs().startOf('month');
+    const currentMonthEnd = dayjs().endOf('month');
+    const absencesThisMonthByStudent: { [studentId: string]: number } = {};
+
+    recordsToProcess.forEach(record => {
+      if (
+        record.status === 'Absent' &&
+        dayjs(record.date).isBetween(currentMonthStart, currentMonthEnd, 'day', '[]')
+      ) {
+        absencesThisMonthByStudent[record.studentId] = (absencesThisMonthByStudent[record.studentId] || 0) + 1;
+      }
+    });
+
+    let studentsWithHighAbsencesThisMonth = 0;
+    for (const studentId in absencesThisMonthByStudent) {
+      if (absencesThisMonthByStudent[studentId] > 5) {
+        studentsWithHighAbsencesThisMonth++;
+      }
+    }
+
     return {
       overallAttendanceRate,
-      absencesToday: todayRecords.filter(r => r.status === 'Absent').length,
-      lateToday: todayRecords.filter(r => r.status === 'Late').length,
-      excusedToday: todayRecords.filter(r => r.status === 'Excused').length,
+      absencesToday,
+      lateToday,
+      excusedToday,
+      studentsWithHighAbsencesThisMonth,
     };
   }, [allAttendanceRecords, loading]); // Changed dependency
 
@@ -154,62 +210,7 @@ const AttendanceDashboard: React.FC = () => {
       handleOpenMarkAttendanceForm(record);
   };
 
-    // Logic for Irregular Attendance Alerts
-    const irregularAttendanceAlerts = useMemo(() => {
-        const alerts: Array<{ studentId: string; studentName: string; reason: string; details: string[] }> = [];
-        if (filteredAttendanceRecords.length === 0 || allStudents.length === 0) {
-            return alerts;
-        }
-
-        const studentAttendance: { [studentId: string]: { records: AttendanceRecord[], uniqueDays: Set<string> } } = {};
-
-        // Group records by student and collect unique attendance days
-        filteredAttendanceRecords.forEach(record => {
-            if (!studentAttendance[record.studentId]) {
-                studentAttendance[record.studentId] = { records: [], uniqueDays: new Set() };
-            }
-            studentAttendance[record.studentId].records.push(record);
-            studentAttendance[record.studentId].uniqueDays.add(dayjs(record.date).format('YYYY-MM-DD'));
-        });
-
-        const SEVEN_DAYS_AGO = dayjs().subtract(7, 'day');
-        const FOURTEEN_DAYS_AGO = dayjs().subtract(14, 'day');
-
-        for (const studentId in studentAttendance) {
-            const student = allStudents.find(s => s.id === studentId);
-            if (!student) continue;
-
-            const { records } = studentAttendance[studentId];
-            const studentAlerts: string[] = [];
-
-            // Criteria 1: More than 3 Absences in the last 7 unique attendance days recorded for the student
-            // This interpretation focuses on the student's active attendance days, not just a rolling calendar window.
-            // To make it simpler: check absences in records dated within the last 7 calendar days.
-            const recentAbsences = records.filter(r => r.status === 'Absent' && dayjs(r.date).isAfter(SEVEN_DAYS_AGO)).length;
-            if (recentAbsences > 3) {
-                studentAlerts.push(t('attendanceDashboard.alerts.absencesOverThreshold', { count: recentAbsences, days: 7 }));
-            }
-
-            // Criteria 2: More than 5 Lates in the last 14 calendar days
-            const recentLates = records.filter(r => r.status === 'Late' && dayjs(r.date).isAfter(FOURTEEN_DAYS_AGO)).length;
-            if (recentLates > 5) {
-                 studentAlerts.push(t('attendanceDashboard.alerts.latesOverThreshold', { count: recentLates, days: 14 }));
-            }
-
-            // Add more criteria as needed...
-
-            if (studentAlerts.length > 0) {
-                alerts.push({
-                    studentId,
-                    studentName: `${student.firstName} ${student.lastName}`,
-                    reason: studentAlerts.join('; '), // Combine multiple reasons
-                    details: studentAlerts // Keep individual messages if needed for sub-items
-                });
-            }
-        }
-        return alerts;
-    }, [filteredAttendanceRecords, allStudents, t]); // Add t to dependencies
-
+  // Removed irregularAttendanceAlerts useMemo hook as it's being replaced by ChronicAbsenteeismTable
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Spin size="large" /></div>;
@@ -240,6 +241,7 @@ const AttendanceDashboard: React.FC = () => {
         <KpiCard title={t('attendanceDashboard.kpi.absencesToday')} value={kpiData.absencesToday} loading={loading && allAttendanceRecords.length === 0} />
         <KpiCard title={t('attendanceDashboard.kpi.lateToday')} value={kpiData.lateToday} loading={loading && allAttendanceRecords.length === 0} />
         <KpiCard title={t('attendanceDashboard.kpi.excusedToday')} value={kpiData.excusedToday} loading={loading && allAttendanceRecords.length === 0} />
+        <KpiCard title={t('attendanceDashboard.kpi.studentsWithHighAbsencesThisMonth', 'Students >5 Absences (Month)')} value={kpiData.studentsWithHighAbsencesThisMonth} loading={loading && allAttendanceRecords.length === 0} />
       </Row>
 
       {/* Filters Section */}
@@ -310,43 +312,23 @@ const AttendanceDashboard: React.FC = () => {
         <Col xs={24} lg={16}>
             <AttendanceCalendarHeatmap records={filteredAttendanceRecords} loading={loading} />
              <Row gutter={[16,16]} style={{marginTop: 16}}>
-                <Col xs={24} md={12}>
+                <Col xs={24} sm={24} md={12} lg={8}>
                     <AbsenceReasonChart records={filteredAttendanceRecords} loading={loading} />
                 </Col>
-                <Col xs={24} md={12}>
-                    <WeeklyAttendanceTrendChart records={filteredAttendanceRecords} loading={loading} />
+                <Col xs={24} sm={24} md={12} lg={8}>
+                    <CourseAbsenceRateChart records={filteredAttendanceRecords} schoolClasses={allSchoolClasses} loading={loading} />
+                </Col>
+                <Col xs={24} sm={24} md={12} lg={8}>
+                    <DailyAttendanceTrendChart records={filteredAttendanceRecords} loading={loading} />
                 </Col>
              </Row>
         </Col>
         <Col xs={24} lg={8}>
-          {/* <IrregularAttendanceAlerts data={filteredAttendanceRecords} students={allStudents} /> */}
-          {/* <IrregularAttendanceAlertsPlaceholder /> */}
-          <Card
-              title={<><WarningOutlined style={{marginRight: 8}} /> {t('attendanceDashboard.alerts.title', 'Irregular Attendance Alerts')}</>}
-              style={{marginTop: '0px', minHeight: 300}} // Adjusted marginTop to 0 as it's inside a Row with gutter
-          >
-              {loading && <Spin />}
-              {!loading && irregularAttendanceAlerts.length === 0 && (
-                  <Empty description={t('attendanceDashboard.alerts.noAlerts', 'No irregular attendance alerts at the moment.')} />
-              )}
-              {!loading && irregularAttendanceAlerts.length > 0 && (
-                  <List
-                      itemLayout="horizontal"
-                      dataSource={irregularAttendanceAlerts}
-                      renderItem={item => (
-                          <List.Item>
-                              <List.Item.Meta
-                                  avatar={<Avatar icon={<UserOutlined />} />}
-                                  title={<Typography.Text strong>{item.studentName}</Typography.Text>}
-                                  description={item.reason}
-                              />
-                              {/* Optionally, add an action like "View Details" */}
-                              {/* <Button size="small" onClick={() => console.log("View details for student:", item.studentId)}>View</Button> */}
-                          </List.Item>
-                      )}
-                  />
-              )}
-          </Card>
+          <ChronicAbsenteeismTable
+            records={filteredAttendanceRecords}
+            students={allStudents}
+            loading={loading}
+          />
         </Col>
       </Row>
 
