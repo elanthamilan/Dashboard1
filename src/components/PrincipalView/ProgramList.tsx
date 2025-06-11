@@ -1,10 +1,13 @@
 // src/components/PrincipalView/ProgramList.tsx
 import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react'; // Added useMemo
 import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox, Tag } from 'antd'; // Added Tag
 import { FilePdfOutlined, WarningOutlined } from '@ant-design/icons'; // Added WarningOutlined
 import { Program } from '../../types/hierarchy';
 import { downloadCSV, sanitizeFilename } from '../../utils/exportUtils'; // Updated import
 import { downloadProgramSummaryPDF } from '../../utils/exportUtils'; // Added import
+import AverageGpaBarChart from './charts/AverageGpaBarChart'; // Import the new chart
+import { useTranslation } from 'react-i18next'; // For chart title translation
 
 // Title is not needed here as it's handled by the parent dashboard
 // const { Title } = Typography;
@@ -18,7 +21,16 @@ interface ProgramListProps {
 }
 
 const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, onComparePrograms, degreeName, academicYearName }) => {
+  const { t } = useTranslation(); // For chart title
   const [selectedForComparison, setSelectedForComparison] = useState<string[]>([]);
+
+  const programGpaChartData = useMemo(() => {
+    return programs.map(prog => ({
+      id: prog.programId,
+      name: prog.programName,
+      averageGpa: prog.averageProgramGPA,
+    }));
+  }, [programs]);
 
   const handleCheckboxChange = (programId: string, checked: boolean) => {
     setSelectedForComparison(prev =>
@@ -75,9 +87,23 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
   }
 
   const canCompare = selectedForComparison.length >= 2 && selectedForComparison.length <= 3;
+  const chartTitle = t('principalView.charts.avgGpaByProgram', 'Average GPA by Program') +
+                     (degreeName ? ` (${degreeName})` : '') +
+                     (academicYearName ? ` - ${academicYearName}` : '');
+
 
   return (
     <div style={{ marginTop: '24px' }}>
+      <Row style={{ marginBottom: '24px' }}>
+        <Col span={24}>
+          <AverageGpaBarChart
+            data={programGpaChartData}
+            title={chartTitle}
+            loading={false} // Assuming `programs` prop means data is loaded if present
+            barColor="#FAAD14" // Example color for programs chart
+          />
+        </Col>
+      </Row>
       <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
         <Col>
           <Button onClick={handleCompareClick} type="primary" disabled={!canCompare} ghost>

@@ -13,6 +13,10 @@ import { generateMockStudents, generateMockAttendanceRecords } from '../../../ut
 import { Institution, StudentSummary, AcademicYear as AcademicYearType, StudentAcademicRecord, Department, CourseEnrollment, Program, FacultyMember } from '../../../types/hierarchy';
 import { Student, AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Added AttendanceRecord
 import PrincipalStudentDetailView from '../../PrincipalView/PrincipalStudentDetailView'; // Corrected import path
+import AverageGpaBarChart from '../charts/AverageGpaBarChart'; // Import the new chart
+import AttendanceGradeScatterPlot from '../charts/AttendanceGradeScatterPlot'; // Import the scatter plot
+// OverallGradeDistributionChart is already imported, no change needed here
+import OverallGradeDistributionChart from '../charts/OverallGradeDistributionChart'; // Import the grade distribution chart
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -71,12 +75,16 @@ const AcademicPerformanceModule: React.FC = () => {
   const failPercentage = useMemo(() => parseFloat((100 - overallPassPercentage).toFixed(2)), [overallPassPercentage]);
   const averageGPA = useMemo(() => institutionData?.overallAverageGPA ?? 0, [institutionData]);
   const backlogRate = useMemo(() => { if (allStudentsInInstitution.length === 0 || allAcademicRecords.length === 0) return 0; let studentsWithBacklog = 0; allStudentsInInstitution.forEach(summary => { const record = allAcademicRecords.find(ar => ar.studentId === summary.studentId); if (record) { for (const term of record.terms) { for (const course of term.courses) { if (course.grade?.letterGrade === 'F' || course.grade?.letterGrade === 'NP') { studentsWithBacklog++; return; } } } } }); return parseFloat(((studentsWithBacklog / allStudentsInInstitution.length) * 100).toFixed(2)); }, [allStudentsInInstitution, allAcademicRecords]);
+  const overallPlacementRate = useMemo(() => institutionData?.overallPlacementRate ?? 0, [institutionData]); // Using overallPlacementRate as proxy for Graduation Rate
+  const totalAtRiskStudents = useMemo(() => institutionData?.totalInstitutionAtRiskStudents ?? 0, [institutionData]);
 
   const summaryKpis = [
     { titleKey: 'module.academics.kpi.overallPassRate', value: overallPassPercentage, suffix: '%', icon: React.createElement(CheckCircleOutlined), precision: 2 },
     { titleKey: 'module.academics.kpi.overallFailRate', value: failPercentage, suffix: '%', icon: React.createElement(CloseCircleOutlined), precision: 2 },
     { titleKey: 'module.academics.kpi.averageGPA', value: averageGPA, icon: React.createElement(ReadOutlined), precision: 2 },
     { titleKey: 'module.academics.kpi.backlogRate', value: backlogRate, suffix: '%', icon: React.createElement(WarningOutlined), precision: 2 },
+    { titleKey: 'module.academics.kpi.overallPlacementRate', value: overallPlacementRate, suffix: '%', icon: React.createElement(StarOutlined), precision: 1 }, // Changed icon
+    { titleKey: 'module.academics.kpi.totalAtRiskStudents', value: totalAtRiskStudents, icon: React.createElement(StudentIcon), precision: 0 }, // Changed icon
   ];
 
   const baseBreadcrumbItems: BreadcrumbProps['items'] = [
@@ -215,6 +223,43 @@ const AcademicPerformanceModule: React.FC = () => {
 
   const summaryTilesSection = React.createElement(Row, { gutter: [16, 16] }, summaryKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 12, lg:6, key: kpi.titleKey }, React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, React.createElement(Statistic, { title: t(kpi.titleKey), value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle: kpi.titleKey === 'module.academics.kpi.overallFailRate' || kpi.titleKey === 'module.academics.kpi.backlogRate' ? { color: '#cf1322' } : { color: '#3f8600' } })))));
   const facultyEvalSnapshotSection = React.createElement(Row, { gutter: [16,16], style: {marginTop: '20px'}}, facultyEvalKpis.map(kpi => React.createElement(Col, { xs: 24, sm:12, md:12, lg:6, key: kpi.titleKey}, React.createElement(Card, {bordered:false, style:{boxShadow: '0 2px 8px rgba(0,0,0,0.09)'}}, React.createElement(Statistic, {title: t(kpi.titleKey), value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle:{color: '#3f8600'}})))));
+
+  const departmentGpaChartData = useMemo(() => {
+    if (!institutionData?.departments) return [];
+    return institutionData.departments.map(dept => ({
+      id: dept.departmentId,
+      name: dept.departmentName,
+      averageGpa: dept.averageGPA,
+    }));
+  }, [institutionData?.departments]);
+
+  const departmentGpaChartSection = React.createElement(Row, { style: { marginTop: '30px' } },
+    React.createElement(Col, { span: 24 },
+      React.createElement(AverageGpaBarChart, {
+        data: departmentGpaChartData,
+        title: t('module.academics.charts.avgGpaByDepartment', "Average GPA by Department"),
+        loading: loading,
+        barColor: "#6395F9" // Example color
+      })
+    )
+  );
+
+        loading: loading,
+      })
+    )
+  );
+
+  // Correctly define overallGradeDistributionChartSection ONCE
+  const overallGradeDistributionChartSection = React.createElement(Row, { style: { marginTop: '30px' } },
+    React.createElement(Col, { span: 24 },
+      React.createElement(OverallGradeDistributionChart, {
+        gradeDistribution: institutionData?.institutionGradeDistribution,
+        title: t('module.academics.charts.overallGradeDistribution', "Overall Grade Distribution"),
+        loading: loading,
+      })
+    )
+  );
+
   const topDepartmentsTableSection = React.createElement(Card, { bordered: false, style: {boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px'} }, React.createElement(Table, { dataSource: topDepartmentsData, columns: departmentTableColumns, rowKey: 'departmentId', loading: loading, pagination: false, scroll: {x: 'max-content'} } as any));
   const topCoursesTableSection = React.createElement(Card, { bordered: false, style: {boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px'} }, React.createElement(Table, { dataSource: restoredTopCoursesDataFull, columns: restoredTopCoursesTableColumns, rowKey: 'courseId', loading: loading, pagination: false, scroll: {x: 'max-content'} } as any));
 
@@ -237,7 +282,7 @@ const AcademicPerformanceModule: React.FC = () => {
   else if (selectedStudentForPerformance) { currentView = studentPerformanceDetailView; }
   else if (selectedCourseForBatches) { currentView = courseOfferingsView; }
   else if (selectedDepartmentForCourses) { currentView = departmentCoursesView; }
-  else { currentView = React.createElement(React.Fragment, null, React.createElement(Title, { level: 3, style: { marginTop: '20px' } }, t('module.academics.summaryTilesTitle')), summaryTilesSection, React.createElement(Title, {level: 3, style: {marginTop: '30px'}}, t('module.academics.facultyEvalSnapshotTitle')), facultyEvalSnapshotSection, React.createElement(Button, { type: "primary", onClick: () => setViewingFacultyPerformance(true), style: {marginTop: '20px', marginBottom: '20px'}}, t('module.academics.viewFacultyPerformanceButton')), React.createElement(Title, {level: 3, style: {marginTop: '30px'}}, t('module.academics.topDepartmentsTitle')), topDepartmentsTableSection, React.createElement(Title, {level: 3, style: {marginTop: '30px'}}, t('module.academics.topCoursesTitle')), topCoursesTableSection ); }
+  else { currentView = React.createElement(React.Fragment, null, React.createElement(Title, { level: 3, style: { marginTop: '20px' } }, t('module.academics.summaryTilesTitle')), summaryTilesSection, React.createElement(Title, {level: 3, style: {marginTop: '30px'}}, t('module.academics.facultyEvalSnapshotTitle')), facultyEvalSnapshotSection, React.createElement(Button, { type: "primary", onClick: () => setViewingFacultyPerformance(true), style: {marginTop: '20px', marginBottom: '20px'}}, t('module.academics.viewFacultyPerformanceButton')), departmentGpaChartSection, attendanceGradeScatterPlotSection, overallGradeDistributionChartSection, React.createElement(Title, {level: 3, style: {marginTop: '30px'}}, t('module.academics.topDepartmentsTitle')), topDepartmentsTableSection, React.createElement(Title, {level: 3, style: {marginTop: '30px'}}, t('module.academics.topCoursesTitle')), topCoursesTableSection ); }
 
   return (
     React.createElement("div", { style: { padding: '20px' } },

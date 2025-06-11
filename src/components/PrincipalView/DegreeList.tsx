@@ -176,14 +176,28 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onComp
 
               {/* Student Risk and Grades */}
               <Row gutter={16} style={{ marginTop: '10px' }}>
-                 <Col span={12}>
+                 <Col span={8}> {/* Adjusted span */}
                   <Statistic
                     title="Total At-Risk Students"
                     value={degree.totalAtRiskStudents ?? 'N/A'}
                     valueStyle={highAtRiskPercentage ? { color: '#faad14' } : {}} // Orange for high at-risk
                   />
                 </Col>
-                <Col span={12}>
+                 <Col span={8}> {/* Added Placement Rate */}
+                  <Statistic
+                    title="Placement Rate"
+                    value={degree.placementRate !== undefined ? `${degree.placementRate.toFixed(1)}%` : 'N/A'}
+                  />
+                </Col>
+                <Col span={8}> {/* Added Average Package */}
+                  <Statistic
+                    title="Avg. Package (LPA)"
+                    value={degree.averagePackage !== undefined ? `${(degree.averagePackage / 100000).toFixed(1)}` : 'N/A'}
+                  />
+                </Col>
+              </Row>
+              <Row gutter={16} style={{ marginTop: '10px' }}>
+                <Col span={24}> {/* Grade Distribution in its own row or adjust layout */}
                   <Typography.Text strong style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)'}}>Grade Distribution</Typography.Text>
                   <Typography.Text style={{display: 'block', fontSize: '14px'}}>
                     {degree.overallGradeDistribution
