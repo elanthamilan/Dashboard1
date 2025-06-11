@@ -6,7 +6,9 @@ import { FeeItem, Invoice, InvoiceStatus, Payment, PaymentMethod } from '../../.
 const commonFeeDescriptions = [
   "Tuition Fee", "Registration Fee", "Library Fee", "Lab Usage Fee",
   "Technology Fee", "Student Activity Fee", "Exam Fee", "Graduation Fee",
-  "Late Payment Surcharge", "Transcript Request Fee"
+  "Late Payment Surcharge", "Transcript Request Fee",
+  // Potential deductions
+  "Scholarship - Academic Excellence", "Scholarship - Financial Aid", "Early Payment Discount", "Sibling Discount", "Waiver - Special Circumstance"
 ];
 
 const paymentMethods: PaymentMethod[] = ['Credit Card', 'Bank Transfer', 'PayPal', 'Check', 'Cash'];
@@ -28,10 +30,42 @@ export const generateMockFeeItems = (count: number): FeeItem[] => {
         description = `${description} - ${faker.lorem.word()}`;
     }
 
+    let amount = parseFloat(faker.finance.amount({ min: 20, max: 2000, dec: 2 }));
+    let category = "Other Fees"; // Default category
+    const lowerDesc = description.toLowerCase();
+
+    if (lowerDesc.includes("tuition")) {
+      category = "Tuition";
+    } else if (lowerDesc.includes("registration")) {
+      category = "Registration Fees";
+    } else if (lowerDesc.includes("library")) {
+      category = "Library Fees";
+    } else if (lowerDesc.includes("lab")) {
+      category = "Lab Fees";
+    } else if (lowerDesc.includes("technology")) {
+      category = "Technology Fees";
+    } else if (lowerDesc.includes("scholarship") || lowerDesc.includes("discount") || lowerDesc.includes("waiver")) {
+      category = "Financial Aid/Deductions";
+      // Ensure scholarships/discounts are a smaller portion of the typical max fee and negative
+      amount = parseFloat(faker.finance.amount({ min: 50, max: 500, dec: 2 }));
+      if (amount > 0) {
+        amount = -amount;
+      }
+    } else if (lowerDesc.includes("activity") || lowerDesc.includes("exam") || lowerDesc.includes("graduation") || lowerDesc.includes("transcript")) {
+        category = "Service Fees";
+    } else if (lowerDesc.includes("surcharge")) {
+        category = "Surcharges";
+    }
+    // If it's a positive amount but still "Financial Aid/Deductions" due to keywords, reset category or handle as error.
+    // For now, this logic assumes "Financial Aid/Deductions" are always negative.
+    // If a "scholarship" was positive, it would be miscategorized for the revenue chart.
+    // The current logic correctly makes them negative.
+
     feeItems.push({
       feeItemId: `FEE-${String(i + 1).padStart(4, '0')}`,
       description,
-      amount: parseFloat(faker.finance.amount({ min: 20, max: 2000, dec: 2 })),
+      amount,
+      category,
     });
   }
   return feeItems;

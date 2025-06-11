@@ -1,12 +1,14 @@
 import React from 'react';
-import { Table, Tag, Button, Typography, Empty, Spin } from 'antd';
+import { Table, Tag, Button, Typography, Empty, Spin, Card, Space } from 'antd';
+import { DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { Invoice, InvoiceStatus } from './types'; // Assuming types.ts is in the same directory
 import { Student } from '../AttendanceDashboard/types'; // To get student names
-import { useTranslation } from 'react-i18next'; // Optional
+import { useTranslation } from 'react-i18next';
+import { downloadCSV } from '../../utils/exportUtils';
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -104,19 +106,72 @@ const InvoiceList: React.FC<InvoiceListProps> = ({ invoices, students, loading, 
   }
 
   if (invoices.length === 0 && !loading) {
-      return <Empty description={t('billingDashboard.invoiceList.noInvoices', 'No invoices to display.')} style={{marginTop: '20px'}}/>;
+    // Still show the card wrapper for consistency if there's a title/button
+    return (
+        <Card title={t('billingDashboard.invoiceList.title', 'Invoice List')}
+              extra={
+                <Button
+                    icon={<DownloadOutlined />}
+                    onClick={() => { /* Export logic will be here, but no data */ }}
+                    disabled={true}
+                >
+                    {t('common.actions.exportCsv', 'Export to CSV')}
+                </Button>
+              }
+              style={{ marginTop: '24px' }}
+        >
+            <Empty description={t('billingDashboard.invoiceList.noInvoices', 'No invoices to display.')} />
+        </Card>
+    );
   }
 
+  const handleExportCSV = () => {
+    const dataToExport = invoices.map(invoice => ({
+      invoiceId: invoice.invoiceId,
+      studentName: getStudentName(invoice.studentId, students),
+      issueDate: dayjs(invoice.issueDate).format('YYYY-MM-DD'),
+      dueDate: dayjs(invoice.dueDate).format('YYYY-MM-DD'),
+      paidDate: invoice.paidDate ? dayjs(invoice.paidDate).format('YYYY-MM-DD') : '',
+      totalAmount: invoice.totalAmount,
+      status: invoice.status,
+    }));
+
+    const csvColumns = [
+      { key: 'invoiceId', title: t('billingDashboard.invoiceList.csvHeaders.invoiceId', 'Invoice ID') },
+      { key: 'studentName', title: t('billingDashboard.invoiceList.csvHeaders.studentName', 'Student Name') },
+      { key: 'issueDate', title: t('billingDashboard.invoiceList.csvHeaders.issueDate', 'Issue Date') },
+      { key: 'dueDate', title: t('billingDashboard.invoiceList.csvHeaders.dueDate', 'Due Date') },
+      { key: 'paidDate', title: t('billingDashboard.invoiceList.csvHeaders.paidDate', 'Paid Date') },
+      { key: 'totalAmount', title: t('billingDashboard.invoiceList.csvHeaders.totalAmount', 'Total Amount') },
+      { key: 'status', title: t('billingDashboard.invoiceList.csvHeaders.status', 'Status') },
+    ];
+
+    downloadCSV(dataToExport, csvColumns, 'invoice_list');
+  };
+
   return (
-    <Table
-      columns={columns}
-      dataSource={invoices}
-      rowKey="invoiceId"
-      loading={loading}
-      pagination={{ pageSize: 10, showSizeChanger: true }}
-      scroll={{ x: true }} // For responsiveness
-      style={{ marginTop: '24px' }}
-    />
+    <Card
+        title={t('billingDashboard.invoiceList.title', 'Invoice List')}
+        extra={
+            <Button
+                icon={<DownloadOutlined />}
+                onClick={handleExportCSV}
+                disabled={loading || invoices.length === 0}
+            >
+                {t('common.actions.exportCsv', 'Export to CSV')}
+            </Button>
+        }
+        style={{ marginTop: '24px' }}
+    >
+        <Table
+          columns={columns}
+          dataSource={invoices}
+          rowKey="invoiceId"
+          loading={loading}
+          pagination={{ pageSize: 10, showSizeChanger: true }}
+          scroll={{ x: true }} // For responsiveness
+        />
+    </Card>
   );
 };
 

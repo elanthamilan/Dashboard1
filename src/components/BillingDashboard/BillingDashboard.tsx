@@ -7,8 +7,10 @@ import { Student } from '../AttendanceDashboard/types'; // Adjust path as needed
 
 import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData'; // Adjust path
 import { generateMockInvoices, generateMockPayments } from '../../utils/mockData/billing/generateMockBillingData'; // Adjust path
-
 import BillingSummaryKPIs from './BillingSummaryKPIs';
+import AgedReceivablesChart from './AgedReceivablesChart'; // Import the new chart
+import RevenueFlowChart from './RevenueFlowChart'; // Import the Revenue Flow chart
+import RevenueSourceChart from './RevenueSourceChart'; // Import the Revenue Source chart
 import InvoiceList from './InvoiceList';
 
 const { Content } = Layout;
@@ -58,6 +60,19 @@ const BillingDashboard: React.FC = () => {
       ) : (
         <>
           <BillingSummaryKPIs invoices={invoices} payments={payments} loading={loading} />
+          <Row gutter={[16, 24]} style={{ marginTop: '24px' }}> {/* Increased gutter for vertical spacing */}
+            <Col xs={24} lg={12}>
+              <AgedReceivablesChart invoices={invoices} payments={payments} loading={loading} />
+            </Col>
+            <Col xs={24} lg={12}>
+              <RevenueFlowChart invoices={invoices} loading={loading} />
+            </Col>
+          </Row>
+          <Row gutter={[16, 24]} style={{ marginTop: '24px' }}>
+            <Col xs={24} span={24}> {/* Span 24 to take full width, or lg={12} if another chart is planned next to it */}
+              <RevenueSourceChart invoices={invoices} loading={loading} />
+            </Col>
+          </Row>
           <InvoiceList
             invoices={invoices}
             students={students}

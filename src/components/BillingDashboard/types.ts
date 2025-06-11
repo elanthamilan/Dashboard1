@@ -2,6 +2,7 @@ export interface FeeItem {
   feeItemId: string;
   description: string;
   amount: number;
+  category?: string; // Optional: For categorizing revenue sources like Tuition, Fees, Other
 }
 
 export type InvoiceStatus = 'Draft' | 'Sent' | 'Paid' | 'Unpaid' | 'Overdue' | 'Cancelled';
