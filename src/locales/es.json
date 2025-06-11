@@ -2,13 +2,11 @@
   "appTitle": "Sistema de Información Estudiantil",
   "nav": {
     "home": "Inicio",
-    "admissions": {
-      "home": "Inicio",
-      "admissions": "Admisiones",
-      "attendance": "Asistencia",
-      "billing": "Facturación",
-      "performance": "Rendimiento"
-    }
+    "admissions": "Admisiones",
+    "attendance": "Asistencia",
+    "billing": "Facturación",
+    "performance": "Rendimiento",
+    "principalView": "Vista Principal"
   },
   "header": {
     "personaSwitcher": "Cambiar Persona",
@@ -16,6 +14,354 @@
     "profileSettings": "Perfil y Configuración",
     "helpSupport": "Ayuda/Soporte",
     "language": "Idioma"
+  },
+  "principalView": {
+    "dashboardTitle": "Tablero del Director"
+  },
+  "filters": {
+    "academicYear": "Año Académico",
+    "selectAcademicYear": "Seleccionar Año",
+    "campus": "Campus",
+    "selectCampus": "Seleccionar Campus",
+    "degreeType": "Tipo de Título",
+    "selectDegreeType": "Seleccionar Tipo de Título",
+    "department": "Departamento",
+    "selectDepartment": "Seleccionar Departamento",
+    "dateRange": "Rango de Fechas",
+    "clear": "Limpiar Filtros"
+  },
+  "dashboard": {
+    "title": "Tablero Principal Vista de Pájaro",
+    "subtitle": "Salud institucional de alto nivel de un vistazo, con tarjetas KPI interactivas que revelan módulos más profundos.",
+    "kpiSectionTitle": "KPIs Institucionales",
+    "noDataKpis": "No hay datos disponibles para mostrar KPIs."
+  },
+  "kpi": {
+    "totalEnrollments": {
+      "title": "Matrículas Totales",
+      "tooltip": "Número total de estudiantes matriculados activamente en todos los programas y campus."
+    },
+    "feeCollection": {
+      "title": "Recaudación de Tasas",
+      "tooltip": "Porcentaje del total de tasas facturadas que han sido recaudadas."
+    },
+    "avgAttendance": {
+      "title": "Asistencia Promedio",
+      "tooltip": "Tasa de asistencia promedio de los estudiantes en todas las sesiones registradas."
+    },
+    "dropoutRate": {
+      "title": "Tasa de Abandono",
+      "tooltip": "Porcentaje de estudiantes que se volvieron inactivos (no por graduación) del total de estudiantes potencialmente activos."
+    },
+    "academicPassRate": {
+      "title": "Tasa de Aprobación Académica",
+      "tooltip": "Porcentaje de estudiantes con un GPA acumulado de 2.0 o superior."
+    },
+    "reEvaluationTrends": {
+      "title": "Tendencias de Reevaluación",
+      "tooltip": "Tendencias en las reevaluaciones o cambios de calificación. (Datos N/D)"
+    },
+    "placementSuccessRate": {
+      "title": "Tasa de Éxito en Colocación",
+      "tooltip": "Porcentaje de estudiantes elegibles (graduados) que aseguraron una colocación a tiempo completo."
+    },
+    "deptPerformance": {
+      "title": "Rendimiento Prom. Departamental",
+      "tooltip": "Puntuación media del rendimiento de los departamentos académicos (compuesto de académicos, colocaciones, feedback estudiantil)."
+    },
+    "openGrievances": {
+      "title": "Quejas Abiertas",
+      "tooltip": "Número de quejas de estudiantes/personal actualmente abiertas o en curso."
+    },
+    "complianceStatus": {
+      "title": "Estado de Cumplimiento",
+      "tooltip": "Porcentaje general de cumplimiento institucional con los organismos reguladores y de acreditación.",
+      "nextReview": "Próx. Revisión",
+      "nextReviewMissing": "Fecha N/D"
+    }
+  },
+  "module": {
+    "admissions": {
+      "title": "Análisis de Admisiones e Inscripciones",
+      "descriptionPlaceholder": "Información detallada sobre tendencias de solicitudes, tasas de conversión y estadísticas de inscripción.",
+      "summaryTilesTitle": "Resumen de Admisiones",
+      "keyDeadlinesTitle": "Fechas Clave y Eventos",
+      "kpi": {
+        "totalApplications": "Solicitudes Totales",
+        "admissionRate": "Tasa de Admisión",
+        "conversionRate": "Tasa de Conversión (Inscritos/Solicitudes)",
+        "yieldRate": "Tasa de Rendimiento (Inscritos/Ofertas)"
+      },
+      "reservedCategoryTitle": "Desglose por Categoría Reservada",
+      "funnelChartTitle": "Embudo de Admisión",
+      "funnel": {
+        "applied": "Solicitudes Recibidas",
+        "screened": "Preseleccionados",
+        "interviewScheduled": "Entrevista Programada",
+        "interviewComplete": "Entrevista Completada",
+        "offerMade": "Oferta Realizada",
+        "offerAccepted": "Oferta Aceptada",
+        "enrolled": "Inscritos",
+        "applicantsSuffix": "Solicitantes"
+      },
+      "mapTitle": "Mapa de Origen de Solicitantes",
+      "map": {
+        "city": "Ciudad",
+        "country": "País"
+      },
+      "programLevelStatsTitle": "Estadísticas por Programa",
+      "programName": "Nombre del Programa",
+      "numApplicants": "# Solicitantes",
+      "admissionRate": "Tasa de Admisión",
+      "avgApplicationTime": "Tiempo Prom. Solicitud",
+      "mockAvgAppTime": "7-10 Días (Est.)",
+      "trends": {
+        "applied": "Solicitudes",
+        "offered": "Ofertas Hechas",
+        "enrolled": "Inscritos",
+        "year": "Año",
+        "count": "Cantidad"
+      },
+      "degreeYearlyComparisonTitle": "Comparación Anual por Tipo de Título",
+      "selectDegreePlaceholder": "Seleccionar Tipo de Título",
+      "selectDegreePrompt": "Seleccione un tipo de título para ver la comparación.",
+      "applicantListTitle": "Lista de Solicitantes",
+      "table": {
+        "applicantName": "Nombre del Solicitante",
+        "programName": "Programa",
+        "applicationDate": "Fecha de Solicitud",
+        "status": "Estado",
+        "reservationCategory": "Categoría de Reserva",
+        "origin": "Origen (Ciudad/País)"
+      },
+      "applicantDetail": {
+        "title": "Perfil del Solicitante",
+        "name": "Nombre",
+        "email": "Correo Electrónico",
+        "phone": "Teléfono",
+        "dob": "Fecha de Nacimiento",
+        "gender": "Género",
+        "nationality": "Nacionalidad",
+        "address": "Dirección",
+        "program": "Programa Solicitado",
+        "applicationDate": "Fecha de Solicitud",
+        "status": "Estado de Solicitud",
+        "prevEducation": "Educación Anterior",
+        "documents": "Documentos",
+        "interview": "Detalles de Entrevista",
+        "visa": "Detalles de Visa",
+        "actions": {
+          "changeStatus": "Cambiar Estado",
+          "sendOffer": "Enviar Carta de Oferta",
+          "scheduleInterview": "Programar Entrevista"
+        }
+      }
+    },
+    "academics": {
+      "title": "Resumen del Rendimiento Académico",
+      "descriptionPlaceholder": "Análisis del rendimiento estudiantil, distribuciones de GPA y resultados de cursos.",
+      "summaryTilesTitle": "Resumen de Rendimiento",
+      "kpi": {
+        "overallPassRate": "% General de Aprobados",
+        "overallFailRate": "% General de Reprobados",
+        "averageGPA": "GPA Promedio",
+        "backlogRate": "Tasa de Asignaturas Pendientes",
+        "avgFacultyRating": "Calif. Prom. Docente (de 10)",
+        "facultyEvalResponseRate": "Tasa de Respuesta Eval."
+      },
+      "topDepartmentsTitle": "Top 5 Departamentos por Rendimiento",
+      "table": {
+        "departmentName": "Nombre del Departamento",
+        "performanceScore": "Puntuación de Rendimiento",
+        "avgGPA": "GPA Prom.",
+        "avgPassRate": "% Aprobados Prom."
+      },
+      "topCoursesTitle": "Top 5 Cursos por Rendimiento",
+      "courseTable": {
+        "courseName": "Nombre del Curso",
+        "passRate": "Tasa de Aprobación",
+        "avgGPA": "GPA Promedio",
+        "enrolledStudents": "Estudiantes Inscritos"
+      },
+      "facultyEvalSnapshotTitle": "Resumen Evaluación Docente",
+      "coursesInDepartmentTitle": "Cursos en {departmentName}",
+      "backToOverview": "Volver al Resumen de Rendimiento Académico",
+      "offeringsForCourseTitle": "Ofertas para {courseName}",
+      "backToCourseList": "Volver a Cursos en {departmentName}",
+      "offeringTable": {
+        "programName": "Programa",
+        "semesterName": "Semestre",
+        "enrolled": "Inscritos",
+        "passRate": "Tasa Aprobación (%)",
+        "avgGPA": "GPA Prom."
+      },
+      "studentsInOfferingTitle": "Estudiantes en {courseName} - {programName} ({semesterName})",
+      "backToStudentList": "Volver a Lista de Estudiantes para {courseName}",
+      "attendanceSummaryTitle": "Resumen de Asistencia para {studentName}",
+      "overallAttendanceRate": "Tasa General de Asistencia",
+      "studentTable": {
+        "studentId": "ID Estudiante",
+        "studentName": "Nombre Estudiante",
+        "gradeInCourse": "Calificación"
+      },
+      "facultyPerformanceSectionTitle": "Resumen del Rendimiento Docente",
+      "viewFacultyPerformanceButton": "Ver Rendimiento Docente",
+      "facultyViewPlaceholders": "Más detalles como Carga Docente y Resultados por Docente se añadirán en futuras actualizaciones.",
+      "facultyTable": {
+        "facultyName": "Nombre del Docente",
+        "departmentName": "Departamento",
+        "avgEvaluationRating": "Calificación Prom. Evaluación",
+        "numberOfEvaluations": "# Evaluaciones"
+      }
+    },
+    "attendance": {
+      "title": "Asistencia y Participación",
+      "descriptionPlaceholder": "Resumen de la asistencia de los estudiantes, patrones de participación y motivos de ausencia.",
+      "summary": "Resumen de Asistencia",
+      "avgAttendance": "Prom. Asistencia",
+      "todaysAbsences": "Ausencias Hoy",
+      "todaysLates": "Retrasos Hoy",
+      "todaysExcused": "Justificadas Hoy",
+      "todaysPresent": "Presentes Hoy",
+      "irregularityAlerts": "Alertas de Irregularidad",
+      "topAbsenceReasons": "Principales Motivos de Ausencia",
+      "weeklyAttendanceTrend": "Tendencia Semanal de Asistencia (Últimos 3 Meses)",
+      "attendancePercentage": "Asistencia (%)",
+      "attendance": "Asistencia",
+      "calendarHeatmapTitle": "Mapa de Calor de Asistencia Mensual",
+      "present": "Presente",
+      "absent": "Ausente",
+      "lmsEngagementTitle": "Interacción LMS (Últimos 30 Días)",
+      "kpi": {
+        "lmsLogins": "Inicios de Sesión LMS",
+        "lmsDownloads": "Descargas de Recursos",
+        "lmsForumPosts": "Publicaciones en Foro"
+      },
+      "selectProgramPrompt": "Seleccione un Programa para Ver Asistencia Detallada",
+      "programAttendanceTitle": "Asistencia del Programa: {programName}",
+      "backToOverview": "Volver al Resumen de Asistencia",
+      "semesterName": "Nombre del Semestre",
+      "avgAttendancePct": "Prom. Asistencia (%)",
+      "totalAbsences": "Ausencias Totales",
+      "selectSemesterPrompt": "Seleccione un Semestre para Ver Clases",
+      "classAttendanceTitle": "Asistencia de Clase en {semesterName} - {programName}",
+      "backToSemesterList": "Volver a Semestres en {programName}",
+      "className": "Nombre de Clase",
+      "instructor": "Instructor(a)",
+      "enrolledCount": "Inscritos",
+      "viewAtRiskButton": "Ver Estudiantes en Riesgo (Asistencia)",
+      "atRiskStudentsTitle": "Estudiantes en Riesgo (Baja Asistencia)",
+      "studentAttendanceDetailTitle": "Detalles de Asistencia de {studentName}",
+      "backToAtRiskList": "Volver a Lista de Estudiantes en Riesgo",
+      "studentName": "Nombre del Estudiante",
+      "studentId": "ID de Estudiante",
+      "programName": "Programa",
+      "calculatedAttendanceRate": "Tasa de Asistencia (%)",
+      "recentAbsences": "Ausencias Recientes (Últimos 30d)",
+      "attendanceLogTitle": "Registro de Asistencia (Últimos 30 Días)",
+      "course": "Curso"
+    },
+    "billing": {
+      "title": "Facturación y Cobranza",
+      "descriptionPlaceholder": "Resumen de facturación, estado de cobranza y métricas financieras.",
+      "summary": "Resumen de Facturación",
+      "totalInvoiced": "Total Facturado",
+      "totalCollected": "Total Cobrado",
+      "outstandingAmount": "Monto Pendiente",
+      "overduePercentage": "Facturas Vencidas (%)",
+      "monthlyCollections": "Cobranza Mensual vs Objetivo",
+      "paymentModes": "Desglose de Métodos de Pago",
+      "collected": "Cobrado",
+      "target": "Objetivo",
+      "selectDepartmentPrompt": "Seleccione un Departamento para Ver Detalles",
+      "departmentBillingTitle": "Facturación del Departamento: {departmentName}",
+      "backToOverview": "Volver al Resumen de Facturación",
+      "programName": "Nombre del Programa",
+      "semesterName": "Nombre del Semestre",
+      "totalOutstanding": "Total Pendiente",
+      "viewInvoicesButton": "Ver Facturas",
+      "invoiceListTitle": "Facturas de {programName} - {semesterName}",
+      "backToSemesterList": "Volver a Semestres de {departmentName}",
+      "invoiceId": "ID Factura",
+      "studentName": "Nombre del Estudiante",
+      "amount": "Monto",
+      "dueDate": "Fecha de Vencimiento",
+      "status": "Estado",
+      "invoiceDetailTitle": "Detalles de Factura - {invoiceId}",
+      "lineItems": "Líneas de Factura",
+      "paymentHistory": "Historial de Pagos",
+      "paymentDate": "Fecha de Pago",
+      "amountPaid": "Monto Pagado",
+      "method": "Método",
+      "viewDefaultersButton": "Ver Deudores y Recordatorios",
+      "defaultersAndRemindersTitle": "Deudores y Rendimiento de Recordatorios",
+      "defaulterListTitle": "Lista de Deudores",
+      "reminderPerformanceTitle": "Resumen de Rendimiento de Recordatorios",
+      "invoiceAmount": "Monto de Factura",
+      "daysOverdue": "Días Vencidos",
+      "remindersSent": "Recordatorios Enviados",
+      "paidAfterReminder": "Pagado Después de Recordatorio",
+      "reminderSuccessRate": "Tasa de Éxito de Recordatorios (%)"
+    },
+    "placements": {
+      "title": "Colocación y Éxito de Egresados",
+      "descriptionPlaceholder": "Seguimiento de tasas de colocación, participación de empleadores y logros de egresados.",
+      "keyPlacementMetrics": "Métricas Clave de Colocación",
+      "topRecruiters": "Principales Reclutadores (Tiempo Completo)",
+      "alumniEngagement": "Participación de Egresados",
+      "kpi": {
+        "placementRate": "Tasa de Colocación",
+        "avgPackage": "Paquete Promedio (LPA)",
+        "campusCompanies": "Empresas en Campus",
+        "internshipRate": "Tasa de Prácticas",
+        "alumniEngagementScore": "Puntuación de Participación"
+      },
+      "hires": "Número de Contrataciones",
+      "selectProgramPrompt": "Seleccione un Programa para Ver Estadísticas por Lote",
+      "programPlacementsTitle": "Estadísticas de Colocación por Lote para {programName}",
+      "backToOverview": "Volver al Resumen de Colocaciones",
+      "batchYear": "Lote (Año)",
+      "salaryBands": "Bandas Salariales (Tiempo Completo)",
+      "selectEmployerPrompt": "Seleccione un Empleador para Ver Detalles",
+      "employerDetailTitle": "Detalles de Colocación para {companyName}",
+      "hireHistoryTitle": "Historial de Contrataciones",
+      "avgFeedbackScore": "Puntuación Prom. de Feedback (Simulado)",
+      "returnEmployerRate": "Tasa de Reclutador Recurrente (Simulado)",
+      "graduationYear": "Año de Graduación",
+      "placementType": "Tipo de Colocación",
+      "packageAmountLPA": "Paquete (LPA)",
+      "viewAlumniNetworkButton": "Ver Perspectivas de Red de Egresados",
+      "alumniNetworkTitle": "Perspectivas de Red de Egresados",
+      "alumniGeoDistributionTitle": "Distribución Geográfica de Egresados",
+      "alumniEngagementTimelineTitle": "Participación Reciente de Egresados"
+    },
+    "departmentFaculty": {
+      "title": "Rendimiento Departamental y Docente",
+      "descriptionPlaceholder": "Información sobre puntajes de rendimiento departamental, carga docente y producción investigadora."
+    },
+    "grievances": {
+      "title": "Gestión de Quejas y Retroalimentación",
+      "descriptionPlaceholder": "Seguimiento y análisis de quejas y retroalimentación de estudiantes y personal."
+    },
+    "compliance": {
+      "title": "Estado de Cumplimiento y Acreditación",
+      "descriptionPlaceholder": "Monitoreo del cumplimiento institucional con estándares regulatorios y estado de acreditación."
+    },
+    "infrastructure": {
+      "title": "Utilización de Infraestructura e Instalaciones",
+      "descriptionPlaceholder": "Análisis de la infraestructura del campus, utilización de recursos y gestión de instalaciones."
+    },
+    "customReports": {
+      "title": "Informes Personalizados y Análisis",
+      "descriptionPlaceholder": "Genere y vea informes personalizados basados en diversos puntos de datos institucionales."
+    }
+  },
+  "alumniActivityType": {
+    "EventAttended": "Evento Asistido",
+    "DonationMade": "Donación Realizada",
+    "MentorshipProvided": "Mentoría Proporcionada",
+    "WebinarJoined": "Seminario Web Unido",
+    "StoryShared": "Historia Compartida"
   },
   "admissionsDashboard": {
     "title": "Tablero de Admisiones",
@@ -193,15 +539,44 @@
       "recordUpdated": "Registro de asistencia actualizado."
     }
   },
+  "attendanceStatus": {
+    "present": "Presente",
+    "absent": "Ausente",
+    "late": "Tarde",
+    "excused": "Justificada",
+    "holiday": "Festivo",
+    "cancelled": "Cancelada"
+  },
   "attendanceReasons": {
     "Illness": "Enfermedad",
     "FamilyEmergency": "Emergencia Familiar",
-    "Appointment": "Emergencia Familiar",
+    "Appointment": "Cita Médica/Oficial",
     "TransportationIssue": "Problema de Transporte",
     "SchoolActivity": "Actividad Escolar",
     "Unexcused": "Injustificada",
     "Traffic": "Tráfico",
     "Overslept": "Se quedó dormido/a"
+  },
+  "absenceReasons": {
+    "illness": "Enfermedad",
+    "family_emergency": "Emergencia Familiar",
+    "transport_issue": "Problema de Transporte",
+    "personal_reasons": "Motivos Personales",
+    "appointment": "Cita Médica/Oficial",
+    "other": "Otro"
+  },
+  "paymentMethods": {
+    "creditcard": "Tarjeta de Crédito",
+    "banktransfer": "Transferencia Bancaria",
+    "paypal": "PayPal",
+    "check": "Cheque",
+    "cash": "Efectivo"
+  },
+  "salaryBands": {
+    "lessthan5lpa": "<5 LPA",
+    "between5and10lpa": "5-10 LPA",
+    "between10and15lpa": "10-15 LPA",
+    "greaterthan15lpa": ">15 LPA"
   },
   "studentSummaryTable": {
     "title": "Resúmenes Académicos Estudiantiles",
@@ -251,9 +626,6 @@
       "editRecord": "Editar Registro"
     }
   },
-  "billingDashboard": {
-    "title": "Tablero de Facturación"
-  },
   "studentPerformanceDashboard": {
     "title": "Rendimiento Académico",
     "selectStudentPlaceholder": "Seleccionar un estudiante",
@@ -290,15 +662,15 @@
         "gradeLegend": "Calificación",
         "countLegend": "Número de Cursos",
         "courses": "cursos"
-      },
-      "progress": {
-        "title": "Progreso de Titulación",
-        "creditsEarned": "Créditos Obtenidos",
-        "creditsRequired": "Créditos Requeridos",
-        "creditsRemaining": "Créditos Restantes",
-        "completed": "Completado",
-        "inProgress": "En Progreso"
       }
+    },
+    "progress": {
+      "title": "Progreso de Titulación",
+      "creditsEarned": "Créditos Obtenidos",
+      "creditsRequired": "Créditos Requeridos",
+      "creditsRemaining": "Créditos Restantes",
+      "completed": "Completado",
+      "inProgress": "En Progreso"
     }
   },
   "studentGradeGrid": {
@@ -312,9 +684,10 @@
       "score": "Puntaje (%)",
       "instructor": "Instructor(a)",
       "comments": "Comentarios",
-      "actions": {
-        "editGrade": "Editar Calificación/Comentarios"
-      }
+      "actions": "Acciones"
+    },
+    "actions": {
+      "editGrade": "Editar Calificación/Comentarios"
     },
     "placeholders": {
       "score": "0-100",
@@ -352,6 +725,37 @@
     "loadingStudentData": "Cargando datos del estudiante...",
     "notEnrolled": "No Inscrito/a",
     "noDataAvailable": "Datos no disponibles.",
-    "unknownProgram": "Programa Desconocido"
+    "unknownProgram": "Programa Desconocido",
+    "currentGlobalFilters": "Filtros Globales Actuales",
+    "notSet": "No Establecido",
+    "moduleSpecificContentPlaceholder": "El contenido específico del módulo, gráficos y tablas se mostrarán aquí.",
+    "unknown": "Desconocido",
+    "notApplicableShort": "N/D",
+    "noTrendDataAvailable": "No hay datos de tendencia disponibles para este programa.",
+    "viewDetails": "Ver Detalles",
+    "close": "Cerrar",
+    "viewCourses": "Ver Cursos",
+    "viewOfferings": "Ver Ofertas",
+    "viewStudents": "Ver Estudiantes",
+    "viewPerformance": "Ver Rendimiento",
+    "count": "Cantidad",
+    "week": "Semana",
+    "students": "Estudiantes",
+    "viewClasses": "Ver Clases",
+    "notAssigned": "N/A",
+    "noRecentAttendanceData": "No hay registros de asistencia recientes para este estudiante.",
+    "noAtRiskStudents": "Actualmente no hay estudiantes identificados en riesgo según la asistencia.",
+    "noInvoicesFound": "No se encontraron facturas para este semestre.",
+    "noPaymentsMade": "No se han realizado pagos para esta factura.",
+    "unknownEmployer": "Empleador Desconocido",
+    "unknownRole": "Rol Desconocido",
+    "unknownAlumnus": "Exalumno Desconocido",
+    "value": "Valor",
+    "noActivitiesFound": "No se encontraron actividades recientes de egresados.",
+    "details": "Detalles"
+  },
+  "errors": {
+    "dataFetchingError": "Error al cargar los datos. Por favor, inténtelo de nuevo.",
+    "errorOccurred": "Ocurrió un Error"
   }
 }

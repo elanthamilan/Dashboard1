@@ -47,13 +47,20 @@ const AcademicPerformanceModule: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     try {
-      const instDataArray = generateMockInstitutions(500, 3, 50);
-      if (instDataArray && instDataArray.length > 0) { setInstitutionData(instDataArray[0]); }
-      const baseStudents = generateMockStudents(500);
-      setAllStudentsForSummaries(baseStudents);
-      const academicRecords = generateMockAcademicRecords(baseStudents);
+      const baseStudents = generateMockStudents(500); // Generate students once
+      setAllStudentsForSummaries(baseStudents); // Set state for summaries
+
+      const instDataArray = generateMockInstitutions(baseStudents, 3, 50); // Use students for institutions
+      if (instDataArray && instDataArray.length > 0) {
+        setInstitutionData(instDataArray[0]);
+      }
+
+      const academicRecords = generateMockAcademicRecords(baseStudents); // Use same students for academic records
       setAllAcademicRecords(academicRecords);
-      const attendanceRecs = generateMockAttendanceRecords(baseStudents, [], 365 * (instDataArray[0]?.academicYears.length || 3));
+
+      // Ensure instDataArray[0] is used carefully if it might be null
+      const numAcademicYears = instDataArray && instDataArray.length > 0 && instDataArray[0]?.academicYears ? instDataArray[0].academicYears.length : 3;
+      const attendanceRecs = generateMockAttendanceRecords(baseStudents, [], 365 * numAcademicYears);
       setAllAttendanceRecords(attendanceRecs);
     } catch (error) { /* console.error("Error loading module data:", error); */ }
     finally { setLoading(false); }

@@ -9,6 +9,7 @@ import {
     AimOutlined, CalendarOutlined, UserOutlined as UserIconForTimeline, EyeOutlined
 } from '@ant-design/icons'; // Added EyeOutlined
 import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType, Degree, Department as DepartmentType } from '../../../types/hierarchy'; // Added Degree, DepartmentType
 import { KeyDeadline, Applicant, ApplicationStatus } from '../../../components/AdmissionsDashboard/types';
 import { generateMockKeyDeadlines, generateMockApplicants } from '../../../utils/mockData/admissions/generateMockApplicants';
@@ -47,7 +48,19 @@ const AdmissionsModule: React.FC = () => {
   const [isDrawerVisible, setIsDrawerVisible] = useState<boolean>(false);
 
   useEffect(() => { /* ... existing ... */
-    setLoading(true); try { const instDataArray = generateMockInstitutions(500, 3, 50); if (instDataArray && instDataArray.length > 0) { setInstitutionData(instDataArray[0]); } const deadlines = generateMockKeyDeadlines(5); setKeyDeadlines(deadlines); const applicants = generateMockApplicants(1000); setAllApplicants(applicants); } catch (error) { } finally { setLoading(false); }
+    setLoading(true);
+    try {
+      const tempStudents = generateMockStudents(500); // Assuming 500 students for the institution context
+      const instDataArray = generateMockInstitutions(tempStudents, 3, 50); // Pass Student[]
+      if (instDataArray && instDataArray.length > 0) {
+        setInstitutionData(instDataArray[0]);
+      }
+      const deadlines = generateMockKeyDeadlines(5);
+      setKeyDeadlines(deadlines);
+      const applicants = generateMockApplicants(1000); // This call remains, assumes it takes a number
+      setAllApplicants(applicants);
+    } catch (error) { /* console.error("Error loading module data:", error); */ }
+    finally { setLoading(false); }
   }, []);
   useEffect(() => { setMapReady(true); }, []);
 

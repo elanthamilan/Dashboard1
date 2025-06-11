@@ -175,9 +175,8 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                   <Statistic title="Overdue Fees (Students)" value={program.totalStudentsWithOverdueFees ?? 'N/A'} />
                 </Col>
               </Row>
-                {/*
               {/* Admissions KPIs */}
-              {/* <Row gutter={16} style={{ marginTop: '10px' }}>
+              <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={8}>
                   <Statistic title="Applicants" value={program.applicants ?? 'N/A'} />
                 </Col>
@@ -192,10 +191,9 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                 <Col span={8}>
                   <Statistic title="Enrolled" value={program.enrolledCount ?? 'N/A'} />
                 </Col>
-              </Row> */}
-
+              </Row>
               {/* Student Risk and Grades */}
-              {/* <Row gutter={16} style={{ marginTop: '10px' }}>
+              <Row gutter={16} style={{ marginTop: '10px' }}>
                  <Col span={12}>
                   <Statistic
                     title="Total At-Risk Students"
@@ -211,9 +209,8 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                       : 'N/A'}
                   </Typography.Text>
                 </Col>
-              </Row> */}
-
-              {/* <Row gutter={8} style={{ marginTop: '20px' }} align="middle">
+              </Row>
+              <Row gutter={8} style={{ marginTop: '20px' }} align="middle">
                 <Col>
                   <Button
                     type="primary"
@@ -232,7 +229,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                     Export PDF Summary
                   </Button>
                 </Col>
-              </Row> */}
+              </Row>
               </Card>
             </List.Item>
           );

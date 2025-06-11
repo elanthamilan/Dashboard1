@@ -18,6 +18,7 @@ type PaymentMethod = any;
 type FeeItem = any;
 type InvoiceStatus = any;
 import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { generateMockInvoices, generateMockPayments } from '../../../utils/mockData/billing/generateMockBillingData';
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
@@ -69,9 +70,8 @@ const BillingFeeCollectionModule: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // Corrected call to generateMockInstitutions: numYears should be a number.
-        // Filtering by filters.academicYear will be handled by the component's internal logic.
-        const mockInstitutions = generateMockInstitutions(1, 3, 50);
+        const tempStudents = generateMockStudents(1); // Generate students first
+        const mockInstitutions = generateMockInstitutions(tempStudents, 3, 50); // Pass Student[]
         const currentInstitution = mockInstitutions[0];
         setInstitutionData(currentInstitution);
 
