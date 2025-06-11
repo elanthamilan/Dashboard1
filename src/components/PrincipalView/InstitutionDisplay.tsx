@@ -94,4 +94,4 @@ const InstitutionDisplay: React.FC<InstitutionDisplayProps> = ({ institution, on
   );
 };
 
-export default InstitutionDisplay;
+export default React.memo(InstitutionDisplay);

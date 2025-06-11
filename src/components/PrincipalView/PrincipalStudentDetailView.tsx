@@ -86,4 +86,4 @@ const PrincipalStudentDetailView: React.FC<PrincipalStudentDetailViewProps> = ({
     </div>
   );
 };
-export default PrincipalStudentDetailView;
+export default React.memo(PrincipalStudentDetailView);

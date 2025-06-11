@@ -1,5 +1,5 @@
 // src/components/PrincipalView/PrincipalViewDashboard.tsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react'; // Added useCallback
 import { Typography, Spin, Empty, Button, Breadcrumb, Row, Col } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
 import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary } from '../../types/hierarchy';
@@ -53,7 +53,7 @@ const PrincipalViewDashboard: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     // Use the memoized records for initializing institutions to ensure consistency
-    const mockInstitutions = generateMockInstitutions(250, 3, 50);
+    const mockInstitutions = generateMockInstitutions(allMockStudents, 3, 50);
     setInstitutions(mockInstitutions);
     setLoading(false);
   }, [allMockStudents, allMockAcademicRecords]);
@@ -89,16 +89,17 @@ const PrincipalViewDashboard: React.FC = () => {
     }
   };
 
-  const handleSelectInstitution = (institutionId: string) => {
+  // Memoize callback functions to prevent unnecessary re-renders of child components
+  const handleSelectInstitution = useCallback((institutionId: string) => {
     const institution = institutions.find(inst => inst.institutionId === institutionId);
     if (institution) {
       setSelectedInstitution(institution);
       resetSelections('academic_year');
       setViewLevel('academic_year');
     }
-  };
+  }, [institutions]); // resetSelections and setSelectedInstitution/setViewLevel are stable
 
-  const handleSelectAcademicYear = (academicYearId: string) => {
+  const handleSelectAcademicYear = useCallback((academicYearId: string) => {
     if (selectedInstitution) {
       const academicYear = selectedInstitution.academicYears.find(ay => ay.yearId === academicYearId);
       if (academicYear) {
@@ -107,9 +108,9 @@ const PrincipalViewDashboard: React.FC = () => {
         setViewLevel('degree');
       }
     }
-  };
+  }, [selectedInstitution]);
 
-  const handleSelectDegree = (degreeId: string) => {
+  const handleSelectDegree = useCallback((degreeId: string) => {
     if (selectedAcademicYear) {
       const degree = selectedAcademicYear.degrees.find(d => d.degreeId === degreeId);
       if (degree) {
@@ -118,9 +119,9 @@ const PrincipalViewDashboard: React.FC = () => {
         setViewLevel('program');
       }
     }
-  };
+  }, [selectedAcademicYear]);
 
-  const handleSelectProgram = (programId: string) => {
+  const handleSelectProgram = useCallback((programId: string) => {
     if (selectedDegree) {
       const program = selectedDegree.programs.find(p => p.programId === programId);
       if (program) {
@@ -129,9 +130,9 @@ const PrincipalViewDashboard: React.FC = () => {
         setViewLevel('semester');
       }
     }
-  };
+  }, [selectedDegree]);
 
-  const handleSelectSemester = (semesterId: string) => {
+  const handleSelectSemester = useCallback((semesterId: string) => {
     if (selectedProgram) {
       const semester = selectedProgram.semesters.find(s => s.termId === semesterId);
       if (semester) {
@@ -140,14 +141,14 @@ const PrincipalViewDashboard: React.FC = () => {
         setViewLevel('student');
       }
     }
-  };
+  }, [selectedProgram]);
 
-  const handleSelectStudentForDetail = (studentId: string) => {
+  const handleSelectStudentForDetail = useCallback((studentId: string) => {
     setSelectedStudentIdForDetail(studentId);
     setViewLevel('student_detail');
-  };
+  }, []); // setSelectedStudentIdForDetail and setViewLevel are stable
 
-  const handleOpenProgramComparisonModal = (programIds: string[]) => {
+  const handleOpenProgramComparisonModal = useCallback((programIds: string[]) => {
     if (selectedDegree) {
       const selectedPrograms = selectedDegree.programs.filter(p => programIds.includes(p.programId));
       const comparisonItems: ComparisonItem[] = selectedPrograms.map(p => ({
@@ -161,9 +162,9 @@ const PrincipalViewDashboard: React.FC = () => {
       setItemsToCompare(comparisonItems);
       setComparisonModalVisible(true);
     }
-  };
+  }, [selectedDegree]);
 
-  const handleOpenAcademicYearComparisonModal = (academicYearIds: string[]) => {
+  const handleOpenAcademicYearComparisonModal = useCallback((academicYearIds: string[]) => {
     if (selectedInstitution) {
       const selectedAcademicYears = selectedInstitution.academicYears.filter(ay => academicYearIds.includes(ay.yearId));
       const comparisonItems: ComparisonItem[] = selectedAcademicYears.map(ay => ({
@@ -177,9 +178,9 @@ const PrincipalViewDashboard: React.FC = () => {
       setItemsToCompare(comparisonItems);
       setComparisonModalVisible(true);
     }
-  };
+  }, [selectedInstitution]);
 
-  const handleOpenDegreeComparisonModal = (degreeIds: string[]) => {
+  const handleOpenDegreeComparisonModal = useCallback((degreeIds: string[]) => {
     if (selectedAcademicYear) {
       const selectedDegrees = selectedAcademicYear.degrees.filter(d => degreeIds.includes(d.degreeId));
       const comparisonItems: ComparisonItem[] = selectedDegrees.map(d => ({
@@ -193,14 +194,14 @@ const PrincipalViewDashboard: React.FC = () => {
       setItemsToCompare(comparisonItems);
       setComparisonModalVisible(true);
     }
-  };
+  }, [selectedAcademicYear]);
 
-  const handleCloseComparisonModal = () => {
+  const handleCloseComparisonModal = useCallback(() => {
     setComparisonModalVisible(false);
     setItemsToCompare([]);
-  };
+  }, []); // setComparisonModalVisible and setItemsToCompare are stable
 
-  const handleGenerateInstitutionsReport = () => {
+  const handleGenerateInstitutionsReport = useCallback(() => {
     if (!institutions || institutions.length === 0) {
       console.warn("No institutions to export."); return;
     }

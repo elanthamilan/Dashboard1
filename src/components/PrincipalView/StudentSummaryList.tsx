@@ -51,17 +51,17 @@ const StudentSummaryList: React.FC<StudentSummaryListProps> = ({ students, onSel
 
         switch (status) {
           case 'High':
-            tagContent = <Tag color="red" icon={<WarningFilled />}>{status}</Tag>;
+            tagContent = <Tag color="error" icon={<WarningFilled />}>{status}</Tag>;
             break;
           case 'Medium':
-            tagContent = <Tag color="orange" icon={<WarningFilled />}>{status}</Tag>;
+            tagContent = <Tag color="warning" icon={<WarningFilled />}>{status}</Tag>;
             break;
           case 'Low':
-            tagContent = <Tag color="green">{status}</Tag>;
+            tagContent = <Tag color="success">{status}</Tag>;
             break;
           case 'None':
           default: // Handles undefined or 'None'
-            tagContent = <Tag color="green">{status || 'Low'}</Tag>; // Default to 'Low' if status is undefined or 'None'
+            tagContent = <Tag color="success">{status || 'Low'}</Tag>; // Default to 'Low' if status is undefined or 'None'
             break;
         }
         return <Tooltip title={tooltipTitle}>{tagContent}</Tooltip>;
@@ -123,4 +123,4 @@ const StudentSummaryList: React.FC<StudentSummaryListProps> = ({ students, onSel
   );
 };
 
-export default StudentSummaryList;
+export default React.memo(StudentSummaryList);

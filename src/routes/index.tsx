@@ -62,6 +62,23 @@ const router = createBrowserRouter([
       { path: 'custom-reports', element: <CustomReportsModule /> },
     ]
   },
+  // Redirects for old paths
+  {
+    path: '/admissions',
+    element: <Navigate to="/principal-view/admissions" replace />,
+  },
+  {
+    path: '/attendance',
+    element: <Navigate to="/principal-view/attendance-engagement" replace />,
+  },
+  {
+    path: '/billing',
+    element: <Navigate to="/principal-view/billing-fee-collection" replace />,
+  },
+  {
+    path: '/performance',
+    element: <Navigate to="/principal-view/academic-performance" replace />,
+  },
   {
     path: '*', // Catch-all for 404
     element: <MainLayout><div>Page Not Found</div></MainLayout>,

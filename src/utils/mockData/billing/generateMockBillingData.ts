@@ -40,7 +40,11 @@ export const generateMockFeeItems = (count: number): FeeItem[] => {
 let invoiceIdCounter = 1;
 const allGeneratedFeeItems = generateMockFeeItems(20); // Generate a pool of fee items
 
-export const generateMockInvoices = (students: Student[], countPerStudentMax: number): Invoice[] => {
+export const generateMockInvoices = (
+  students: Student[],
+  countPerStudentMax: number,
+  overdueCohortStudentIds?: Set<string> // Added for data realism
+): Invoice[] => {
   const invoices: Invoice[] = [];
 
   students.forEach(student => {
@@ -57,10 +61,23 @@ export const generateMockInvoices = (students: Student[], countPerStudentMax: nu
 
       // Ensure overdue status is logical
       let finalStatus = status;
-      if (status !== 'Paid' && status !== 'Draft' && status !== 'Cancelled' && dayjs().isAfter(dueDate)) {
+      const isPastDue = dayjs().isAfter(dueDate);
+
+      if (status !== 'Paid' && status !== 'Draft' && status !== 'Cancelled' && isPastDue) {
         finalStatus = 'Overdue';
       }
-      if (status === 'Draft' && Math.random() < 0.3) { // Some drafts get cancelled
+
+      // DATA REALISM: Increase likelihood of overdue invoices for a specific cohort
+      if (overdueCohortStudentIds?.has(student.id) &&
+          isPastDue &&
+          (finalStatus === 'Unpaid' || finalStatus === 'Sent')) {
+        if (Math.random() < 0.7) { // 70% chance to make it overdue for this cohort if it's past due and unpaid/sent
+            finalStatus = 'Overdue';
+            // console.log(`INFO: Forcing overdue for cohort student ${student.id}, invoice INV-${invoiceIdCounter}`);
+        }
+      }
+
+      if (finalStatus === 'Draft' && Math.random() < 0.3) { // Some drafts get cancelled
           finalStatus = 'Cancelled';
       }
 

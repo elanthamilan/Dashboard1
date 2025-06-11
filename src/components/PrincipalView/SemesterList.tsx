@@ -127,4 +127,4 @@ const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester
   );
 };
 
-export default SemesterList;
+export default React.memo(SemesterList);

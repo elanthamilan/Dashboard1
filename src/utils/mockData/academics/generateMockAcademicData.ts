@@ -437,9 +437,21 @@ export const generateMockSemester = (
     const studentIdsInSemester = semesterStudents.map(s => s.studentId);
 
     // Calculate new KPIs for the semester
-    const attendanceKPIs = calculateAttendanceKPIs(studentIdsInSemester, allAttendanceRecords, term.startDate, term.endDate);
+    let attendanceKPIs = calculateAttendanceKPIs(studentIdsInSemester, allAttendanceRecords, term.startDate, term.endDate); // Made attendanceKPIs 'let'
     const billingKPIs = calculateBillingKPIs(studentIdsInSemester, allInvoices); // Invoices are typically not semester-specific in the same way attendance is.
                                                                             // This will use all invoices for these students. Refine if invoices are term-linked.
+
+    // DATA REALISM: Simulate lower attendance for a specific term (e.g., Fall of the previous year)
+    const currentYear = dayjs().year();
+    const targetTermIdForLowerAttendance = `FA${currentYear - 1}`; // Example: FA2023 if current year is 2024
+    let finalAttendancePercentage = attendanceKPIs.percentage;
+
+    if (term.termId === targetTermIdForLowerAttendance && finalAttendancePercentage !== undefined) {
+        const reducedAttendance = finalAttendancePercentage * 0.90; // Reduce by 10%
+        finalAttendancePercentage = Math.max(60, parseFloat(reducedAttendance.toFixed(2))); // Ensure it doesn't go below 60%
+        // Add a console log for debugging/verification if needed:
+        // console.log(`INFO: Term ${term.termId} original attendance ${attendanceKPIs.percentage}%, modified to ${finalAttendancePercentage}%`);
+    }
 
     return {
         termId: term.termId,
@@ -451,8 +463,8 @@ export const generateMockSemester = (
         averageGPA: calculateSemesterAverageGPA(semesterStudents, term.courses, term.termId),
         passRate: calculateSemesterPassRate(semesterStudents, term.courses, term.termId),
         // New KPIs
-        attendancePercentage: attendanceKPIs.percentage,
-        totalAbsences: attendanceKPIs.totalAbsences,
+        attendancePercentage: finalAttendancePercentage, // Use potentially modified attendance
+        totalAbsences: attendanceKPIs.totalAbsences, // Total absences remain based on original calculation for now
         feesPaidPercentage: billingKPIs.feesPaidPercentage,
         studentsWithOverdueFees: billingKPIs.overdueCount,
     };
@@ -507,10 +519,10 @@ export const generateMockProgram = (
     const applicantsForProgram = allApplicants.filter(app => app.programId === programId);
     const programAdmissionKPIs = calculateAdmissionKPIs(applicantsForProgram);
 
-    const programPlacementKPIs = calculatePlacementKPIs(programStudentIdsArray, programStudentSummaries, allPlacementRecords);
+    let programPlacementKPIs = calculatePlacementKPIs(programStudentIdsArray, programStudentSummaries, allPlacementRecords); // Made let
 
     const programGradeDistribution = calculateGradeDistribution(programStudentRecords);
-    const programAtRiskStudents = countAtRiskStudents(programStudentRecords, programStudentIdsArray, allAttendanceRecords);
+    let programAtRiskStudents = countAtRiskStudents(programStudentRecords, programStudentIdsArray, allAttendanceRecords); // Made let
 
     let sumOfGpas = 0;
     let studentsWithGpas = 0;
@@ -520,16 +532,33 @@ export const generateMockProgram = (
             studentsWithGpas++;
         }
     });
-    const averageProgramGPA = studentsWithGpas > 0 ? parseFloat((sumOfGpas / studentsWithGpas).toFixed(2)) : undefined;
+    let averageProgramGPA = studentsWithGpas > 0 ? parseFloat((sumOfGpas / studentsWithGpas).toFixed(2)) : undefined; // Made let
 
     // Mock graduation rate
     const graduatedStudents = programStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated').length;
     const eligibleForGraduation = programStudentSummaries.filter(s => s.totalCreditsEarned && s.totalCreditsEarned >= requiredCredits).length;
     // Base graduation rate on those who have graduated out of those who were eligible or are still active.
-    const graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, multipleOf: 0.01 });
+    let graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, multipleOf: 0.01 }); // Made let
 
     const passingStudentsInProgram = programStudentSummaries.filter(s => s.cumulativeGPA !== undefined && s.cumulativeGPA >= 2.0).length;
     const programPassRate = totalStudentsInProgram > 0 ? parseFloat(((passingStudentsInProgram / totalStudentsInProgram) * 100).toFixed(2)) : 0;
+
+    // DATA REALISM: Introduce issues for a "Problematic Program" (e.g., PSY_BS)
+    if (programId === "PSY_BS") {
+        // console.log(`INFO: Modifying stats for problematic program: ${programId}`);
+        if (averageProgramGPA !== undefined) {
+            averageProgramGPA = parseFloat(Math.max(1.0, averageProgramGPA * 0.85).toFixed(2)); // Lower GPA by 15%, ensure it's at least 1.0
+        }
+        if (programPlacementKPIs.rate !== undefined) {
+            programPlacementKPIs.rate = parseFloat(Math.max(0, programPlacementKPIs.rate - 15).toFixed(2)); // Reduce placement rate by 15 points
+        }
+        // Increase at-risk students by a few, or a percentage
+        const additionalAtRisk = Math.min(totalStudentsInProgram - programAtRiskStudents, faker.number.int({min: 3, max: Math.max(3, Math.floor(totalStudentsInProgram * 0.1))}) ); // Add 3-10% more at-risk students
+        programAtRiskStudents += additionalAtRisk;
+
+        // Optionally, slightly lower graduation rate too for this program
+        graduationRate = parseFloat(Math.max(30, graduationRate * 0.8).toFixed(2)); // Reduce grad rate by 20%, floor at 30%
+    }
 
     return {
         programId,
@@ -539,10 +568,10 @@ export const generateMockProgram = (
         requiredCredits,
         semesters,
         totalStudents: programStudentSummaries.length,
-        averageProgramGPA,
-        graduationRate,
-        programPassRate, // Added program pass rate
-        placementRate: programPlacementKPIs.rate,
+        averageProgramGPA, // Potentially modified
+        graduationRate, // Potentially modified
+        programPassRate,
+        placementRate: programPlacementKPIs.rate, // Potentially modified
         averagePackage: programPlacementKPIs.avgPackage,
         totalPlacedStudents: programPlacementKPIs.placedCount,
         totalInternships: programPlacementKPIs.internshipCount,
@@ -554,7 +583,7 @@ export const generateMockProgram = (
         acceptanceRate: programAdmissionKPIs.acceptanceRate,
         enrolledCount: programAdmissionKPIs.enrolledCount,
         gradeDistribution: programGradeDistribution,
-        atRiskStudents: programAtRiskStudents,
+        atRiskStudents: programAtRiskStudents, // Potentially modified
     };
 };
 
@@ -587,33 +616,71 @@ export const generateMockDegree = (
     allApplicants: Applicant[],
     allPlacementRecords: PlacementRecord[],
     availableTerms: Term[],
-    departmentIdToAssign?: string // Optional: if programs under this degree should get a departmentId
+    // departmentIdToAssign?: string, // This parameter was not used and is being removed.
+    existingPrograms?: Program[] // Added to use pre-generated programs for consistency
 ): Degree => {
-    const programsInDegreeData = degreeProgramMappings[degreeId] || [];
-    if (programsInDegreeData.length === 0) {
+    const programsInDegreeConfig = degreeProgramMappings[degreeId] || [];
+    if (programsInDegreeConfig.length === 0) {
         console.warn(`No program definitions found for degreeId: ${degreeId}.`);
     }
 
-    const generatedPrograms: Program[] = programsInDegreeData.map(pInfo => {
-        // When generating programs under a degree, they might not have a departmentId
-        // unless the degree itself is tied to a single department.
-        // For now, pass undefined for departmentId here.
-        // Department assignment will happen when generating departments directly.
-        return generateMockProgram(
-            pInfo.programId,
-            pInfo.programName,
-            degreeId, // This program awards this degree type
-            undefined, // departmentId - not assigned at degree generation level directly
-            pInfo.requiredCredits,
-            allStudents,
-            allAcademicRecords,
-            allAttendanceRecords,
-            allInvoices,
-            allApplicants,
-            allPlacementRecords,
-            availableTerms
+    let generatedPrograms: Program[];
+
+    if (existingPrograms) {
+        // Filter from existing programs if provided.
+        // This ensures that we use the program instances that may already be linked to departments.
+        generatedPrograms = existingPrograms.filter(ep =>
+            programsInDegreeConfig.some(pdc => pdc.programId === ep.programId)
         );
-    });
+
+        // Optional: Check if all configured programs for the degree were found in existingPrograms.
+        // This can help identify inconsistencies between degreeProgramMappings and departmentDefinitions.
+        if (generatedPrograms.length !== programsInDegreeConfig.length) {
+            // console.warn(`Degree ${degreeId}: Mismatch or missing programs. Configured: ${programsInDegreeConfig.length}, Found in existing: ${generatedPrograms.length}. Check programId consistency in mappings.`);
+            // To handle missing programs, we could fall back to generating them,
+            // but this might re-introduce the instance mismatch for those specific programs.
+            // For now, we proceed with the programs found.
+            const foundProgramIds = new Set(generatedPrograms.map(p => p.programId));
+            const missingPrograms = programsInDegreeConfig.filter(pInfo => !foundProgramIds.has(pInfo.programId));
+            if (missingPrograms.length > 0) {
+                // console.warn(`Degree ${degreeId}: The following programs were configured but not found in existingPrograms: ${missingPrograms.map(p=>p.programId).join(', ')}`);
+                // Fallback: Generate the missing ones to ensure the degree isn't empty if it shouldn't be.
+                // This is a compromise to avoid breaking degree structures entirely if there's a config mismatch.
+                const newlyGeneratedMissingPrograms = missingPrograms.map(pInfo => {
+                    // console.log(`Generating fallback for missing program ${pInfo.programId} in degree ${degreeId}`);
+                    return generateMockProgram(
+                        pInfo.programId,
+                        pInfo.programName,
+                        degreeId,
+                        undefined, // No departmentId if generated as fallback here
+                        pInfo.requiredCredits,
+                        allStudents, allAcademicRecords, allAttendanceRecords, allInvoices,
+                        allApplicants, allPlacementRecords, availableTerms
+                    );
+                });
+                generatedPrograms = [...generatedPrograms, ...newlyGeneratedMissingPrograms];
+            }
+        }
+    } else {
+        // Fallback to generating programs if not provided (maintains original behavior if new system isn't used)
+        // console.warn(`Degree ${degreeId}: existingPrograms not provided. Generating new program instances. This may lead to program instance inconsistencies across hierarchy levels.`);
+        generatedPrograms = programsInDegreeConfig.map(pInfo => {
+            return generateMockProgram(
+                pInfo.programId,
+                pInfo.programName,
+                degreeId, // This program awards this degree type
+                undefined, // departmentId - not assigned at degree generation level directly at this stage
+                pInfo.requiredCredits,
+                allStudents,
+                allAcademicRecords,
+                allAttendanceRecords,
+                allInvoices,
+                allApplicants,
+                allPlacementRecords,
+                availableTerms
+            );
+        });
+    }
 
     // Aggregate Student Summaries and IDs for the Degree
     const degreeStudentSummariesMap = new Map<string, StudentSummary>();
@@ -731,7 +798,8 @@ export const generateMockAcademicYear = (
     allInvoices: Invoice[], // Added
     allApplicants: Applicant[], // Added
     allPlacementRecords: PlacementRecord[], // Added
-    allAvailableTerms: Term[]
+    allAvailableTerms: Term[],
+    existingPrograms?: Program[] // Added to pass down pre-generated programs
 ): AcademicYear => {
     const termsForThisYear = allAvailableTerms.filter(term => {
         const termStart = dayjs(term.startDate);
@@ -739,6 +807,12 @@ export const generateMockAcademicYear = (
     });
 
     const degreesInYear: Degree[] = mockDegrees.map(degInfo => {
+        // Filter existingPrograms for the current degree if provided
+        // These programs are already instantiated, potentially with department links.
+        const programsForThisDegree = existingPrograms
+            ? existingPrograms.filter(ep => degreeProgramMappings[degInfo.degreeId]?.some(dp => dp.programId === ep.programId))
+            : undefined;
+
         return generateMockDegree(
             degInfo.degreeId,
             degInfo.degreeName,
@@ -748,7 +822,9 @@ export const generateMockAcademicYear = (
             allInvoices,
             allApplicants,
             allPlacementRecords, // Pass down
-            termsForThisYear
+            termsForThisYear,
+            // departmentIdToAssign is removed from generateMockDegree
+            programsForThisDegree // Pass filtered existing programs
         );
     }).filter(degree => degree.programs.length > 0);
 
@@ -867,12 +943,12 @@ const departmentDefinitions = [
 
 
 export const generateMockInstitutions = (
-    numStudents: number = 250, // Default number of students for the institution
+    allStudents: Student[], // Changed from numStudents
     numYears: number = 3, // Default number of academic years to generate
     numApplicantsPerProgram: number = 50 // For admissions data
 ): Institution[] => {
     // 1. Generate Base Data Sets (Institution-wide)
-    const allStudents = generateMockStudents(numStudents); // Corrected: Use parameter `numStudents`
+    // const allStudents = generateMockStudents(numStudents); // Removed: allStudents is now a parameter
     const allAcademicRecords = generateMockAcademicRecords(allStudents);
     const institutionWideStudentSummaries = allAcademicRecords.map(ar =>
         generateMockStudentSummary(allStudents.find(s => s.id === ar.studentId)!, ar)
@@ -884,12 +960,24 @@ export const generateMockInstitutions = (
     const allAlumni = generateMockAlumni(graduatedStudentSummaries);
     const allAlumniActivities = generateMockAlumniActivities(allAlumni, 2); // Target 2 activities per alumnus
 
-    const allLmsActivities = generateMockLmsActivityData(institutionWideStudentSummaries, 30, 60); // Target 30 activities/student, over 60 days
+    // PERFORMANCE OPTIMIZATION: Reduced LMS activities per student
+    const allLmsActivities = generateMockLmsActivityData(institutionWideStudentSummaries, 20, 60); // Target 20 activities/student (was 30)
     const allPlacementRecords = generateMockPlacementData(institutionWideStudentSummaries); // Generate placement records for all students, filter by eligibility later
     const allAttendanceRecords = generateMockAttendanceRecords(allStudents, [], numYears * 365);
-    const allInvoices = generateMockInvoices(allStudents, 5);
+
+    // DATA REALISM: Identify a cohort for increased overdue fees (e.g., students enrolled in the last year)
+    const oneYearAgo = dayjs().subtract(1, 'year');
+    const overdueCohortStudentIds = new Set<string>();
+    allAcademicRecords.forEach(record => {
+        if (dayjs(record.enrollmentDate).isAfter(oneYearAgo)) {
+            overdueCohortStudentIds.add(record.studentId);
+        }
+    });
+    // console.log(`INFO: Identified ${overdueCohortStudentIds.size} students for overdue fee cohort.`);
+
+    const allInvoices = generateMockInvoices(allStudents, 5, overdueCohortStudentIds); // Pass cohort to invoice generation
     const estimatedTotalApplicants = numApplicantsPerProgram * programs.length; // Use actual programs length
-    const allApplicants = generateMockApplicants(Math.max(estimatedTotalApplicants, numStudents));
+    const allApplicants = generateMockApplicants(Math.max(estimatedTotalApplicants, allStudents.length)); // Use allStudents.length
     const institutionId = faker.string.uuid();
     const institutionName = `${faker.company.name()} University`;
 
@@ -1036,13 +1124,16 @@ export const generateMockInstitutions = (
     // This will be addressed by ensuring generateMockDegree and generateMockAcademicYear
     // correctly filter and use programs that now have departmentIds if that linkage is made.
     // The current `generateMockAcademicYear` and `generateMockDegree` will create a separate hierarchy
-    // of programs that are NOT the same instances as those in `institutionDepartments`. This is a known issue
-    // to be resolved by a deeper refactor of how programs are instantiated and passed around.
-    // For this step, we focus on populating `institution.departments`.
+    // of programs that are NOT the same instances as those in `institutionDepartments`.
+    // SOLUTION ATTEMPTED: `allProgramsGeneratedForDepartments` (which have department linkages)
+    // are now passed down to `generateMockAcademicYear` and `generateMockDegree`.
+    // This should ensure that programs within the academic hierarchy are the same instances
+    // as those associated with departments, maintaining data consistency.
 
     // Generate Faculty Data
+    // PERFORMANCE OPTIMIZATION: Reduced evaluations per faculty
     const allFacultyMembers = generateMockFacultyMembers(institutionDepartments, 7); // 7 faculty per dept
-    const allFacultyEvaluations = generateMockFacultyEvaluations(allFacultyMembers, institutionWideStudentSummaries, 15); // Approx 15 evals per faculty
+    const allFacultyEvaluations = generateMockFacultyEvaluations(allFacultyMembers, institutionWideStudentSummaries, 8); // Approx 8 evals per faculty (was 15)
 
     let avgFacultyRating: number | undefined = undefined;
     if (allFacultyEvaluations.length > 0) {
@@ -1074,7 +1165,8 @@ export const generateMockInstitutions = (
                 allInvoices,
                 allApplicants,
                 allPlacementRecords, // Pass down
-                allTermsAcrossYears
+                allTermsAcrossYears,
+                allProgramsGeneratedForDepartments // Pass the programs linked with departments
             )
         );
     }

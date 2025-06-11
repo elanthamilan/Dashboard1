@@ -1,6 +1,7 @@
 // src/components/PrincipalView/AcademicYearList.tsx
 import React, { useState } from 'react';
 import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox } from 'antd';
+import { WarningOutlined } from '@ant-design/icons'; // Added
 import { AcademicYear } from '../../types/hierarchy'; // Adjust path
 import { downloadCSV } from '../../utils/exportUtils'; // Added import
 
@@ -89,25 +90,47 @@ const AcademicYearList: React.FC<AcademicYearListProps> = ({ academicYears, onSe
       <List
         grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 3, xl: 3, xxl: 3 }}
         dataSource={academicYears}
-        renderItem={year => (
-          <List.Item>
-            <Card
-              title={year.yearName}
-              extra={<Checkbox
-                       checked={selectedForComparison.includes(year.yearId)}
-                       onChange={(e) => handleCheckboxChange(year.yearId, e.target.checked)}
-                     />}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Statistic title="Total Students" value={year.totalStudents} />
-                </Col>
-                <Col span={12}>
-                  <Statistic title="Avg. GPA" value={year.overallAverageGPA?.toFixed(2) || 'N/A'} />
-                </Col>
-              </Row>
+        renderItem={year => {
+          // Define conditions for highlighting
+          const isLowGpa = year.overallAverageGPA !== undefined && year.overallAverageGPA < 2.7;
+          const highAtRiskPercentage = year.totalAnnualAtRiskStudents !== undefined &&
+                                   year.totalStudents > 0 &&
+                                   (year.totalAnnualAtRiskStudents / year.totalStudents) * 100 > 10;
 
-              {/* Attendance & Billing KPIs */}
+          const needsAttention = isLowGpa || highAtRiskPercentage;
+
+          let cardStyle: React.CSSProperties = {};
+          let titlePrefix: React.ReactNode = null;
+
+          if (needsAttention) {
+            cardStyle = { background: '#fffbe6' }; // Light yellow background
+            titlePrefix = <WarningOutlined style={{ color: '#faad14', marginRight: '8px' }} />; // Orange/yellow warning
+          }
+
+          return (
+            <List.Item>
+              <Card
+                title={<>{titlePrefix}{year.yearName}</>}
+                style={cardStyle}
+                extra={<Checkbox
+                         checked={selectedForComparison.includes(year.yearId)}
+                         onChange={(e) => handleCheckboxChange(year.yearId, e.target.checked)}
+                       />}
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Statistic title="Total Students" value={year.totalStudents} />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Avg. GPA"
+                      value={year.overallAverageGPA?.toFixed(2) || 'N/A'}
+                      valueStyle={isLowGpa ? { color: '#f5222d' } : {}} // Red for low GPA
+                    />
+                  </Col>
+                </Row>
+
+                {/* Attendance & Billing KPIs */}
               <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={6}>
                   <Statistic
@@ -160,7 +183,11 @@ const AcademicYearList: React.FC<AcademicYearListProps> = ({ academicYears, onSe
               {/* Student Risk and Grades */}
               <Row gutter={16} style={{ marginTop: '10px' }}>
                  <Col span={12}>
-                  <Statistic title="Total At-Risk Students" value={year.totalAnnualAtRiskStudents ?? 'N/A'} />
+                  <Statistic
+                    title="Total At-Risk Students"
+                    value={year.totalAnnualAtRiskStudents ?? 'N/A'}
+                    valueStyle={highAtRiskPercentage ? { color: '#faad14' } : {}} // Orange for high at-risk
+                  />
                 </Col>
                 <Col span={12}>
                   <Typography.Text strong style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)'}}>Grade Distribution</Typography.Text>
@@ -183,4 +210,4 @@ const AcademicYearList: React.FC<AcademicYearListProps> = ({ academicYears, onSe
   );
 };
 
-export default AcademicYearList;
+export default React.memo(AcademicYearList);

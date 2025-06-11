@@ -1,7 +1,7 @@
 // src/components/PrincipalView/ProgramList.tsx
 import React, { useState } from 'react';
-import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox } from 'antd';
-import { FilePdfOutlined } from '@ant-design/icons'; // Added import
+import { List, Card, Statistic, Button, Row, Col, Typography, Checkbox, Tag } from 'antd'; // Added Tag
+import { FilePdfOutlined, WarningOutlined } from '@ant-design/icons'; // Added WarningOutlined
 import { Program } from '../../types/hierarchy';
 import { downloadCSV, sanitizeFilename } from '../../utils/exportUtils'; // Updated import
 import { downloadProgramSummaryPDF } from '../../utils/exportUtils'; // Added import
@@ -93,34 +93,60 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
       <List
         grid={{ gutter: 16, xs: 1, sm: 1, md: 2, lg: 2, xl: 2, xxl: 2 }}
         dataSource={programs}
-        renderItem={program => (
-          <List.Item>
-            <Card
-              title={program.programName}
-              extra={<Checkbox
-                        checked={selectedForComparison.includes(program.programId)}
-                        onChange={(e) => handleCheckboxChange(program.programId, e.target.checked)}
-                     />}
-            >
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Statistic title="Total Students" value={program.totalStudents} />
-                </Col>
-                <Col span={12}>
-                  <Statistic title="Avg. GPA" value={program.averageProgramGPA?.toFixed(2) || 'N/A'} />
-                </Col>
-              </Row>
-               <Row gutter={16} style={{marginTop: '10px'}}>
-                <Col span={12}>
-                  <Statistic title="Required Credits" value={program.requiredCredits ?? 'N/A'} />
-                </Col>
-                 <Col span={12}>
-                  <Statistic title="Graduation Rate" value={program.graduationRate !== undefined ? `${program.graduationRate.toFixed(1)}%` : 'N/A'} />
-                </Col>
-              </Row>
+        renderItem={program => {
+          // Define conditions for highlighting
+          const isProblemProgramById = program.programId === "PSY_BS";
+          const isLowGpa = program.averageProgramGPA !== undefined && program.averageProgramGPA < 2.5;
+          const isLowGraduationRate = program.graduationRate !== undefined && program.graduationRate < 60;
+          const highAtRiskPercentage = program.atRiskStudents !== undefined && program.totalStudents > 0 && (program.atRiskStudents / program.totalStudents) * 100 > 15;
 
-              {/* Attendance KPIs */}
-              <Row gutter={16} style={{ marginTop: '10px' }}>
+          const needsAttention = isProblemProgramById || isLowGpa || isLowGraduationRate || highAtRiskPercentage;
+
+          let cardStyle: React.CSSProperties = {};
+          let titlePrefix: React.ReactNode = null;
+
+          if (needsAttention) {
+            cardStyle = { border: '1.5px solid #f5222d', background: '#fff1f0' }; // Red border and light red background
+            titlePrefix = <WarningOutlined style={{ color: '#f5222d', marginRight: '8px' }} />;
+          }
+
+          return (
+            <List.Item>
+              <Card
+                title={<>{titlePrefix}{program.programName}</>}
+                style={cardStyle}
+                extra={<Checkbox
+                          checked={selectedForComparison.includes(program.programId)}
+                          onChange={(e) => handleCheckboxChange(program.programId, e.target.checked)}
+                       />}
+              >
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Statistic title="Total Students" value={program.totalStudents} />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Avg. GPA"
+                      value={program.averageProgramGPA?.toFixed(2) || 'N/A'}
+                      valueStyle={isLowGpa ? { color: '#f5222d' } : {}}
+                    />
+                  </Col>
+                </Row>
+                <Row gutter={16} style={{marginTop: '10px'}}>
+                  <Col span={12}>
+                    <Statistic title="Required Credits" value={program.requiredCredits ?? 'N/A'} />
+                  </Col>
+                  <Col span={12}>
+                    <Statistic
+                      title="Graduation Rate"
+                      value={program.graduationRate !== undefined ? `${program.graduationRate.toFixed(1)}%` : 'N/A'}
+                      valueStyle={isLowGraduationRate ? { color: '#f5222d' } : {}}
+                    />
+                  </Col>
+                </Row>
+
+                {/* Attendance KPIs */}
+                <Row gutter={16} style={{ marginTop: '10px' }}>
                 <Col span={12}>
                   <Statistic
                     title="Avg. Attendance"
@@ -170,7 +196,11 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
               {/* Student Risk and Grades */}
               <Row gutter={16} style={{ marginTop: '10px' }}>
                  <Col span={12}>
-                  <Statistic title="Total At-Risk Students" value={program.atRiskStudents ?? 'N/A'} />
+                  <Statistic
+                    title="Total At-Risk Students"
+                    value={program.atRiskStudents ?? 'N/A'}
+                    valueStyle={highAtRiskPercentage ? { color: '#faad14' } : {}} // Orange for high at-risk
+                  />
                 </Col>
                 <Col span={12}>
                   <Typography.Text strong style={{ fontSize: '12px', color: 'rgba(0, 0, 0, 0.45)'}}>Grade Distribution</Typography.Text>
@@ -210,4 +240,4 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
   );
 };
 
-export default ProgramList;
+export default React.memo(ProgramList);
