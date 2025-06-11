@@ -27,6 +27,10 @@ export const generateMockGrievanceData = (
 
     let resolvedDate: string | undefined = undefined;
     let resolutionDetails: string | undefined = undefined;
+    let satisfactionRating: GrievanceTicket['satisfactionRating'] = undefined;
+    let resolutionFeedbackComment: string | undefined = undefined;
+    let mockSentiment: GrievanceTicket['mockSentiment'] = undefined;
+
     // Ensure lastUpdatedDate is after submittedDate
     const lastUpdatedDate = dayjs(faker.date.between({from: submittedDate, to: new Date()})).toISOString();
 
@@ -34,6 +38,13 @@ export const generateMockGrievanceData = (
       // Ensure resolvedDate is between submittedDate and lastUpdatedDate
       resolvedDate = dayjs(faker.date.between({ from: submittedDate, to: lastUpdatedDate })).toISOString();
       resolutionDetails = faker.lorem.paragraph();
+      satisfactionRating = faker.helpers.arrayElement([1, 2, 3, 4, 5, undefined, 4, 5]); // Skew towards rated, and positive
+      if (satisfactionRating) {
+        resolutionFeedbackComment = faker.lorem.sentence();
+        if (satisfactionRating >= 4) mockSentiment = 'Positive';
+        else if (satisfactionRating === 3) mockSentiment = 'Neutral';
+        else mockSentiment = 'Negative';
+      }
     }
 
     const submittedByStudent = faker.datatype.boolean(0.7); // 70% chance submitted by student
@@ -68,6 +79,9 @@ export const generateMockGrievanceData = (
       resolvedDate: resolvedDate,
       assignedToStaffId: status !== 'Closed' && status !== 'Resolved' && canSubmitOrAssignToStaff ? faker.helpers.arrayElement(staffIds) : undefined,
       resolutionDetails: resolutionDetails,
+      satisfactionRating,
+      resolutionFeedbackComment,
+      mockSentiment,
     });
   }
   return tickets;

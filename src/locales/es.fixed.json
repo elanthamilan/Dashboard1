@@ -230,15 +230,110 @@
       "attendance": "Asistencia",
       "calendarHeatmapTitle": "Mapa de Calor de Asistencia Mensual",
       "present": "Presente",
-      "absent": "Ausente"
+      "absent": "Ausente",
+      "lmsEngagementTitle": "Interacción LMS (Últimos 30 Días)",
+      "kpi": {
+        "lmsLogins": "Inicios de Sesión LMS",
+        "lmsDownloads": "Descargas de Recursos",
+        "lmsForumPosts": "Publicaciones en Foro"
+      },
+      "selectProgramPrompt": "Seleccione un Programa para Ver Asistencia Detallada",
+      "programAttendanceTitle": "Asistencia del Programa: {programName}",
+      "backToOverview": "Volver al Resumen de Asistencia",
+      "semesterName": "Nombre del Semestre",
+      "avgAttendancePct": "Prom. Asistencia (%)",
+      "totalAbsences": "Ausencias Totales",
+      "selectSemesterPrompt": "Seleccione un Semestre para Ver Clases",
+      "classAttendanceTitle": "Asistencia de Clase en {semesterName} - {programName}",
+      "backToSemesterList": "Volver a Semestres en {programName}",
+      "className": "Nombre de Clase",
+      "instructor": "Instructor(a)",
+      "enrolledCount": "Inscritos",
+      "viewAtRiskButton": "Ver Estudiantes en Riesgo (Asistencia)",
+      "atRiskStudentsTitle": "Estudiantes en Riesgo (Baja Asistencia)",
+      "studentAttendanceDetailTitle": "Detalles de Asistencia de {studentName}",
+      "backToAtRiskList": "Volver a Lista de Estudiantes en Riesgo",
+      "studentName": "Nombre del Estudiante",
+      "studentId": "ID de Estudiante",
+      "programName": "Programa",
+      "calculatedAttendanceRate": "Tasa de Asistencia (%)",
+      "recentAbsences": "Ausencias Recientes (Últimos 30d)",
+      "attendanceLogTitle": "Registro de Asistencia (Últimos 30 Días)",
+      "course": "Curso"
     },
     "billing": {
-      "title": "Información de Facturación y Recaudación",
-      "descriptionPlaceholder": "Resumen del estado de recaudación, pagos pendientes y salud financiera."
+      "title": "Facturación y Cobranza",
+      "descriptionPlaceholder": "Resumen de facturación, estado de cobranza y métricas financieras.",
+      "summary": "Resumen de Facturación",
+      "totalInvoiced": "Total Facturado",
+      "totalCollected": "Total Cobrado",
+      "outstandingAmount": "Monto Pendiente",
+      "overduePercentage": "Facturas Vencidas (%)",
+      "monthlyCollections": "Cobranza Mensual vs Objetivo",
+      "paymentModes": "Desglose de Métodos de Pago",
+      "collected": "Cobrado",
+      "target": "Objetivo",
+      "selectDepartmentPrompt": "Seleccione un Departamento para Ver Detalles",
+      "departmentBillingTitle": "Facturación del Departamento: {departmentName}",
+      "backToOverview": "Volver al Resumen de Facturación",
+      "programName": "Nombre del Programa",
+      "semesterName": "Nombre del Semestre",
+      "totalOutstanding": "Total Pendiente",
+      "viewInvoicesButton": "Ver Facturas",
+      "invoiceListTitle": "Facturas de {programName} - {semesterName}",
+      "backToSemesterList": "Volver a Semestres de {departmentName}",
+      "invoiceId": "ID Factura",
+      "studentName": "Nombre del Estudiante",
+      "amount": "Monto",
+      "dueDate": "Fecha de Vencimiento",
+      "status": "Estado",
+      "invoiceDetailTitle": "Detalles de Factura - {invoiceId}",
+      "lineItems": "Líneas de Factura",
+      "paymentHistory": "Historial de Pagos",
+      "paymentDate": "Fecha de Pago",
+      "amountPaid": "Monto Pagado",
+      "method": "Método",
+      "viewDefaultersButton": "Ver Deudores y Recordatorios",
+      "defaultersAndRemindersTitle": "Deudores y Rendimiento de Recordatorios",
+      "defaulterListTitle": "Lista de Deudores",
+      "reminderPerformanceTitle": "Resumen de Rendimiento de Recordatorios",
+      "invoiceAmount": "Monto de Factura",
+      "daysOverdue": "Días Vencidos",
+      "remindersSent": "Recordatorios Enviados",
+      "paidAfterReminder": "Pagado Después de Recordatorio",
+      "reminderSuccessRate": "Tasa de Éxito de Recordatorios (%)"
     },
     "placements": {
       "title": "Colocación y Éxito de Egresados",
-      "descriptionPlaceholder": "Seguimiento de tasas de colocación, participación de empleadores y logros de egresados."
+      "descriptionPlaceholder": "Seguimiento de tasas de colocación, participación de empleadores y logros de egresados.",
+      "keyPlacementMetrics": "Métricas Clave de Colocación",
+      "topRecruiters": "Principales Reclutadores (Tiempo Completo)",
+      "alumniEngagement": "Participación de Egresados",
+      "kpi": {
+        "placementRate": "Tasa de Colocación",
+        "avgPackage": "Paquete Promedio (LPA)",
+        "campusCompanies": "Empresas en Campus",
+        "internshipRate": "Tasa de Prácticas",
+        "alumniEngagementScore": "Puntuación de Participación"
+      },
+      "hires": "Número de Contrataciones",
+      "selectProgramPrompt": "Seleccione un Programa para Ver Estadísticas por Lote",
+      "programPlacementsTitle": "Estadísticas de Colocación por Lote para {programName}",
+      "backToOverview": "Volver al Resumen de Colocaciones",
+      "batchYear": "Lote (Año)",
+      "salaryBands": "Bandas Salariales (Tiempo Completo)",
+      "selectEmployerPrompt": "Seleccione un Empleador para Ver Detalles",
+      "employerDetailTitle": "Detalles de Colocación para {companyName}",
+      "hireHistoryTitle": "Historial de Contrataciones",
+      "avgFeedbackScore": "Puntuación Prom. de Feedback (Simulado)",
+      "returnEmployerRate": "Tasa de Reclutador Recurrente (Simulado)",
+      "graduationYear": "Año de Graduación",
+      "placementType": "Tipo de Colocación",
+      "packageAmountLPA": "Paquete (LPA)",
+      "viewAlumniNetworkButton": "Ver Perspectivas de Red de Egresados",
+      "alumniNetworkTitle": "Perspectivas de Red de Egresados",
+      "alumniGeoDistributionTitle": "Distribución Geográfica de Egresados",
+      "alumniEngagementTimelineTitle": "Participación Reciente de Egresados"
     },
     "departmentFaculty": {
       "title": "Rendimiento Departamental y Docente",
@@ -260,6 +355,13 @@
       "title": "Informes Personalizados y Análisis",
       "descriptionPlaceholder": "Genere y vea informes personalizados basados en diversos puntos de datos institucionales."
     }
+  },
+  "alumniActivityType": {
+    "EventAttended": "Evento Asistido",
+    "DonationMade": "Donación Realizada",
+    "MentorshipProvided": "Mentoría Proporcionada",
+    "WebinarJoined": "Seminario Web Unido",
+    "StoryShared": "Historia Compartida"
   },
   "admissionsDashboard": {
     "title": "Tablero de Admisiones",
@@ -437,6 +539,14 @@
       "recordUpdated": "Registro de asistencia actualizado."
     }
   },
+  "attendanceStatus": {
+    "present": "Presente",
+    "absent": "Ausente",
+    "late": "Tarde",
+    "excused": "Justificada",
+    "holiday": "Festivo",
+    "cancelled": "Cancelada"
+  },
   "attendanceReasons": {
     "Illness": "Enfermedad",
     "FamilyEmergency": "Emergencia Familiar",
@@ -454,6 +564,19 @@
     "personal_reasons": "Motivos Personales",
     "appointment": "Cita Médica/Oficial",
     "other": "Otro"
+  },
+  "paymentMethods": {
+    "creditcard": "Tarjeta de Crédito",
+    "banktransfer": "Transferencia Bancaria",
+    "paypal": "PayPal",
+    "check": "Cheque",
+    "cash": "Efectivo"
+  },
+  "salaryBands": {
+    "lessthan5lpa": "<5 LPA",
+    "between5and10lpa": "5-10 LPA",
+    "between10and15lpa": "10-15 LPA",
+    "greaterthan15lpa": ">15 LPA"
   },
   "studentSummaryTable": {
     "title": "Resúmenes Académicos Estudiantiles",
@@ -617,10 +740,32 @@
     "viewPerformance": "Ver Rendimiento",
     "count": "Cantidad",
     "week": "Semana",
-    "students": "Estudiantes"
+    "students": "Estudiantes",
+    "viewClasses": "Ver Clases",
+    "notAssigned": "N/A",
+    "noRecentAttendanceData": "No hay registros de asistencia recientes para este estudiante.",
+    "noAtRiskStudents": "Actualmente no hay estudiantes identificados en riesgo según la asistencia.",
+    "noInvoicesFound": "No se encontraron facturas para este semestre.",
+    "noPaymentsMade": "No se han realizado pagos para esta factura.",
+    "unknownEmployer": "Empleador Desconocido",
+    "unknownRole": "Rol Desconocido",
+    "unknownAlumnus": "Exalumno Desconocido",
+    "value": "Valor",
+    "noActivitiesFound": "No se encontraron actividades recientes de egresados.",
+    "details": "Detalles"
   },
   "errors": {
     "dataFetchingError": "Error al cargar los datos. Por favor, inténtelo de nuevo.",
     "errorOccurred": "Ocurrió un Error"
   }
 }
+
+[end of src/locales/es.fixed.json]
+
+[end of src/locales/es.fixed.json]
+
+[end of src/locales/es.fixed.json]
+
+[end of src/locales/es.fixed.json]
+
+[end of src/locales/es.fixed.json]

@@ -9,7 +9,11 @@ export interface CourseEnrollment {
   courseCode: string; // e.g., "CS101", "MATH203"
   courseName: string;
   credits: number; // e.g., 3, 4
-  instructor?: string;
+  instructorId?: string;
+  instructorName?: string;
+  scheduledHours?: number;
+  deliveredHours?: number; // Can be same as scheduled for mock
+  completionPercentage?: number; // e.g., 0-100
   grade?: Grade;
   comments?: string;
 }

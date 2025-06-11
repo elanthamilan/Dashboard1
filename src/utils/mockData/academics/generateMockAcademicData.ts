@@ -24,8 +24,10 @@ import { PlacementRecord } from '../../../types/placement';
 import { generateMockPlacementData } from '../placements/generateMockPlacementData';
 import {
     ReEvaluationRequest, GrievanceTicket,
-    ComplianceItem, AccreditationStatusSummary, AccreditingBody
-} from '../../../types/academics'; // Added Compliance and Accreditation types
+    ComplianceItem, AccreditationStatusSummary, AccreditingBody,
+    LmsActivity
+} from '../../../types/academics';
+import { Alumnus, AlumniActivity } from '../../../types/alumni'; // Corrected import for Alumni types
 import { generateMockReEvaluationData } from './generateMockReEvaluationData';
 import { generateMockGrievanceData } from '../grievances/generateMockGrievanceData';
 import {
@@ -35,6 +37,8 @@ import {
 import { Department } from '../../../types/departments';
 import { FacultyMember, FacultyEvaluation } from '../../../types/academics'; // For Faculty Data
 import { generateMockFacultyMembers, generateMockFacultyEvaluations } from '../faculty/generateMockFacultyData'; // For Faculty Data
+import { generateMockLmsActivityData } from '../engagement/generateMockLmsActivityData'; // Added for LMS Data
+import { generateMockAlumni, generateMockAlumniActivities } from '../alumni/generateMockAlumniData'; // Added for Alumni Data
 
 
 import dayjs from 'dayjs';
@@ -873,7 +877,14 @@ export const generateMockInstitutions = (
         generateMockStudentSummary(allStudents.find(s => s.id === ar.studentId)!, ar)
     );
     const institutionStudentIds = institutionWideStudentSummaries.map(s => s.studentId);
-    const allPlacementRecords = generateMockPlacementData(institutionWideStudentSummaries);
+
+    // Generate Alumni Data
+    const graduatedStudentSummaries = institutionWideStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated');
+    const allAlumni = generateMockAlumni(graduatedStudentSummaries);
+    const allAlumniActivities = generateMockAlumniActivities(allAlumni, 2); // Target 2 activities per alumnus
+
+    const allLmsActivities = generateMockLmsActivityData(institutionWideStudentSummaries, 30, 60); // Target 30 activities/student, over 60 days
+    const allPlacementRecords = generateMockPlacementData(institutionWideStudentSummaries); // Generate placement records for all students, filter by eligibility later
     const allAttendanceRecords = generateMockAttendanceRecords(allStudents, [], numYears * 365);
     const allInvoices = generateMockInvoices(allStudents, 5);
     const estimatedTotalApplicants = numApplicantsPerProgram * programs.length; // Use actual programs length
@@ -898,8 +909,14 @@ export const generateMockInstitutions = (
     const institutionWideCourseEnrollments: CourseEnrollment[] = allTermsAcrossYears.flatMap(term => term.courses);
     const allReEvaluationRequests = generateMockReEvaluationData(institutionWideStudentSummaries, institutionWideCourseEnrollments, 100);
     const pendingReEvaluationsCount = allReEvaluationRequests.filter(r => r.status === 'Pending').length;
-    const oneMonthAgo = dayjs().subtract(1, 'month');
-    const totalReEvaluationsLastMonth = allReEvaluationRequests.filter(r => dayjs(r.requestDate).isAfter(oneMonthAgo)).length;
+    const thirtyDaysAgo = dayjs().subtract(30, 'days'); // For LMS activity filtering
+    const totalReEvaluationsLastMonth = allReEvaluationRequests.filter(r => dayjs(r.requestDate).isAfter(thirtyDaysAgo)).length;
+
+    // LMS Activity Counts for last 30 days
+    const recentLmsActivities = allLmsActivities.filter(act => dayjs(act.timestamp).isAfter(thirtyDaysAgo));
+    const lmsLoginsLast30Days = recentLmsActivities.filter(act => act.activityType === 'Login').length;
+    const lmsResourceDownloadsLast30Days = recentLmsActivities.filter(act => act.activityType === 'ResourceDownload').length;
+    const lmsForumPostsLast30Days = recentLmsActivities.filter(act => act.activityType === 'ForumPost').length;
 
     const mockStaffIds = ['STAFF001', 'STAFF002', 'STAFF003', 'STAFF004', 'STAFF005'];
     const allGrievanceTickets = generateMockGrievanceData(institutionWideStudentSummaries, mockStaffIds, 75);
@@ -1068,6 +1085,26 @@ export const generateMockInstitutions = (
 
     const institutionPlacementKPIs = calculatePlacementKPIs(institutionStudentIds, institutionWideStudentSummaries, allPlacementRecords);
 
+    // Calculate Alumni Engagement Score
+    let alumniEngagementScore = 0;
+    if (allAlumni.length > 0) {
+        const totalActivities = allAlumniActivities.length;
+        alumniEngagementScore = Math.min(100, (totalActivities / allAlumni.length) * 20); // Example: 5 activities per alumnus for 100 score
+    }
+    alumniEngagementScore = parseFloat(alumniEngagementScore.toFixed(1));
+
+    // Calculate Overall Internship Rate
+    // overallTotalInternships is count of students with internships from institutionPlacementKPIs
+    let overallInternshipRate = 0;
+    if (institutionWideStudentSummaries.length > 0 && institutionPlacementKPIs.internshipCount !== undefined) {
+        overallInternshipRate = (institutionPlacementKPIs.internshipCount / institutionWideStudentSummaries.length) * 100;
+    }
+    overallInternshipRate = parseFloat(overallInternshipRate.toFixed(1));
+
+    // Calculate Total Campus Companies
+    const campusCompanyNames = new Set(allPlacementRecords.filter(p => p.campusDrive).map(p => p.companyName));
+    const totalCampusCompanies = campusCompanyNames.size;
+
     // Aggregate Institution-Level KPIs from academicYearsData
     let instAttendancePercentage: number | undefined = 0;
     let instTotalAbsences = 0;
@@ -1160,6 +1197,18 @@ export const generateMockInstitutions = (
         totalInstitutionEnrolledCount: instTotalEnrolled,
         institutionGradeDistribution: instGradeDistribution,
         totalInstitutionAtRiskStudents: instTotalAtRisk,
+        // LMS Data
+        lmsLoginsLast30Days,
+        lmsResourceDownloadsLast30Days,
+        lmsForumPostsLast30Days,
+        lmsActivities: allLmsActivities,
+        // Alumni and Enhanced Placement Data
+        alumni: allAlumni,
+        alumniActivities: allAlumniActivities,
+        alumniEngagementScore,
+        overallInternshipRate,
+        totalCampusCompanies,
+        allPlacementRecords: allPlacementRecords, // Add all placement records
     };
 
     return [institution];

@@ -3,9 +3,10 @@ import { PlacementRecord } from './placement';
 import {
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,
-    FacultyMember, FacultyEvaluation // Added Faculty types
+    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject // Added ResearchProject
 } from './academics';
 import { Department } from './departments';
+import { Alumnus, AlumniActivity } from './alumni';
 
 export interface StudentSummary {
   studentId: string;
@@ -138,4 +139,25 @@ export interface Institution {
   facultyEvaluationResponseRate?: number;
   facultyMembers?: FacultyMember[];
   facultyEvaluations?: FacultyEvaluation[];
+  // LMS Engagement Metrics
+  lmsLoginsLast30Days?: number;
+  lmsResourceDownloadsLast30Days?: number;
+  lmsForumPostsLast30Days?: number;
+  lmsActivities?: LmsActivity[]; // Optional: to store all raw activities for the institution
+  // Alumni and Enhanced Placement Metrics
+  alumni?: Alumnus[];
+  alumniActivities?: AlumniActivity[];
+  alumniEngagementScore?: number; // A calculated score e.g. 0-100
+  overallInternshipRate?: number;
+  totalCampusCompanies?: number;
+  allPlacementRecords?: PlacementRecord[]; // Add all placement records for detailed analysis
+  // Faculty & Research Metrics
+  allResearchProjects?: ResearchProject[];
+  avgTeachingHoursDelivered?: number;
+  overallCourseCompletionRate?: number;
+  totalActiveResearchProjects?: number;
+  // Grievance Metrics
+  allGrievanceTickets?: GrievanceTicket[];
+  grievanceCSAT?: number; // Percentage
+  sentimentDistribution?: { positive: number; neutral: number; negative: number; total: number };
 }

@@ -17,6 +17,9 @@ export interface GrievanceTicket {
   resolvedDate?: string;
   assignedToStaffId?: string;
   resolutionDetails?: string;
+  satisfactionRating?: 1 | 2 | 3 | 4 | 5;
+  resolutionFeedbackComment?: string;
+  mockSentiment?: 'Positive' | 'Neutral' | 'Negative';
 }
 
 // Re-evaluation System Types (existing)
@@ -83,4 +86,38 @@ export interface FacultyEvaluation {
   rating: number; // e.g., 1-5 or 1-10
   comments?: string;
   submissionDate: string; // ISO Date
+}
+
+// LMS Activity Types
+export type LmsActivityType = 'Login' | 'ResourceView' | 'ResourceDownload' | 'ForumPost' | 'ForumView' | 'QuizAttempt' | 'AssignmentSubmission';
+
+export interface LmsActivity {
+  activityId: string;
+  studentId: string;
+  activityType: LmsActivityType;
+  timestamp: string; // ISO Date string
+  courseId?: string; // Optional: if activity is course-specific
+  resourceId?: string; // e.g., ID of the downloaded file or viewed page
+  forumId?: string;
+  postId?: string;
+  quizId?: string;
+  assignmentId?: string;
+  durationMinutes?: number; // For activities like resource view or login session
+}
+
+// Research Project Types
+export interface ResearchProject {
+  projectId: string;
+  title: string;
+  principalInvestigatorId: string;
+  principalInvestigatorName: string;
+  departmentId?: string; // PI's department
+  status: 'Ongoing' | 'Completed' | 'Submitted' | 'Published' | 'OnHold';
+  startDate: string; // ISO Date
+  endDate?: string; // ISO Date
+  abstract?: string;
+  fundingAmount?: number;
+  fundingAgency?: string;
+  publications?: Array<{ title: string; journal?: string; year?: number; doi?: string }>;
+  teamMembers?: Array<{ facultyId?: string; studentId?: string; name: string; role: string }>;
 }
