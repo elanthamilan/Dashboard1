@@ -94,8 +94,8 @@ const AcademicYearList: React.FC<AcademicYearListProps> = ({ academicYears, onSe
           // Define conditions for highlighting
           const isLowGpa = year.overallAverageGPA !== undefined && year.overallAverageGPA < 2.7;
           const highAtRiskPercentage = year.totalAnnualAtRiskStudents !== undefined &&
-                                   year.totalStudents > 0 &&
-                                   (year.totalAnnualAtRiskStudents / year.totalStudents) * 100 > 10;
+                                   year.totalStudents && // Check for truthiness before division
+                                   (year.totalStudents > 0 ? (year.totalAnnualAtRiskStudents / year.totalStudents) * 100 : 0) > 10;
 
           const needsAttention = isLowGpa || highAtRiskPercentage;
 
@@ -204,7 +204,7 @@ const AcademicYearList: React.FC<AcademicYearListProps> = ({ academicYears, onSe
               </Button>
             </Card>
           </List.Item>
-        )}
+        )}}
       />
     </div>
   );

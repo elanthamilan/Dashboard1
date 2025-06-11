@@ -88,8 +88,8 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onComp
           // Define conditions for highlighting
           const isLowGpa = degree.averageDegreeGPA !== undefined && degree.averageDegreeGPA < 2.6;
           const highAtRiskPercentage = degree.totalAtRiskStudents !== undefined &&
-                                   degree.totalStudents > 0 &&
-                                   (degree.totalAtRiskStudents / degree.totalStudents) * 100 > 12;
+                                   degree.totalStudents && // Check for truthiness before division
+                                   (degree.totalStudents > 0 ? (degree.totalAtRiskStudents / degree.totalStudents) * 100 : 0) > 12;
 
           const needsAttention = isLowGpa || highAtRiskPercentage;
 
@@ -198,7 +198,7 @@ const DegreeList: React.FC<DegreeListProps> = ({ degrees, onSelectDegree, onComp
               </Button>
             </Card>
           </List.Item>
-        )}
+        )}}
       />
     </div>
   );

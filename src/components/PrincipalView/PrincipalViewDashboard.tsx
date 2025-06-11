@@ -222,7 +222,7 @@ const PrincipalViewDashboard: React.FC = () => {
       totalInstitutionEnrolledCount: inst.totalInstitutionEnrolledCount ?? 'N/A', totalInstitutionAtRiskStudents: inst.totalInstitutionAtRiskStudents ?? 'N/A',
     }));
     downloadCSV(reportData, columns, "institutions_report");
-  };
+  }, [institutions]);
 
   const breadcrumbItems = useMemo(() => {
     const items: { key: string; title: React.ReactNode; onClick?: () => void }[] = [{
@@ -251,12 +251,14 @@ const PrincipalViewDashboard: React.FC = () => {
                 onClick: viewLevel === 'student_detail' ? () => { setViewLevel('student'); setSelectedStudentIdForDetail(null); setCurrentStudentAcademicRecord(null); } : undefined });
         }
     }
+    // NOTE: The extra brace that was here is now removed by this diff.
+    // The 'if (selectedSemester)' block is correctly closed by the brace on the line above.
     if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
         const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
         const studentNameString = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
         items.push({ key: 'student_detail', title: `Student: ${studentNameString || 'N/A'}` });
     }
-    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key, }));
+    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key }));
   }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
 
 

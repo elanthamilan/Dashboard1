@@ -98,7 +98,9 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
           const isProblemProgramById = program.programId === "PSY_BS";
           const isLowGpa = program.averageProgramGPA !== undefined && program.averageProgramGPA < 2.5;
           const isLowGraduationRate = program.graduationRate !== undefined && program.graduationRate < 60;
-          const highAtRiskPercentage = program.atRiskStudents !== undefined && program.totalStudents > 0 && (program.atRiskStudents / program.totalStudents) * 100 > 15;
+          const highAtRiskPercentage = program.atRiskStudents !== undefined &&
+                                   program.totalStudents && // Check for truthiness before division
+                                   (program.totalStudents > 0 ? (program.atRiskStudents / program.totalStudents) * 100 : 0) > 15;
 
           const needsAttention = isProblemProgramById || isLowGpa || isLowGraduationRate || highAtRiskPercentage;
 
@@ -234,7 +236,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
               </Row>
             </Card>
           </List.Item>
-        )}
+        )}}
       />
     </div>
   );
