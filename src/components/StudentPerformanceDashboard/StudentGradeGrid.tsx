@@ -45,7 +45,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
   }
 
   // For nested paths like 'grade.letterGrade'
-  const fieldName = dataIndex.includes('.') ? dataIndex.split('.') as [string, string] : dataIndex;
+  let fieldName: string | string[] = dataIndex as string; // Initialize with type assertion if confident it's string based on upstream logic
+  if (typeof dataIndex === 'string' && dataIndex.includes('.')) {
+    fieldName = dataIndex.split('.'); // This will be string[] which is fine for Form.Item name
+  } else {
+    fieldName = dataIndex as string; // Ensure it's string if not split
+  }
 
   return (
     <td {...restProps}>

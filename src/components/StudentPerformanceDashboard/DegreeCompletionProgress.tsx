@@ -52,7 +52,7 @@ const DegreeCompletionProgress: React.FC<DegreeCompletionProgressProps> = ({ stu
     <Card
         title={t('studentPerformanceDashboard.progress.title', 'Degree Completion Progress')}
         style={{ minHeight: 200 }}
-        headStyle={{borderBottom: 0}} // Optional: remove border under title for cleaner look
+        styles={{ header: { borderBottom: 0 } }} // Optional: remove border under title for cleaner look
     >
       <Row gutter={[16,16]} align="middle" justify="center" style={{textAlign: 'center'}}>
         <Col span={24}>
@@ -60,7 +60,7 @@ const DegreeCompletionProgress: React.FC<DegreeCompletionProgressProps> = ({ stu
                 type="dashboard" // or "circle" or "line"
                 percent={progressData.percent}
                 status={progressData.status as ('success' | 'normal' | 'active' | 'exception')}
-                width={120} // Adjust size of dashboard/circle
+                size={120} // Adjust size of dashboard/circle - REPLACED width with size
                 format={(percent) => (
                     <div style={{textAlign: 'center'}}>
                         <Text style={{fontSize: '24px', fontWeight: 'bold'}}>{`${percent}%`}</Text><br/>
