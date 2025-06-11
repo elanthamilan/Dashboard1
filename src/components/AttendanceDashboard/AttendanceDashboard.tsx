@@ -38,7 +38,7 @@ const { RangePicker } = DatePicker;
 
 const MOCK_STUDENT_COUNT = 300;
 const MOCK_CLASS_COUNT = 10;
-const MOCK_ATTENDANCE_DAYS = 90;
+const MOCK_ATTENDANCE_DAYS = 365;
 
 const AttendanceDashboard: React.FC = () => {
   const { t } = useTranslation();
@@ -54,7 +54,7 @@ const AttendanceDashboard: React.FC = () => {
   // Filter states
   const [selectedStudentId, setSelectedStudentId] = useState<string | undefined>(undefined);
   const [selectedClassId, setSelectedClassId] = useState<string | undefined>(undefined);
-  const [selectedDateRange, setSelectedDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
+  const [selectedDateRange, setSelectedDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>([dayjs().subtract(89, 'days').startOf('day'), dayjs().endOf('day')]);
 
   useEffect(() => {
     setLoading(true);

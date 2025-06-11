@@ -80,5 +80,37 @@ export const generateMockAttendanceRecords = (students: Student[], classes: Scho
       });
     }
   });
+
+  // Generate records for "today"
+  const today = dayjs();
+  const numberOfStudentsForToday = Math.max(1, Math.floor(students.length * 0.05)); // e.g., 5% of students, at least 1
+  const studentsForToday = faker.helpers.arrayElements(students, numberOfStudentsForToday);
+
+  studentsForToday.forEach(student => {
+    const studentClassesToday = faker.helpers.arrayElements(classes, faker.number.int({ min: 1, max: 2 })); // 1-2 classes for today
+    studentClassesToday.forEach(cls => {
+      const status = faker.helpers.arrayElement(ATTENDANCE_STATUSES);
+      let absenceReason: string | undefined = undefined;
+      if (status === 'Absent' || status === 'Excused') {
+        absenceReason = faker.helpers.arrayElement(ABSENCE_REASONS);
+      }
+      if (status === 'Late' && Math.random() < 0.3) {
+        absenceReason = faker.helpers.arrayElement(['Traffic', 'Overslept']);
+      }
+
+      records.push({
+        id: `ATTREC-${String(recordIdCounter++).padStart(6, '0')}`,
+        studentId: student.id,
+        classId: cls.id,
+        date: today.toISOString(),
+        status,
+        absenceReason,
+        notes: (status === 'Absent' || status === 'Late') && Math.random() < 0.5 ? faker.lorem.sentence(3) : undefined,
+        recordedBy: `USR-${faker.number.int({min:1, max:5})}`,
+        recordedAt: today.subtract(faker.number.int({min:0, max:3}), 'hour').toISOString(), // Recorded sometime today
+      });
+    });
+  });
+
   return records;
 };
