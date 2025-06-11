@@ -7,12 +7,12 @@ import NewApplicationForm from './NewApplicationForm';
 import { generateMockApplicants, generateMockKeyDeadlines } from '../../utils/mockData/admissions/generateMockApplicants'; // Import generateMockKeyDeadlines
 import ApplicantFunnelChart from './ApplicantFunnelChart';
 import KeyDeadlinesTimeline from './KeyDeadlinesTimeline';
+import EnrollmentByCategoryChart from './EnrollmentByCategoryChart'; // Import the new chart
+import ApplicationTrendsChart from './ApplicationTrendsChart'; // Import the new trends chart
+import ApplicantDemographicsChart from './ApplicantDemographicsChart'; // Import the new demographics chart
 import ApplicantTable from './ApplicantTable'; // Import the new component
 import ApplicantDetailModal from './ApplicantDetailModal'; // Import the new component
 
-
-// Placeholders for components from other steps remain the same for now
-const ApplicantOriginMapPlaceholder: React.FC = () => <Card style={{marginTop: '16px'}}><Typography.Text>Applicant Origin Map Placeholder</Typography.Text></Card>;
 
 // Updated KpiCard to use Ant Design Statistic
 const KpiCard: React.FC<{ title: string; value: string | number; precision?: number; suffix?: string; loading?: boolean }> = ({ title, value, precision, suffix, loading }) => (
@@ -79,42 +79,50 @@ const AdmissionsDashboard: React.FC = () => {
         totalApplicants: 0,
         shortlistedCount: 0,
         offersMadeCount: 0,
-        acceptedCount: 0,
-        conversionRate: 0, // Accepted / Total Applied
+        acceptedCount: 0, // This might be Offer Accepted
+        conversionRate: 0,
+        totalEnrolled: 0,
+        acceptanceRate: 0,
+        yieldRate: 0,
       };
     }
 
     const totalApplicants = applicants.length;
-    // Example: 'Screened' could be an equivalent to old 'Shortlisted' for KPI display purposes.
-    // Or we define KPIs based on the new funnel explicitly.
-    // Let's assume 'Screened' and beyond are "past initial review".
-    const pastScreeningCount = applicants.filter(a =>
-      ['Screened', 'Interview Scheduled', 'Interview Complete', 'Offer Made', 'Offer Accepted', 'Enrollment Confirmed'].includes(a.status)
-    ).length;
+
+    const screenedCount = applicants.filter(a => a.status === 'Screened').length;
+
     const offersMadeCount = applicants.filter(a =>
       ['Offer Made', 'Offer Accepted', 'Enrollment Confirmed'].includes(a.status)
     ).length;
-    const acceptedCount = applicants.filter(a => // Offer Accepted or Enrollment Confirmed
-      ['Offer Accepted', 'Enrollment Confirmed'].includes(a.status)
+
+    // 'acceptedCount' could specifically mean 'Offer Accepted' before final enrollment.
+    // For conversion rate, it often means offers accepted. Let's stick to that.
+    const acceptedOfferCount = applicants.filter(a =>
+        a.status === 'Offer Accepted' || a.status === 'Enrollment Confirmed'
     ).length;
 
-    const conversionRate = totalApplicants > 0 ? (acceptedCount / totalApplicants) * 100 : 0;
+    const totalEnrolled = applicants.filter(a => a.status === 'Enrollment Confirmed').length;
 
-    // Placeholder for Avg Processing Time - requires more specific date logic
-    // For now, mock it or leave it out.
-    // const avgProcessingTime = ...;
+    // Conversion Rate: (Offers Accepted / Total Applicants) * 100
+    // Or, if "acceptedCount" was meant to be "Enrolled" for conversion, then it's (Total Enrolled / Total Applicants)
+    // Let's assume conversion rate is based on offers accepted.
+    const conversionRate = totalApplicants > 0 ? (acceptedOfferCount / totalApplicants) * 100 : 0;
 
-    // For "Shortlisted" KPI, if 'Screened' is the new equivalent:
-    const screenedCount = applicants.filter(a => a.status === 'Screened').length;
+    // Acceptance Rate: (Offers Made / Total Applicants) * 100
+    const acceptanceRate = totalApplicants > 0 ? (offersMadeCount / totalApplicants) * 100 : 0;
 
+    // Yield Rate: (Total Enrolled / Offers Made) * 100
+    const yieldRate = offersMadeCount > 0 ? (totalEnrolled / offersMadeCount) * 100 : 0;
 
     return {
       totalApplicants,
-      // shortlistedCount: pastScreeningCount, // Or screenedCount specifically
-      shortlistedCount: screenedCount, // Using 'Screened' as a direct KPI now
+      shortlistedCount: screenedCount,
       offersMadeCount,
-      acceptedCount,
+      acceptedCount: acceptedOfferCount, // Renaming to acceptedOfferCount internally for clarity, prop remains acceptedCount
       conversionRate,
+      totalEnrolled,
+      acceptanceRate,
+      yieldRate,
     };
   }, [applicants]);
 
@@ -161,6 +169,25 @@ const AdmissionsDashboard: React.FC = () => {
           suffix="%"
           loading={loading}
         />
+        <KpiCard
+          title={t('admissionsDashboard.kpi.totalEnrolled', 'Total Enrolled')}
+          value={kpiData.totalEnrolled}
+          loading={loading}
+        />
+        <KpiCard
+          title={t('admissionsDashboard.kpi.acceptanceRate', 'Acceptance Rate')}
+          value={kpiData.acceptanceRate}
+          precision={1}
+          suffix="%"
+          loading={loading}
+        />
+        <KpiCard
+          title={t('admissionsDashboard.kpi.yieldRate', 'Yield Rate')}
+          value={kpiData.yieldRate}
+          precision={1}
+          suffix="%"
+          loading={loading}
+        />
       </Row>
 
       {/* Charts and Table Section (Placeholders remain) */}
@@ -172,7 +199,19 @@ const AdmissionsDashboard: React.FC = () => {
           <KeyDeadlinesTimeline deadlines={keyDeadlines} loading={loading} />
         </Col>
         <Col xs={24} md={12} lg={8}>
-          <ApplicantOriginMapPlaceholder />
+          <EnrollmentByCategoryChart applicants={applicants} loading={loading} />
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+        <Col span={24}>
+          <ApplicationTrendsChart applicants={applicants} loading={loading} />
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: '24px' }}>
+        <Col span={24}>
+          <ApplicantDemographicsChart applicants={applicants} loading={loading} />
         </Col>
       </Row>
 
