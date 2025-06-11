@@ -14,12 +14,13 @@ import ProgramList from './ProgramList';
 import SemesterList from './SemesterList';
 import StudentSummaryList from './StudentSummaryList';
 import PrincipalStudentDetailView from './PrincipalStudentDetailView'; // Added import
+import InstitutionOverviewDisplay from './InstitutionOverviewDisplay'; // Import the new component
 import ComparisonModal, { ComparisonItem } from './ComparisonModal';
 import { downloadCSV } from '../../utils/exportUtils';
 
 const { Title } = Typography;
 
-type ViewLevel = 'institution' | 'academic_year' | 'degree' | 'program' | 'semester' | 'student' | 'student_detail';
+type ViewLevel = 'institution' | 'institution_overview' | 'academic_year' | 'degree' | 'program' | 'semester' | 'student' | 'student_detail';
 
 interface ComparisonModalProps {
   items: ComparisonItem[];
@@ -94,10 +95,17 @@ const PrincipalViewDashboard: React.FC = () => {
     const institution = institutions.find(inst => inst.institutionId === institutionId);
     if (institution) {
       setSelectedInstitution(institution);
-      resetSelections('academic_year');
+      resetSelections('institution_overview'); // Clear selections beyond institution itself for the overview
+      setViewLevel('institution_overview');
+    }
+  }, [institutions]);
+
+  const handleNavigateToAcademicYearsFromOverview = useCallback(() => {
+    if (selectedInstitution) { // Should always be true if we are in overview
+      resetSelections('academic_year'); // Clear selections beyond academic_year for a clean start
       setViewLevel('academic_year');
     }
-  }, [institutions]); // resetSelections and setSelectedInstitution/setViewLevel are stable
+  }, [selectedInstitution]);
 
   const handleSelectAcademicYear = useCallback((academicYearId: string) => {
     if (selectedInstitution) {
@@ -230,30 +238,32 @@ const PrincipalViewDashboard: React.FC = () => {
         onClick: () => { resetSelections('institution'); setViewLevel('institution');}
     }];
     if (selectedInstitution) {
-      items.push({ key: 'institution', title: selectedInstitution.institutionName,
-        onClick: viewLevel !== 'academic_year' ? () => { resetSelections('academic_year'); setViewLevel('academic_year'); } : undefined });
+      items.push({
+        key: 'institution',
+        title: selectedInstitution.institutionName,
+        onClick: () => { resetSelections('institution_overview'); setViewLevel('institution_overview'); }
+      });
     }
-    if (selectedAcademicYear) {
+    // Subsequent breadcrumbs only if not on institution_overview
+    if (viewLevel !== 'institution_overview' && selectedAcademicYear) {
       items.push({ key: 'academic_year', title: selectedAcademicYear.yearName,
         onClick: viewLevel !== 'degree' ? () => { resetSelections('degree'); setViewLevel('degree'); } : undefined });
     }
-    if (selectedDegree) {
+    if (viewLevel !== 'institution_overview' && selectedDegree) {
       items.push({ key: 'degree', title: selectedDegree.degreeName,
         onClick: viewLevel !== 'program' ? () => { resetSelections('program'); setViewLevel('program'); } : undefined });
     }
-    if (selectedProgram) {
+    if (viewLevel !== 'institution_overview' && selectedProgram) {
       items.push({ key: 'program', title: selectedProgram.programName,
         onClick: viewLevel !== 'semester' ? () => { resetSelections('semester'); setViewLevel('semester'); } : undefined });
     }
-    if (selectedSemester) {
+    if (viewLevel !== 'institution_overview' && selectedSemester) {
         if (viewLevel === 'student' || viewLevel === 'student_detail') {
             items.push({ key: 'semester', title: selectedSemester.termName,
                 onClick: viewLevel === 'student_detail' ? () => { setViewLevel('student'); setSelectedStudentIdForDetail(null); setCurrentStudentAcademicRecord(null); } : undefined });
         }
     }
-    // NOTE: The extra brace that was here is now removed by this diff.
-    // The 'if (selectedSemester)' block is correctly closed by the brace on the line above.
-    if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
+    if (viewLevel === 'student_detail' && selectedStudentIdForDetail && viewLevel !== 'institution_overview') {
         const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
         const studentNameString = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
         items.push({ key: 'student_detail', title: `Student: ${studentNameString || 'N/A'}` });
@@ -273,6 +283,9 @@ const PrincipalViewDashboard: React.FC = () => {
     currentDisplayTitle = "Institutions";
     content = institutions.map((inst: Institution) => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
     if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
+  } else if (selectedInstitution && viewLevel === 'institution_overview') {
+    currentDisplayTitle = ""; // Title is handled within InstitutionOverviewDisplay
+    content = ( <InstitutionOverviewDisplay institution={selectedInstitution} onNavigateToAcademicYears={handleNavigateToAcademicYearsFromOverview} /> );
   } else if (selectedInstitution && viewLevel === 'academic_year') {
     currentDisplayTitle = selectedInstitution.institutionName;
     content = ( <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} onCompareAcademicYears={handleOpenAcademicYearComparisonModal} /> );
