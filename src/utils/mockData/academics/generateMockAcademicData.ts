@@ -103,7 +103,7 @@ const getRandomEnrollmentStatus = (): StudentSummary['enrollmentStatus'] => {
 };
 
 export const generateMockStudentSummary = (student: Student, studentAcademicRecord: StudentAcademicRecord): StudentSummary & { attendanceRate?: number; atRiskStatus?: 'Low' | 'Medium' | 'High' | 'None' }=> {
-    const attendanceRate = faker.number.float({ min: 70, max: 100, precision: 1 });
+    const attendanceRate = faker.number.float({ min: 70, max: 100, multipleOf: 0.1 }); // precision: 1 changed to multipleOf: 0.1
     let atRiskStatus: 'Low' | 'Medium' | 'High' | 'None' = 'None'; // Default to None or Low
     const gpa = studentAcademicRecord.cumulativeGPA;
 
@@ -384,7 +384,7 @@ export const generateMockSemester = (
 
     return {
         termId: term.termId,
-        semesterName: term.termName,
+        termName: term.termName, // Corrected from semesterName to termName
         startDate: term.startDate,
         endDate: term.endDate,
         courses: term.courses,
@@ -465,7 +465,7 @@ export const generateMockProgram = (
     const graduatedStudents = programStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated').length;
     const eligibleForGraduation = programStudentSummaries.filter(s => s.totalCreditsEarned && s.totalCreditsEarned >= requiredCredits).length;
     // Base graduation rate on those who have graduated out of those who were eligible or are still active.
-    const graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, precision: 2 });
+    const graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, multipleOf: 0.01 }); // precision: 2 changed to multipleOf: 0.01
 
 
     return {

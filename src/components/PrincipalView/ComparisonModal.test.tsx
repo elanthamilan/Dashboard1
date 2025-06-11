@@ -72,20 +72,20 @@ describe('ComparisonModal', () => {
   });
 
   it('should render correctly with title when visible (open) is true', () => {
-    render(<ComparisonModal visible={true} items={mockProgramItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={true} items={mockProgramItems} onClose={mockOnClose} />);
     expect(screen.getByText('Comparison View')).toBeVisible();
   });
 
   it('should not render visible content when visible (open) is false', () => {
     // AntD Modal when not visible is typically not in the DOM or display:none.
     // queryByText will return null if not found, which is expected.
-    render(<ComparisonModal visible={false} items={mockProgramItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={false} items={mockProgramItems} onClose={mockOnClose} />);
     expect(screen.queryByText('Comparison View')).not.toBeInTheDocument();
   });
 
 
   it('should display common KPIs for program items', () => {
-    render(<ComparisonModal visible={true} items={mockProgramItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={true} items={mockProgramItems} onClose={mockOnClose} />);
     expect(screen.getByRole('columnheader', { name: 'Name' })).toBeVisible();
     expect(screen.getByRole('columnheader', { name: 'Total Students' })).toBeVisible();
     expect(screen.getByRole('columnheader', { name: 'Average GPA' })).toBeVisible();
@@ -98,7 +98,7 @@ describe('ComparisonModal', () => {
   });
 
   it('should display program-specific columns (Required Credits, Graduation Rate) for Program type items', () => {
-    render(<ComparisonModal visible={true} items={mockProgramItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={true} items={mockProgramItems} onClose={mockOnClose} />);
     expect(screen.getByRole('columnheader', { name: 'Required Credits' })).toBeVisible();
     expect(screen.getByRole('columnheader', { name: 'Graduation Rate (%)' })).toBeVisible();
 
@@ -107,7 +107,7 @@ describe('ComparisonModal', () => {
   });
 
   it('should NOT display program-specific columns for non-Program type items (e.g., Degree)', () => {
-    render(<ComparisonModal visible={true} items={mockDegreeItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={true} items={mockDegreeItems} onClose={mockOnClose} />);
     expect(screen.queryByRole('columnheader', { name: 'Required Credits' })).not.toBeInTheDocument();
     expect(screen.queryByRole('columnheader', { name: 'Graduation Rate (%)' })).not.toBeInTheDocument();
 
@@ -116,14 +116,14 @@ describe('ComparisonModal', () => {
   });
 
   it('should call onClose when the Ant Design close button (x) is clicked', async () => {
-    render(<ComparisonModal visible={true} items={mockProgramItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={true} items={mockProgramItems} onClose={mockOnClose} />);
     const closeButton = screen.getByLabelText('Close', { selector: 'button' }); // AntD modal close button has aria-label="Close"
     await userEvent.click(closeButton);
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 
   it('should render N/A for undefined optional common KPIs for Degree items', () => {
-    render(<ComparisonModal visible={true} items={mockDegreeItems} onClose={mockOnClose} />);
+    render(<ComparisonModal open={true} items={mockDegreeItems} onClose={mockOnClose} />);
 
     const degreeRow = screen.getByText(mockDegreeItems[0].name).closest('tr');
     expect(degreeRow).not.toBeNull();

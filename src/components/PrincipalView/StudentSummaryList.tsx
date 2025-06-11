@@ -95,7 +95,14 @@ const StudentSummaryList: React.FC<StudentSummaryListProps> = ({ students, onSel
       width: 120,
       fixed: 'right',
       render: (_: any, record?: StudentSummaryWithDetails) => (
-        <Button type="link" onClick={() => onSelectStudent?.(record?.studentId)}>
+        <Button
+          type="link"
+          onClick={() => {
+            if (record && record.studentId) {
+              onSelectStudent(record.studentId);
+            }
+          }}
+        >
           View Details
         </Button>
       ),

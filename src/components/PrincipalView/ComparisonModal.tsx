@@ -34,13 +34,13 @@ export interface ComparisonItem {
 }
 
 interface ComparisonModalProps {
-  visible: boolean;
+  open: boolean; // Changed from visible to open
   items: ComparisonItem[];
   onClose: () => void;
 }
 
-const ComparisonModal: React.FC<ComparisonModalProps> = ({ visible, items, onClose }) => {
-  if (items.length === 0 && visible) {
+const ComparisonModal: React.FC<ComparisonModalProps> = ({ open, items, onClose }) => { // Changed from visible to open
+  if (items.length === 0 && open) { // Changed from visible to open
     onClose();
     return null;
   }
@@ -159,7 +159,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ visible, items, onClo
   return (
     <Modal
       title={<Title level={4}>Comparison View</Title>}
-      open={visible}
+      open={open} // Changed from visible to open
       onCancel={onClose}
       footer={null}
       width={1200} // Adjusted width for more columns
