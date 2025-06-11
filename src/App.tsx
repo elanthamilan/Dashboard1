@@ -5,6 +5,7 @@ import { ConfigProvider } from 'antd'; // Import Ant Design's ConfigProvider
 import enUS from 'antd/locale/en_US'; // Ant Design English locale
 import esES from 'antd/locale/es_ES'; // Ant Design Spanish locale
 import { useTranslation } from 'react-i18next'; // To get current language
+import { GlobalFilterProvider } from './contexts/GlobalFilterContext'; // Import the provider
 
 // Basic CSS reset / global styles (optional, can be expanded)
 import './App.css'; // Create this file if it doesn't exist
@@ -17,9 +18,11 @@ const App: React.FC = () => {
 
   return (
     <ConfigProvider locale={antdLocale}>
-      <React.Suspense fallback="Loading..."> {/* Recommended for i18next */}
-        <AppRouter />
-      </React.Suspense>
+      <GlobalFilterProvider>
+        <React.Suspense fallback="Loading..."> {/* Recommended for i18next */}
+          <AppRouter />
+        </React.Suspense>
+      </GlobalFilterProvider>
     </ConfigProvider>
   );
 };

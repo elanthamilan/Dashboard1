@@ -1,4 +1,46 @@
 {
+  "filters": {
+    "academicYear": "Academic Year",
+    "selectAcademicYear": "Select Year",
+    "campus": "Campus",
+    "selectCampus": "Select Campus",
+    "degreeType": "Degree Type",
+    "selectDegreeType": "Select Degree Type",
+    "department": "Department",
+    "selectDepartment": "Select Department",
+    "dateRange": "Date Range",
+    "clear": "Clear Filters"
+  },
+  "kpi": {
+    "totalEnrollments": {
+      "title": "Total Enrollments",
+      "tooltip": "Total number of actively enrolled students across all programs and campuses."
+        },
+        "feeCollection": {
+          "title": "Fee Collection",
+          "tooltip": "Percentage of total invoiced fees that have been collected."
+        },
+        "avgAttendance": {
+          "title": "Average Attendance",
+          "tooltip": "Average student attendance rate across all recorded sessions."
+        },
+        "dropoutRate": {
+          "title": "Dropout Rate",
+          "tooltip": "Percentage of students who became inactive (not due to graduation) out of potentially active students."
+        },
+        "academicPassRate": {
+          "title": "Academic Pass Rate",
+          "tooltip": "Percentage of students with a Cumulative GPA of 2.0 or higher."
+        },
+        "reEvaluationTrends": {
+          "title": "Re-evaluation Trends",
+          "tooltip": "Trends in grade re-evaluations or changes. (Data N/A)"
+        },
+        "placementSuccessRate": {
+          "title": "Placement Success Rate",
+          "tooltip": "Percentage of eligible (graduated) students who secured full-time placement."
+    }
+  },
   "appTitle": "Student Information System",
   "nav": {
     "home": "Home",

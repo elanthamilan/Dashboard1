@@ -1,4 +1,46 @@
 {
+  "filters": {
+    "academicYear": "Año Académico",
+    "selectAcademicYear": "Seleccionar Año",
+    "campus": "Campus",
+    "selectCampus": "Seleccionar Campus",
+    "degreeType": "Tipo de Título",
+    "selectDegreeType": "Seleccionar Tipo de Título",
+    "department": "Departamento",
+    "selectDepartment": "Seleccionar Departamento",
+    "dateRange": "Rango de Fechas",
+    "clear": "Limpiar Filtros"
+  },
+  "kpi": {
+    "totalEnrollments": {
+      "title": "Matrículas Totales",
+      "tooltip": "Número total de estudiantes matriculados activamente en todos los programas y campus."
+        },
+        "feeCollection": {
+          "title": "Recaudación de Tasas",
+          "tooltip": "Porcentaje del total de tasas facturadas que han sido recaudadas."
+        },
+        "avgAttendance": {
+          "title": "Asistencia Promedio",
+          "tooltip": "Tasa de asistencia promedio de los estudiantes en todas las sesiones registradas."
+        },
+        "dropoutRate": {
+          "title": "Tasa de Abandono",
+          "tooltip": "Porcentaje de estudiantes que se volvieron inactivos (no por graduación) del total de estudiantes potencialmente activos."
+        },
+        "academicPassRate": {
+          "title": "Tasa de Aprobación Académica",
+          "tooltip": "Porcentaje de estudiantes con un GPA acumulado de 2.0 o superior."
+        },
+        "reEvaluationTrends": {
+          "title": "Tendencias de Reevaluación",
+          "tooltip": "Tendencias en las reevaluaciones o cambios de calificación. (Datos N/D)"
+        },
+        "placementSuccessRate": {
+          "title": "Tasa de Éxito en Colocación",
+          "tooltip": "Porcentaje de estudiantes elegibles (graduados) que aseguraron una colocación a tiempo completo."
+    }
+  },
   "appTitle": "Sistema de Información Estudiantil",
   "nav": {
     "home": "Inicio",

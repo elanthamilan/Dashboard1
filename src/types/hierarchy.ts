@@ -1,4 +1,7 @@
 import { Term, CourseEnrollment } from '../components/StudentPerformanceDashboard/types';
+import { PlacementRecord } from './placement';
+import { ReEvaluationRequest } from './academics';
+import { Department } from './departments';
 
 export interface StudentSummary {
   studentId: string;
@@ -9,6 +12,7 @@ export interface StudentSummary {
   cumulativeGPA?: number;
   totalCreditsEarned?: number;
   enrollmentStatus?: 'Active' | 'Inactive' | 'Graduated';
+  expectedGraduationDate?: string;
 }
 
 export interface Semester extends Term {
@@ -25,7 +29,8 @@ export interface Semester extends Term {
 export interface Program {
   programId: string;
   programName: string;
-  degreeId: string;
+  degreeId: string; // This might become optional or change if a Program is primarily linked to a Department
+  departmentId?: string; // Program now belongs to a department
   requiredCredits?: number;
   semesters: Semester[];
   totalStudents?: number;
@@ -41,6 +46,10 @@ export interface Program {
   enrolledCount?: number;
   gradeDistribution?: { [gradeCategory: string]: number };
   atRiskStudents?: number;
+  placementRate?: number;
+  averagePackage?: number;
+  totalPlacedStudents?: number;
+  totalInternships?: number;
 }
 
 export interface Degree {
@@ -59,6 +68,10 @@ export interface Degree {
   totalEnrolledCount?: number;
   overallGradeDistribution?: { [gradeCategory: string]: number };
   totalAtRiskStudents?: number;
+  placementRate?: number;
+  averagePackage?: number;
+  totalPlacedStudents?: number;
+  totalInternships?: number;
 }
 
 export interface AcademicYear {
@@ -79,6 +92,10 @@ export interface AcademicYear {
   totalAnnualEnrolledCount?: number;
   annualGradeDistribution?: { [gradeCategory: string]: number };
   totalAnnualAtRiskStudents?: number;
+  placementRate?: number;
+  averagePackage?: number;
+  totalPlacedStudents?: number;
+  totalInternships?: number;
 }
 
 export interface Institution {
@@ -97,4 +114,11 @@ export interface Institution {
   totalInstitutionEnrolledCount?: number;
   institutionGradeDistribution?: { [gradeCategory: string]: number };
   totalInstitutionAtRiskStudents?: number;
+  overallPlacementRate?: number;
+  overallAveragePackage?: number;
+  overallTotalPlacedStudents?: number;
+  overallTotalInternships?: number;
+  pendingReEvaluationsCount?: number;
+  totalReEvaluationsLastMonth?: number;
+  departments?: Department[]; // Institution has a list of departments
 }

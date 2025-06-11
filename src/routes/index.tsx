@@ -5,7 +5,7 @@ import { AdmissionsDashboard } from '../components/AdmissionsDashboard';
 import { AttendanceDashboard } from '../components/AttendanceDashboard';
 import { BillingDashboard } from '../components/BillingDashboard';
 import { StudentPerformanceDashboard } from '../components/StudentPerformanceDashboard';
-import PrincipalViewDashboard from '../components/PrincipalView/PrincipalViewDashboard'; // Added import
+import PrincipalDashboardLandingPage from '../components/PrincipalView/PrincipalDashboardLandingPage'; // New import
 
 const router = createBrowserRouter([
   {
@@ -30,7 +30,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/principal-view', // New Route
-    element: <MainLayout><PrincipalViewDashboard /></MainLayout>,
+    element: <MainLayout><PrincipalDashboardLandingPage /></MainLayout>,
   },
   {
     path: '*',
