@@ -9,6 +9,7 @@ import {
 } from '@ant-design/icons';
 import { useGlobalFilters } from '../../contexts/GlobalFilterContext';
 import { generateMockInstitutions } from '../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { Institution, StudentSummary, Department } from '../../types/hierarchy'; // Added Department
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
@@ -26,7 +27,8 @@ const PrincipalDashboardLandingPage: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     try {
-      const data = generateMockInstitutions(500, 3, 50);
+      const tempStudents = generateMockStudents(500);
+      const data = generateMockInstitutions(tempStudents, 3, 50);
       if (data && data.length > 0) {
         setInstitutionData(data[0]);
       } else {
