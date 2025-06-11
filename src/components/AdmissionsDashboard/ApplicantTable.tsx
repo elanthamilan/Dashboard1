@@ -19,21 +19,15 @@ interface ApplicantTableProps {
 // Helper for status colors
 const getStatusColor = (status: ApplicationStatus): string => {
   switch (status) {
-    case 'Accepted':
+    case 'Offer Accepted':
     case 'Enrollment Confirmed':
       return 'green';
-    case 'Offered':
+    case 'Offer Made':
       return 'cyan';
     case 'Interview Scheduled':
       return 'blue';
-    case 'Shortlisted':
-      return 'geekblue';
     case 'Applied':
       return 'processing';
-    case 'Rejected':
-      return 'error';
-    case 'Waitlisted':
-      return 'warning';
     case 'Application Withdrawn':
       return 'default';
     default:
@@ -42,7 +36,7 @@ const getStatusColor = (status: ApplicationStatus): string => {
 };
 
 const applicationStatusesForFilter: ApplicationStatus[] = [
-  'Applied', 'Shortlisted', 'Interview Scheduled', 'Offered', 'Accepted', 'Rejected', 'Waitlisted', 'Enrollment Confirmed', 'Application Withdrawn'
+  'Applied', 'Interview Scheduled', 'Offer Made', 'Offer Accepted', 'Enrollment Confirmed', 'Application Withdrawn'
 ];
 
 

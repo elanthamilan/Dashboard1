@@ -17,13 +17,10 @@ interface ApplicantDetailModalProps {
 // Helper for status colors (can be imported from ApplicantTable or a shared util if desired)
 const getStatusColor = (status: ApplicationStatus): string => {
   switch (status) {
-    case 'Accepted': case 'Enrollment Confirmed': return 'green';
-    case 'Offered': return 'cyan';
+    case 'Offer Accepted': case 'Enrollment Confirmed': return 'green';
+    case 'Offer Made': return 'cyan';
     case 'Interview Scheduled': return 'blue';
-    case 'Shortlisted': return 'geekblue';
     case 'Applied': return 'processing';
-    case 'Rejected': return 'error';
-    case 'Waitlisted': return 'warning';
     case 'Application Withdrawn': return 'default';
     default: return 'default';
   }
@@ -135,7 +132,7 @@ const ApplicantDetailModal: React.FC<ApplicantDetailModalProps> = ({ applicant, 
         {/* Mock Status Change Section */}
         <TabPane tab={<><SolutionOutlined /> {t('applicantDetailModal.tabs.statusActions', 'Status & Actions')}</>} key="statusActions">
             <Card title={t('applicantDetailModal.statusActions.currentStatus', 'Current Status')}>
-                <Tag icon={ applicant.status === 'Accepted' || applicant.status === 'Enrollment Confirmed' ? <CheckCircleOutlined/> : applicant.status === 'Rejected' ? <CloseCircleOutlined/> : <IssuesCloseOutlined />}
+                <Tag icon={ applicant.status === 'Offer Accepted' || applicant.status === 'Enrollment Confirmed' ? <CheckCircleOutlined/> : <IssuesCloseOutlined />}
                      color={getStatusColor(applicant.status)} style={{fontSize: '16px', padding: '5px 10px'}}>
                     {t(`applicationStatus.${applicant.status}`, applicant.status)}
                 </Tag>

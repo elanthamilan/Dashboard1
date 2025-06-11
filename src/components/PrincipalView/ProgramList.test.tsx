@@ -79,8 +79,8 @@ describe('ProgramList', () => {
 
     const program1Card = screen.getByText(mockPrograms[0].programName).closest('.ant-card');
     expect(program1Card).not.toBeNull();
-    expect(within(program1Card!).getByText(mockPrograms[0].totalStudents!.toString())).toBeVisible();
-    expect(within(program1Card!).getByText(mockPrograms[0].averageProgramGPA!.toFixed(2))).toBeVisible();
+    expect(within(program1Card as HTMLElement).getByText(mockPrograms[0].totalStudents!.toString())).toBeVisible();
+    expect(within(program1Card as HTMLElement).getByText(mockPrograms[0].averageProgramGPA!.toFixed(2))).toBeVisible();
   });
 
   it('should display "no programs" message when programs array is empty', () => {
@@ -166,7 +166,7 @@ describe('ProgramList', () => {
 
     const program1CardBody = screen.getByText(mockPrograms[0].programName).closest('.ant-card')?.querySelector('.ant-card-body');
     expect(program1CardBody).not.toBeNull();
-    const pdfButton = within(program1CardBody!).getByRole('button', { name: /Export PDF Summary/i });
+    const pdfButton = within(program1CardBody as HTMLElement).getByRole('button', { name: /Export PDF Summary/i }) as HTMLElement;
 
     await user.click(pdfButton);
     expect(require('../../utils/exportUtils').downloadProgramSummaryPDF).toHaveBeenCalledTimes(1);
@@ -188,7 +188,7 @@ describe('ProgramList', () => {
     );
     const program1CardBody = screen.getByText(mockPrograms[0].programName).closest('.ant-card')?.querySelector('.ant-card-body');
     expect(program1CardBody).not.toBeNull();
-    const viewSemestersButton = within(program1CardBody!).getByRole('button', { name: /View Semesters/i });
+    const viewSemestersButton = within(program1CardBody as HTMLElement).getByRole('button', { name: /View Semesters/i }) as HTMLElement;
 
     await user.click(viewSemestersButton);
     expect(mockOnSelectProgram).toHaveBeenCalledTimes(1);

@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event'; // For simulating user interactions like close
+import '@testing-library/jest-dom/extend-expect';
 import ComparisonModal, { ComparisonItem, ComparisonItemType } from './ComparisonModal'; // Adjust path if necessary
 import '@testing-library/jest-dom'; // For extended matchers like .toBeVisible()
 
