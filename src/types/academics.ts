@@ -62,3 +62,25 @@ export interface AccreditationStatusSummary {
   nextMajorReviewCycle: string;
   applicationStatus?: 'Submitted' | 'Queried' | 'Visit Scheduled' | 'Awaiting Results';
 }
+
+// Faculty and Evaluation Types
+export interface FacultyMember {
+  facultyId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  departmentId: string;
+  departmentName?: string; // Added for convenience
+  // other fields like designation, office, etc. can be added later
+}
+
+export interface FacultyEvaluation {
+  evaluationId: string;
+  facultyId: string;
+  studentId: string; // Assuming evaluations are by students
+  courseId?: string; // Evaluation could be general or course-specific
+  termId?: string;
+  rating: number; // e.g., 1-5 or 1-10
+  comments?: string;
+  submissionDate: string; // ISO Date
+}

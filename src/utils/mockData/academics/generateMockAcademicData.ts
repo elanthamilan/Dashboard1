@@ -31,8 +31,10 @@ import { generateMockGrievanceData } from '../grievances/generateMockGrievanceDa
 import {
     generateMockComplianceItems,
     generateMockAccreditationStatusSummary
-} from '../compliance/generateMockComplianceData'; // New Imports
+} from '../compliance/generateMockComplianceData';
 import { Department } from '../../../types/departments';
+import { FacultyMember, FacultyEvaluation } from '../../../types/academics'; // For Faculty Data
+import { generateMockFacultyMembers, generateMockFacultyEvaluations } from '../faculty/generateMockFacultyData'; // For Faculty Data
 
 
 import dayjs from 'dayjs';
@@ -519,8 +521,10 @@ export const generateMockProgram = (
     const graduatedStudents = programStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated').length;
     const eligibleForGraduation = programStudentSummaries.filter(s => s.totalCreditsEarned && s.totalCreditsEarned >= requiredCredits).length;
     // Base graduation rate on those who have graduated out of those who were eligible or are still active.
-    const graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, multipleOf: 0.01 }); // precision: 2 changed to multipleOf: 0.01
+    const graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, multipleOf: 0.01 });
 
+    const passingStudentsInProgram = programStudentSummaries.filter(s => s.cumulativeGPA !== undefined && s.cumulativeGPA >= 2.0).length;
+    const programPassRate = totalStudentsInProgram > 0 ? parseFloat(((passingStudentsInProgram / totalStudentsInProgram) * 100).toFixed(2)) : 0;
 
     return {
         programId,
@@ -532,6 +536,7 @@ export const generateMockProgram = (
         totalStudents: programStudentSummaries.length,
         averageProgramGPA,
         graduationRate,
+        programPassRate, // Added program pass rate
         placementRate: programPlacementKPIs.rate,
         averagePackage: programPlacementKPIs.avgPackage,
         totalPlacedStudents: programPlacementKPIs.placedCount,
@@ -1003,6 +1008,10 @@ export const generateMockInstitutions = (
             totalStudents: deptStudentSummaries.length,
             averageGPA: deptAverageGPA,
             placementRate: deptPlacementKPIs.rate,
+            // Calculate averagePassRate for the department
+            averagePassRate: departmentProgramInstances.length > 0
+                ? parseFloat((departmentProgramInstances.reduce((acc, p) => acc + (p.programPassRate || 0), 0) / departmentProgramInstances.filter(p => p.programPassRate !== undefined).length || 0).toFixed(2))
+                : 0,
             mockStudentSatisfactionScore: deptMockStudentSatisfactionScore,
             performanceScore: parseFloat(deptPerformanceScore.toFixed(2)),
         });
@@ -1017,6 +1026,18 @@ export const generateMockInstitutions = (
     // of programs that are NOT the same instances as those in `institutionDepartments`. This is a known issue
     // to be resolved by a deeper refactor of how programs are instantiated and passed around.
     // For this step, we focus on populating `institution.departments`.
+
+    // Generate Faculty Data
+    const allFacultyMembers = generateMockFacultyMembers(institutionDepartments, 7); // 7 faculty per dept
+    const allFacultyEvaluations = generateMockFacultyEvaluations(allFacultyMembers, institutionWideStudentSummaries, 15); // Approx 15 evals per faculty
+
+    let avgFacultyRating: number | undefined = undefined;
+    if (allFacultyEvaluations.length > 0) {
+        const sumOfRatings = allFacultyEvaluations.reduce((acc, evalItem) => acc + evalItem.rating, 0);
+        avgFacultyRating = parseFloat((sumOfRatings / allFacultyEvaluations.length).toFixed(1));
+    }
+    const facultyEvaluationResponseRate = parseFloat(faker.number.float({ min: 0.60, max: 0.85, precision: 0.01 }).toFixed(2)) * 100;
+
 
     for (let i = 0; i < numYears; i++) {
         const startYear = currentCycleYear - numYears + 1 + i;
@@ -1126,6 +1147,10 @@ export const generateMockInstitutions = (
         accreditationBody: primaryAccreditationBody,
         complianceItems: complianceItems,
         accreditationStatuses: accreditationStatuses,
+        avgFacultyRating: avgFacultyRating,
+        facultyEvaluationResponseRate: facultyEvaluationResponseRate,
+        facultyMembers: allFacultyMembers,
+        facultyEvaluations: allFacultyEvaluations,
         institutionAttendancePercentage: instAttendancePercentage,
         totalInstitutionAbsences: instTotalAbsences,
         institutionFeesPaidPercentage: instFeesPaidPercentage,

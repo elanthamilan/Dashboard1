@@ -2,8 +2,9 @@ import { Term, CourseEnrollment } from '../components/StudentPerformanceDashboar
 import { PlacementRecord } from './placement';
 import {
     ReEvaluationRequest, GrievanceTicket,
-    ComplianceItem, AccreditationStatusSummary, AccreditingBody
-} from './academics'; // Added Compliance and Accreditation types
+    ComplianceItem, AccreditationStatusSummary, AccreditingBody,
+    FacultyMember, FacultyEvaluation // Added Faculty types
+} from './academics';
 import { Department } from './departments';
 
 export interface StudentSummary {
@@ -53,6 +54,7 @@ export interface Program {
   averagePackage?: number;
   totalPlacedStudents?: number;
   totalInternships?: number;
+  programPassRate?: number; // Percentage of students in the program with GPA >= 2.0
 }
 
 export interface Degree {
@@ -132,4 +134,8 @@ export interface Institution {
   accreditationBody?: AccreditingBody;
   complianceItems?: ComplianceItem[];
   accreditationStatuses?: AccreditationStatusSummary[];
+  avgFacultyRating?: number;
+  facultyEvaluationResponseRate?: number;
+  facultyMembers?: FacultyMember[];
+  facultyEvaluations?: FacultyEvaluation[];
 }

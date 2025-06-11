@@ -40,45 +40,44 @@
     "totalEnrollments": {
       "title": "Total Enrollments",
       "tooltip": "Total number of actively enrolled students across all programs and campuses."
-        },
-        "feeCollection": {
-          "title": "Fee Collection",
-          "tooltip": "Percentage of total invoiced fees that have been collected."
-        },
-        "avgAttendance": {
-          "title": "Average Attendance",
-          "tooltip": "Average student attendance rate across all recorded sessions."
-        },
-        "dropoutRate": {
-          "title": "Dropout Rate",
-          "tooltip": "Percentage of students who became inactive (not due to graduation) out of potentially active students."
-        },
-        "academicPassRate": {
-          "title": "Academic Pass Rate",
-          "tooltip": "Percentage of students with a Cumulative GPA of 2.0 or higher."
-        },
-        "reEvaluationTrends": {
-          "title": "Re-evaluation Trends",
-          "tooltip": "Trends in grade re-evaluations or changes. (Data N/A)"
-        },
-        "placementSuccessRate": {
-          "title": "Placement Success Rate",
-          "tooltip": "Percentage of eligible (graduated) students who secured full-time placement."
-        },
-        "deptPerformance": {
-          "title": "Avg. Dept. Performance",
-          "tooltip": "Average performance score of academic departments (composite of academics, placements, student feedback)."
-        },
-        "openGrievances": {
-          "title": "Open Grievances",
-          "tooltip": "Number of currently open or in-progress student/staff grievances."
-        },
-        "complianceStatus": {
-          "title": "Compliance Status",
-          "tooltip": "Overall institutional compliance percentage with regulatory and accrediting bodies.",
-          "nextReview": "Next Review",
-          "nextReviewMissing": "Date N/A"
-        }
+    },
+    "feeCollection": {
+      "title": "Fee Collection",
+      "tooltip": "Percentage of total invoiced fees that have been collected."
+    },
+    "avgAttendance": {
+      "title": "Average Attendance",
+      "tooltip": "Average student attendance rate across all recorded sessions."
+    },
+    "dropoutRate": {
+      "title": "Dropout Rate",
+      "tooltip": "Percentage of students who became inactive (not due to graduation) out of potentially active students."
+    },
+    "academicPassRate": {
+      "title": "Academic Pass Rate",
+      "tooltip": "Percentage of students with a Cumulative GPA of 2.0 or higher."
+    },
+    "reEvaluationTrends": {
+      "title": "Re-evaluation Trends",
+      "tooltip": "Trends in grade re-evaluations or changes. (Data N/A)"
+    },
+    "placementSuccessRate": {
+      "title": "Placement Success Rate",
+      "tooltip": "Percentage of eligible (graduated) students who secured full-time placement."
+    },
+    "deptPerformance": {
+      "title": "Avg. Dept. Performance",
+      "tooltip": "Average performance score of academic departments (composite of academics, placements, student feedback)."
+    },
+    "openGrievances": {
+      "title": "Open Grievances",
+      "tooltip": "Number of currently open or in-progress student/staff grievances."
+    },
+    "complianceStatus": {
+      "title": "Compliance Status",
+      "tooltip": "Overall institutional compliance percentage with regulatory and accrediting bodies.",
+      "nextReview": "Next Review",
+      "nextReviewMissing": "Date N/A"
     }
   },
   "module": {
@@ -109,15 +108,129 @@
       "map": {
         "city": "City",
         "country": "Country"
+      },
+      "programLevelStatsTitle": "Program Level Statistics",
+      "programName": "Program Name",
+      "numApplicants": "# Applicants",
+      "admissionRate": "Admission Rate",
+      "avgApplicationTime": "Avg. Application Time",
+      "mockAvgAppTime": "7-10 Days (Est.)",
+      "trends": {
+        "applied": "Applied",
+        "offered": "Offers Made",
+        "enrolled": "Enrolled",
+        "year": "Year",
+        "count": "Count"
+      },
+      "degreeYearlyComparisonTitle": "Degree - Year-on-Year Comparison",
+      "selectDegreePlaceholder": "Select Degree Type",
+      "selectDegreePrompt": "Select a degree type to view comparison.",
+      "applicantListTitle": "Applicant List",
+      "table": {
+        "applicantName": "Applicant Name",
+        "programName": "Program",
+        "applicationDate": "Application Date",
+        "status": "Status",
+        "reservationCategory": "Reservation Category",
+        "origin": "Origin (City/Country)"
+      },
+      "applicantDetail": {
+        "title": "Applicant Profile",
+        "name": "Name",
+        "email": "Email",
+        "phone": "Phone",
+        "dob": "Date of Birth",
+        "gender": "Gender",
+        "nationality": "Nationality",
+        "address": "Address",
+        "program": "Applied Program",
+        "applicationDate": "Application Date",
+        "status": "Application Status",
+        "prevEducation": "Previous Education",
+        "documents": "Documents",
+        "interview": "Interview Details",
+        "visa": "Visa Details",
+        "actions": {
+          "changeStatus": "Change Status",
+          "sendOffer": "Send Offer Letter",
+          "scheduleInterview": "Schedule Interview"
+        }
       }
     },
     "academics": {
       "title": "Academic Performance Overview",
-      "descriptionPlaceholder": "Analysis of student performance, GPA distributions, and course outcomes."
+      "descriptionPlaceholder": "Analysis of student performance, GPA distributions, and course outcomes.",
+      "summaryTilesTitle": "Performance Summary",
+      "kpi": {
+        "overallPassRate": "Overall Pass %",
+        "overallFailRate": "Overall Fail %",
+        "averageGPA": "Average GPA",
+        "backlogRate": "Backlog Rate",
+        "avgFacultyRating": "Avg. Faculty Rating (out of 10)",
+        "facultyEvalResponseRate": "Response Rate"
+      },
+      "topDepartmentsTitle": "Top 5 Performing Departments",
+      "table": {
+        "departmentName": "Department Name",
+        "performanceScore": "Performance Score",
+        "avgGPA": "Avg. GPA",
+        "avgPassRate": "Avg. Pass Rate"
+      },
+      "topCoursesTitle": "Top 5 Performing Courses",
+      "courseTable": {
+        "courseName": "Course Name",
+        "passRate": "Pass Rate",
+        "avgGPA": "Average GPA",
+        "enrolledStudents": "Enrolled Students"
+      },
+      "facultyEvalSnapshotTitle": "Faculty Evaluation Snapshot",
+      "coursesInDepartmentTitle": "Courses in {departmentName}",
+      "backToOverview": "Back to Academic Performance Overview",
+      "offeringsForCourseTitle": "Offerings for {courseName}",
+      "backToCourseList": "Back to Courses in {departmentName}",
+      "offeringTable": {
+        "programName": "Program",
+        "semesterName": "Semester",
+        "enrolled": "Enrolled",
+        "passRate": "Pass Rate (%)",
+        "avgGPA": "Avg. GPA"
+      },
+      "studentsInOfferingTitle": "Students in {courseName} - {programName} ({semesterName})",
+      "backToStudentList": "Back to Offerings for {courseName}",
+      "attendanceSummaryTitle": "Attendance Summary for {studentName}",
+      "overallAttendanceRate": "Overall Attendance Rate",
+      "studentTable": {
+        "studentId": "Student ID",
+        "studentName": "Student Name",
+        "gradeInCourse": "Grade"
+      },
+      "facultyPerformanceSectionTitle": "Faculty Performance Overview",
+      "viewFacultyPerformanceButton": "View Faculty Performance",
+      "facultyViewPlaceholders": "Further details like Teaching Load and Student Outcomes per Faculty will be added in future updates.",
+      "facultyTable": {
+        "facultyName": "Faculty Name",
+        "departmentName": "Department",
+        "avgEvaluationRating": "Avg. Evaluation Rating",
+        "numberOfEvaluations": "# Evaluations"
+      }
     },
     "attendance": {
-      "title": "Attendance & Engagement Tracking",
-      "descriptionPlaceholder": "Monitoring student attendance patterns, engagement levels, and absenteeism."
+      "title": "Attendance & Engagement",
+      "descriptionPlaceholder": "Overview of student attendance, engagement patterns, and absence reasons.",
+      "summary": "Attendance Summary",
+      "avgAttendance": "Avg. Attendance",
+      "todaysAbsences": "Today's Absences",
+      "todaysLates": "Today's Lates",
+      "todaysExcused": "Today's Excused",
+      "todaysPresent": "Today's Present",
+      "irregularityAlerts": "Irregularity Alerts",
+      "topAbsenceReasons": "Top Absence Reasons",
+      "weeklyAttendanceTrend": "Weekly Attendance Trend (Last 3 Months)",
+      "attendancePercentage": "Attendance (%)",
+      "attendance": "Attendance",
+      "calendarHeatmapTitle": "Monthly Attendance Heatmap",
+      "present": "Present",
+      "absent": "Absent"
     },
     "billing": {
       "title": "Billing & Fee Collection Insights",
@@ -324,6 +437,10 @@
       "noAlerts": "No irregular attendance alerts at the moment.",
       "absencesOverThreshold": "{{count}} absences in the last {{days}} days.",
       "latesOverThreshold": "{{count}} late arrivals in the last {{days}} days."
+    },
+    "messages": {
+        "recordAdded": "New attendance record added.",
+        "recordUpdated": "Attendance record updated."
     }
   },
   "attendanceReasons": {
@@ -335,6 +452,14 @@
     "Unexcused": "Unexcused",
     "Traffic": "Traffic",
     "Overslept": "Overslept"
+  },
+  "absenceReasons": {
+    "illness": "Illness",
+    "family_emergency": "Family Emergency",
+    "transport_issue": "Transport Issue",
+    "personal_reasons": "Personal Reasons",
+    "appointment": "Appointment",
+    "other": "Other"
   },
   "studentSummaryTable": {
     "title": "Student Academic Summaries",
@@ -382,58 +507,6 @@
     },
     "actions": {
       "editRecord": "Edit Record"
-    }
-  },
-  "billingDashboard": {
-    "title": "Billing Dashboard"
-  },
-  "attendanceDashboard": {
-    "title": "Attendance Tracking",
-    "kpi": {
-      "overallAttendanceRate": "Overall Rate",
-      "absencesToday": "Absences Today",
-      "lateToday": "Late Today",
-      "excusedToday": "Excused Today"
-    },
-    "filters": {
-      "student": "Student",
-      "selectStudent": "Select Student",
-      "class": "Class",
-      "selectClass": "Select Class",
-      "dateRange": "Date Range",
-      "filterButton": "Apply Filters",
-      "clearFiltersButton": "Clear Filters",
-      "activeFilters": "Active Filters",
-      "studentTag": "Student",
-      "classTag": "Class",
-      "dateRangeTag": "Dates"
-    },
-    "actions": {
-        "markAttendance": "Mark Attendance"
-    },
-    "calendar": {
-      "title": "Attendance Calendar",
-      "tooltip": {
-        "totalRecords": "Total Records",
-        "present": "Present",
-        "absent": "Absent",
-        "late": "Late",
-        "excused": "Excused"
-      }
-    },
-    "charts": {
-      "absenceReasonTitle": "Absence Reasons",
-      "absenceCount": "Absences",
-      "reasonLegend": "Reason",
-      "countLegend": "Number of Absences",
-      "weeklyTrendTitle": "Weekly Attendance Trend",
-      "trendPresentRate": "Present Rate (%)",
-      "weekLegend": "Week",
-      "rateLegend": "Attendance Rate (%)"
-    },
-    "messages": {
-        "recordAdded": "New attendance record added.",
-        "recordUpdated": "Attendance record updated."
     }
   },
   "studentPerformanceDashboard": {
@@ -517,8 +590,18 @@
     "currentGlobalFilters": "Current Global Filters",
     "notSet": "Not Set",
     "moduleSpecificContentPlaceholder": "Module-specific content, charts, and tables will be displayed here.",
-    "noDataAvailable": "No data available.",
-    "unknown": "Unknown"
+    "unknown": "Unknown",
+    "notApplicableShort": "N/A",
+    "noTrendDataAvailable": "No trend data available for this program.",
+    "viewDetails": "View Details",
+    "close": "Close",
+    "viewCourses": "View Courses",
+    "viewOfferings": "View Offerings",
+    "viewStudents": "View Students",
+    "viewPerformance": "View Performance",
+    "count": "Count",
+    "week": "Week",
+    "students": "Students"
   },
    "studentGradeGrid": {
     "title": "Student Grade Grid",
@@ -541,5 +624,9 @@
         "grade": "Select Grade",
         "comments": "Enter comments"
     }
+  },
+  "errors": {
+    "dataFetchingError": "Failed to fetch data. Please try again.",
+    "errorOccurred": "Error Occurred"
   }
 }

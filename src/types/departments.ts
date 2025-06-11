@@ -6,6 +6,7 @@ export interface Department {
   performanceScore?: number;
   averageGPA?: number; // Aggregated from programs in this department
   placementRate?: number; // Aggregated from programs in this department
+  averagePassRate?: number; // Aggregated pass rate from programs in this department
   mockStudentSatisfactionScore?: number; // Aggregated or direct mock for the department
   totalStudents?: number; // Total students in this department
   // We can add more specific aggregated KPIs if needed later
