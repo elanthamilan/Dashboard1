@@ -4,7 +4,9 @@ import { Typography, Spin, Empty, Button, Breadcrumb, Row, Col } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
 import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary } from '../../types/hierarchy';
 import { StudentAcademicRecord } from '../../components/StudentPerformanceDashboard/types'; // Added import
-import { generateMockInstitutions, generateMockAcademicRecords, generateMockStudentSummary } from '../../utils/mockData/academics/generateMockAcademicData'; // Added more imports
+import { generateMockInstitutions, generateMockAcademicRecords } from '../../utils/mockData/academics/generateMockAcademicData'; // generateMockStudentSummary removed if not used directly
+import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData';
+import { Student } from '../../components/AttendanceDashboard/types';
 import InstitutionDisplay from './InstitutionDisplay';
 import AcademicYearList from './AcademicYearList';
 import DegreeList from './DegreeList';
@@ -250,10 +252,9 @@ const PrincipalViewDashboard: React.FC = () => {
         }
     }
     if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-        const studentName = currentStudentAcademicRecord
-            ? `${allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.firstName} ${allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.lastName}`
-            : selectedStudentIdForDetail;
-        items.push({ key: 'student_detail', title: `Student: ${studentName}` });
+        const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
+        const studentNameString = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
+        items.push({ key: 'student_detail', title: `Student: ${studentNameString || 'N/A'}` });
     }
     return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key, }));
   }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
@@ -268,7 +269,7 @@ const PrincipalViewDashboard: React.FC = () => {
 
   if (viewLevel === 'institution') {
     currentDisplayTitle = "Institutions";
-    content = institutions.map(inst => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
+    content = institutions.map((inst: Institution) => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
     if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
   } else if (selectedInstitution && viewLevel === 'academic_year') {
     currentDisplayTitle = selectedInstitution.institutionName;
@@ -286,119 +287,9 @@ const PrincipalViewDashboard: React.FC = () => {
     currentDisplayTitle = selectedSemester.termName;
     content = <StudentSummaryList students={selectedSemester.students} onSelectStudent={handleSelectStudentForDetail} />;
   } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-    const studentForTitle = currentStudentAcademicRecord
-        ? allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.firstName} ${allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.lastName}`
-            : selectedStudentIdForDetail;
-        items.push({ key: 'student_detail', title: `Student: ${studentName}` });
-    }
-    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key, }));
-  }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
-
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}><Spin size="large" tip="Loading Data..." /></div>;
-  }
-
-  let content;
-  let currentDisplayTitle = "";
-
-  if (viewLevel === 'institution') {
-    currentDisplayTitle = "Institutions";
-    content = institutions.map(inst => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
-    if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
-  } else if (selectedInstitution && viewLevel === 'academic_year') {
-    currentDisplayTitle = selectedInstitution.institutionName;
-    content = ( <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} onCompareAcademicYears={handleOpenAcademicYearComparisonModal} /> );
-  } else if (selectedAcademicYear && viewLevel === 'degree') {
-    currentDisplayTitle = selectedAcademicYear.yearName;
-    content = ( <DegreeList degrees={selectedAcademicYear.degrees} onSelectDegree={handleSelectDegree} onCompareDegrees={handleOpenDegreeComparisonModal} /> );
-  } else if (selectedDegree && viewLevel === 'program') {
-    currentDisplayTitle = selectedDegree.degreeName;
-    content = ( <ProgramList programs={selectedDegree.programs} onSelectProgram={handleSelectProgram} onComparePrograms={handleOpenProgramComparisonModal} degreeName={selectedDegree.degreeName} academicYearName={selectedAcademicYear?.yearName} /> );
-  } else if (selectedProgram && viewLevel === 'semester') {
-    currentDisplayTitle = selectedProgram.programName;
-    content = <SemesterList semesters={selectedProgram.semesters} onSelectSemester={handleSelectSemester} />;
-  } else if (selectedSemester && viewLevel === 'student') {
-    currentDisplayTitle = selectedSemester.termName;
-    content = <StudentSummaryList students={selectedSemester.students} onSelectStudent={handleSelectStudentForDetail} />;
-  } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-    const studentForTitle = currentStudentAcademicRecord
-        ? allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.firstName} ${allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.lastName}`
-            : selectedStudentIdForDetail;
-        items.push({ key: 'student_detail', title: `Student: ${studentName}` });
-    }
-    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key, }));
-  }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
-
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}><Spin size="large" tip="Loading Data..." /></div>;
-  }
-
-  let content;
-  let currentDisplayTitle = "";
-
-  if (viewLevel === 'institution') {
-    currentDisplayTitle = "Institutions";
-    content = institutions.map(inst => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
-    if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
-  } else if (selectedInstitution && viewLevel === 'academic_year') {
-    currentDisplayTitle = selectedInstitution.institutionName;
-    content = ( <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} onCompareAcademicYears={handleOpenAcademicYearComparisonModal} /> );
-  } else if (selectedAcademicYear && viewLevel === 'degree') {
-    currentDisplayTitle = selectedAcademicYear.yearName;
-    content = ( <DegreeList degrees={selectedAcademicYear.degrees} onSelectDegree={handleSelectDegree} onCompareDegrees={handleOpenDegreeComparisonModal} /> );
-  } else if (selectedDegree && viewLevel === 'program') {
-    currentDisplayTitle = selectedDegree.degreeName;
-    content = ( <ProgramList programs={selectedDegree.programs} onSelectProgram={handleSelectProgram} onComparePrograms={handleOpenProgramComparisonModal} degreeName={selectedDegree.degreeName} academicYearName={selectedAcademicYear?.yearName} /> );
-  } else if (selectedProgram && viewLevel === 'semester') {
-    currentDisplayTitle = selectedProgram.programName;
-    content = <SemesterList semesters={selectedProgram.semesters} onSelectSemester={handleSelectSemester} />;
-  } else if (selectedSemester && viewLevel === 'student') {
-    currentDisplayTitle = selectedSemester.termName;
-    content = <StudentSummaryList students={selectedSemester.students} onSelectStudent={handleSelectStudentForDetail} />;
-  } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-    const studentForTitle = currentStudentAcademicRecord
-        ? allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.firstName} ${allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)?.lastName}`
-            : selectedStudentIdForDetail;
-        items.push({ key: 'student_detail', title: `Student: ${studentName}` });
-    }
-    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key, }));
-  }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
-
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}><Spin size="large" tip="Loading Data..." /></div>;
-  }
-
-  let content;
-  let currentDisplayTitle = "";
-
-  if (viewLevel === 'institution') {
-    currentDisplayTitle = "Institutions";
-    content = institutions.map(inst => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
-    if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
-  } else if (selectedInstitution && viewLevel === 'academic_year') {
-    currentDisplayTitle = selectedInstitution.institutionName;
-    content = ( <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} onCompareAcademicYears={handleOpenAcademicYearComparisonModal} /> );
-  } else if (selectedAcademicYear && viewLevel === 'degree') {
-    currentDisplayTitle = selectedAcademicYear.yearName;
-    content = ( <DegreeList degrees={selectedAcademicYear.degrees} onSelectDegree={handleSelectDegree} onCompareDegrees={handleOpenDegreeComparisonModal} /> );
-  } else if (selectedDegree && viewLevel === 'program') {
-    currentDisplayTitle = selectedDegree.degreeName;
-    content = ( <ProgramList programs={selectedDegree.programs} onSelectProgram={handleSelectProgram} onComparePrograms={handleOpenProgramComparisonModal} degreeName={selectedDegree.degreeName} academicYearName={selectedAcademicYear?.yearName} /> );
-  } else if (selectedProgram && viewLevel === 'semester') {
-    currentDisplayTitle = selectedProgram.programName;
-    content = <SemesterList semesters={selectedProgram.semesters} onSelectSemester={handleSelectSemester} />;
-  } else if (selectedSemester && viewLevel === 'student') {
-    currentDisplayTitle = selectedSemester.termName;
-    content = <StudentSummaryList students={selectedSemester.students} onSelectStudent={handleSelectStudentForDetail} />;
-  } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-    const studentForTitle = currentStudentAcademicRecord
-        ? allMockStudents.find((s: StudentSummary) => s.id === currentStudentAcademicRecord.studentId)
-        : null;
-    const studentDisplayName = studentForTitle ? `${studentForTitle.firstName} ${studentForTitle.lastName}` : selectedStudentIdForDetail;
-    currentDisplayTitle = `Details for ${studentDisplayName}`;
+    const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
+    const studentDisplayName = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
+    currentDisplayTitle = `Details for ${studentDisplayName || 'N/A'}`;
     content = ( <PrincipalStudentDetailView studentAcademicRecord={currentStudentAcademicRecord} loading={studentDetailLoading} /> );
   }
   else {
