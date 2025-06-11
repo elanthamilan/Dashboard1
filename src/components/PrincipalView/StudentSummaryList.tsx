@@ -45,7 +45,7 @@ const StudentSummaryList: React.FC<StudentSummaryListProps> = ({ students, onSel
       key: 'atRiskStatus',
       width: 120,
       responsive: ['sm'],
-      render: (status?: StudentSummaryWithDetails['atRiskStatus'], record: StudentSummaryWithDetails) => {
+      render: (status?: StudentSummaryWithDetails['atRiskStatus'], record?: StudentSummaryWithDetails) => {
         const tooltipTitle = "Student's assessed risk level. High or Medium may indicate a need for support based on GPA or attendance.";
         let tagContent;
 
@@ -94,8 +94,8 @@ const StudentSummaryList: React.FC<StudentSummaryListProps> = ({ students, onSel
       key: 'actions',
       width: 120,
       fixed: 'right',
-      render: (_: any, record: StudentSummaryWithDetails) => (
-        <Button type="link" onClick={() => onSelectStudent?.(record.studentId)}>
+      render: (_: any, record?: StudentSummaryWithDetails) => (
+        <Button type="link" onClick={() => onSelectStudent?.(record?.studentId)}>
           View Details
         </Button>
       ),

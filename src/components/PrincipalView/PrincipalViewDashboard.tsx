@@ -22,7 +22,6 @@ const { Title } = Typography;
 type ViewLevel = 'institution' | 'academic_year' | 'degree' | 'program' | 'semester' | 'student' | 'student_detail';
 
 interface ComparisonModalProps {
-  visible: boolean;
   items: ComparisonItem[];
   onClose: () => void;
   open: boolean;

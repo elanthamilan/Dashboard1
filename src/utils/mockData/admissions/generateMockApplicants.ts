@@ -107,8 +107,8 @@ export const generateMockApplicant = (id: number): Applicant => {
     visaDetails: isInternational ? {
       visaType: 'Student Visa F-1',
       applicationStatus: faker.helpers.arrayElement(['Not Started', 'Submitted', 'Approved', 'Rejected']),
-      issueDate: status === 'Accepted' || status === 'Enrollment Confirmed' ? faker.date.recent({ days: 60 }).toISOString() : undefined,
-      expiryDate: status === 'Accepted' || status === 'Enrollment Confirmed' ? faker.date.future({ years: 3 }).toISOString() : undefined,
+      issueDate: status === 'Offer Accepted' || status === 'Enrollment Confirmed' ? faker.date.recent({ days: 60 }).toISOString() : undefined,
+      expiryDate: status === 'Offer Accepted' || status === 'Enrollment Confirmed' ? faker.date.future({ years: 3 }).toISOString() : undefined,
     } : undefined,
     originCoordinates: getRandomCoordinates(),
     funnelStage: getFunnelStage(status),
@@ -130,7 +130,7 @@ export const generateMockKeyDeadlines = (count: number): KeyDeadline[] => {
 
   for (let i = 0; i < count; i++) {
     const type = faker.helpers.arrayElement(types);
-    lastDate = dayjs(faker.date.future({ refDate: lastDate, years: 0.2 })); // Ensure dates progress somewhat logically
+    lastDate = dayjs(faker.date.future({ refDate: lastDate.toDate(), years: 0.2 })); // Ensure dates progress somewhat logically
 
     deadlines.push({
       id: `DEADLINE-${String(i + 1).padStart(3, '0')}`,

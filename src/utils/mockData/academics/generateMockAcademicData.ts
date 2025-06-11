@@ -12,7 +12,7 @@ import {
     StudentSummary
 } from '../../../types/hierarchy';
 // Import base data types and generators
-import { Student } from '../../../components/AttendanceDashboard/types';
+// import { Student } from '../../../components/AttendanceDashboard/types'; // Removed duplicate
 import { generateMockStudents } from '../attendance/generateMockAttendanceData';
 import { AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Added
 import { generateMockAttendanceRecords } from '../attendance/generateMockAttendanceData'; // Added
@@ -383,7 +383,7 @@ export const generateMockSemester = (
                                                                             // This will use all invoices for these students. Refine if invoices are term-linked.
 
     return {
-        semesterId: term.termId,
+        termId: term.termId,
         semesterName: term.termName,
         startDate: term.startDate,
         endDate: term.endDate,
@@ -412,8 +412,8 @@ export const generateMockProgram = (
     termsForProgram: Term[]
 ): Program => {
     const programStudentRecords = allAcademicRecords.filter(ar => ar.programId === programId);
-    const programStudentIds = new Set(programStudentRecords.map(ar => ar.studentId));
-    const programStudents = allStudents.filter(s => programStudentIds.has(s.id));
+    const programStudentIdsSet = new Set(programStudentRecords.map(ar => ar.studentId)); // Renamed to programStudentIdsSet
+    const programStudents = allStudents.filter(s => programStudentIdsSet.has(s.id)); // Use programStudentIdsSet
 
     const programStudentSummaries = programStudents.map(student => {
         const record = programStudentRecords.find(r => r.studentId === student.id);
@@ -435,11 +435,12 @@ export const generateMockProgram = (
     });
 
     const totalStudentsInProgram = programStudentSummaries.length;
-    const programStudentIds = programStudentSummaries.map(s => s.studentId);
+    // const programStudentIds = programStudentSummaries.map(s => s.studentId); // Removed second declaration
+    const programStudentIdsArray = Array.from(programStudentIdsSet); // Create array from the Set
 
     // Aggregate KPIs for the Program
-    const programAttendanceKPIs = calculateAttendanceKPIs(programStudentIds, allAttendanceRecords); // For the whole program duration ideally
-    const programBillingKPIs = calculateBillingKPIs(programStudentIds, allInvoices);
+    const programAttendanceKPIs = calculateAttendanceKPIs(programStudentIdsArray, allAttendanceRecords); // For the whole program duration ideally
+    const programBillingKPIs = calculateBillingKPIs(programStudentIdsArray, allInvoices);
 
     // Filter applicants for this specific program
     // This assumes applicants have a programId they applied to.
@@ -448,7 +449,7 @@ export const generateMockProgram = (
     const programAdmissionKPIs = calculateAdmissionKPIs(applicantsForProgram);
 
     const programGradeDistribution = calculateGradeDistribution(programStudentRecords);
-    const programAtRiskStudents = countAtRiskStudents(programStudentRecords, programStudentIds, allAttendanceRecords);
+    const programAtRiskStudents = countAtRiskStudents(programStudentRecords, programStudentIdsArray, allAttendanceRecords);
 
     let sumOfGpas = 0;
     let studentsWithGpas = 0;
@@ -556,6 +557,9 @@ export const generateMockDegree = (
     let totalAtRiskInDegree = 0;
     let sumOfProgramGpas = 0;
     let totalStudentsForGpaCalculation = 0;
+    let totalStudentsForAttendanceCalculation = 0; // Added initialization
+    let totalStudentsForFeesCalculation = 0; // Added initialization
+    let totalApplicantsForAcceptanceRateCalculation = 0; // Added initialization
 
     generatedPrograms.forEach(prog => {
         totalStudentsInDegree += prog.totalStudents || 0;
@@ -707,9 +711,9 @@ export const generateMockAcademicYear = (
     });
 
     const overallAverageGPA = degreesWithGpas > 0 ? parseFloat((sumOfDegreeGpas / degreesWithGpas).toFixed(2)) : undefined;
-    annualAttendancePercentage = totalStudentsForAttendance > 0 ? parseFloat((weightedSumAttendance / totalStudentsForAttendance).toFixed(2)) : undefined;
-    annualFeesPaidPercentage = totalStudentsForFees > 0 ? parseFloat((weightedSumFeesPaid / totalStudentsForFees).toFixed(2)) : undefined;
-    avgAnnualAcceptanceRate = totalApplicantsForRate > 0 ? parseFloat((weightedSumAcceptance / totalApplicantsForRate).toFixed(2)) : undefined;
+    annualAttendancePercentage = totalStudentsForAttendance > 0 ? parseFloat((weightedSumAttendance / totalStudentsForAttendance).toFixed(2)) : 0;
+    annualFeesPaidPercentage = totalStudentsForFees > 0 ? parseFloat((weightedSumFeesPaid / totalStudentsForFees).toFixed(2)) : 0;
+    avgAnnualAcceptanceRate = totalApplicantsForRate > 0 ? parseFloat((weightedSumAcceptance / totalApplicantsForRate).toFixed(2)) : 0;
 
     return {
         yearId,

@@ -125,7 +125,7 @@ export const downloadProgramSummaryPDF = (program: Program, degreeName?: string,
   ];
 
   const semesterTableBody = program.semesters.map(s => [
-    s.semesterName,
+    s.termName,
     s.students?.length.toString() ?? 'N/A',
     s.averageGPA?.toFixed(2) ?? 'N/A',
     s.passRate !== undefined ? s.passRate.toFixed(1) : 'N/A', // Corrected percentage handling
