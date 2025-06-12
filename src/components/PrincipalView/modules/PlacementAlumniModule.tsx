@@ -10,7 +10,7 @@ import { DotMap } from '@ant-design/maps'; // Added DotMap from @ant-design/maps
 import { Institution, Program as ProgramType, StudentSummary } from '../../../types/hierarchy';
 import { PlacementRecord } from '../../../types/placement';
 import { Alumnus, AlumniActivity } from '../../../types/alumni';
-import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
 
@@ -53,7 +53,7 @@ const PlacementAlumniModule: React.FC = () => {
         ay.degrees.forEach(deg =>
           deg.programs.forEach(prog =>
             prog.semesters.forEach(sem =>
-              sem.students.forEach(s => {
+              sem.students.forEach((s: StudentSummary) => {
                 if(!studentSummaries.find(es => es.studentId === s.studentId)) {
                   // departmentId is not a property of StudentSummary, removing it.
                   studentSummaries.push({...s, programName: prog.programName });

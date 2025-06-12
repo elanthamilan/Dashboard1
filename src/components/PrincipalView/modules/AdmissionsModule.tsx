@@ -8,7 +8,7 @@ import {
     HomeOutlined, UsergroupAddOutlined, CheckSquareOutlined, PercentageOutlined,
     AimOutlined, CalendarOutlined, UserOutlined as UserIconForTimeline, EyeOutlined
 } from '@ant-design/icons'; // Added EyeOutlined
-import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType, Degree, Department as DepartmentType } from '../../../types/hierarchy'; // Added Degree, DepartmentType
 import { KeyDeadline, Applicant, ApplicationStatus } from '../../../components/AdmissionsDashboard/types';
@@ -29,9 +29,9 @@ const degreeProgramMappings: { [degreeId: string]: { programId: string, programN
 // Department definitions - needed for filtering applicants by department
 // This should ideally come from institutionData if available, or a shared config
 const departmentDefinitions: DepartmentType[] = [
-    { departmentId: 'DEPT_SCI_ENG', departmentName: 'School of Science & Engineering', programIds: ['CS_BS', 'CS_MS', 'CS_PHD', 'PHY_BS'] }, // Assuming PHY_BS for example
-    { departmentId: 'DEPT_ARTS_HUM', departmentName: 'School of Arts & Humanities', programIds: ['ENG_BA', 'ART_MFA', 'PSY_BS', 'HIST_BA'] },
-    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', programIds: ['MBA_GEN', 'FIN_MS'] },
+    { departmentId: 'DEPT_SCI_ENG', departmentName: 'School of Science & Engineering', degreeIds: ['CS_BS', 'CS_MS', 'CS_PHD', 'PHY_BS'] }, // Assuming PHY_BS for example
+    { departmentId: 'DEPT_ARTS_HUM', departmentName: 'School of Arts & Humanities', degreeIds: ['ENG_BA', 'ART_MFA', 'PSY_BS', 'HIST_BA'] },
+    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', degreeIds: ['MBA_GEN', 'FIN_MS'] },
 ];
 
 
@@ -162,7 +162,7 @@ const AdmissionsModule: React.FC = () => {
     if (filters.department) {
       const deptDef = departmentDefinitions.find(d => d.departmentId === filters.department);
       if(deptDef) {
-        filtered = filtered.filter(app => deptDef.programIds.includes(app.programId));
+        filtered = filtered.filter(app => deptDef.degreeIds.includes(app.programId));
       }
     }
     if (filters.dateRange && filters.dateRange[0] && filters.dateRange[1]) {

@@ -46,6 +46,13 @@ import { generateMockLmsActivityData } from '../engagement/generateMockLmsActivi
 import { generateMockAlumni, generateMockAlumniActivities } from '../alumni/generateMockAlumniData'; // Added for Alumni Data
 
 
+// Mock Degree definitions (moved earlier as it's used by departmentConfigs)
+const mockDegrees: Degree[] = [ // Changed from const mockDegrees = [ to const mockDegrees: Degree[] = [
+    { degreeId: "BACHELORS", degreeName: "Bachelor's Degrees" },
+    { degreeId: "MASTERS", degreeName: "Master's Degrees" },
+    { degreeId: "DOCTORATE", degreeName: "Doctorate Degrees" },
+];
+
 import dayjs from 'dayjs';
 // faker is already imported via the first line: import { faker } from '@faker-js/faker';
 
@@ -545,11 +552,12 @@ const generateMockNewSemester = (
     const passingStudents = availableStudents.filter(s => uniqueStudentIdsArray.includes(s.studentId) && s.cumulativeGPA !== undefined && s.cumulativeGPA >= 2.0).length;
     const passRate = uniqueStudentIdsArray.length > 0 ? parseFloat(((passingStudents / uniqueStudentIdsArray.length) * 100).toFixed(2)) : undefined;
 
+    const semesterStudentSummaries = availableStudents.filter(s => uniqueStudentIdsArray.includes(s.studentId));
 
     return {
         ...termDetails, // termId, termName, startDate, endDate
         courses, // This is now Course[]
-        // students field is removed from Semester type
+        students: semesterStudentSummaries, // Added students field
         averageGPA, // Mocked or aggregated differently
         passRate,   // Mocked or aggregated differently
         attendancePercentage: attendanceKPIs.percentage,
@@ -659,6 +667,7 @@ export const generateMockNewProgram = (
         programId,
         programName,
         degreeId,
+        departmentId: undefined, // Added optional departmentId
         // departmentId is removed
         requiredCredits,
         semesters, // Now uses NewSemester
@@ -690,6 +699,13 @@ export const generateMockNewProgram = (
 // Update generateMockDegree to generateMockNewDegree
 // It should include departmentId and use generateMockNewProgram
 
+// Define a type for the program configuration objects used in degreeProgramMappings
+interface ProgramConfigForDegreeMap {
+    programId: string;
+    programName: string;
+    requiredCredits: number;
+}
+
 export const generateMockNewDegree = (
     degreeConfig: { degreeId: string, degreeName: string },
     departmentId: string,
@@ -704,7 +720,7 @@ export const generateMockNewDegree = (
     const { degreeId, degreeName } = degreeConfig;
     const programsInDegreeConfig = degreeProgramMappings[degreeId] || [];
 
-    const programs: Program[] = programsInDegreeConfig.map(pConfig => {
+    const programs: Program[] = programsInDegreeConfig.map((pConfig: ProgramConfigForDegreeMap) => {
         // Students for this program are filtered from the scope passed to the Degree
         return generateMockNewProgram(
             pConfig,
@@ -759,6 +775,28 @@ export const generateMockNewDegree = (
     // Simplified acceptance rate: total enrolled / total applicants for the degree
     const avgAcceptanceRate = totalApplicants > 0 ? parseFloat(((totalEnrolledCount / totalApplicants) * 100).toFixed(2)) : undefined;
 
+    let totalDegreeAbsences = 0;
+    let sumProgramAttendance = 0;
+    let totalStudentsForAttendance = 0;
+    let sumProgramFeesPaid = 0;
+    let totalStudentsForFees = 0;
+    let totalStudentsWithOverdueFeesInDegree = 0;
+
+    programs.forEach(prog => {
+        if (prog.avgAttendancePercentage !== undefined && prog.totalStudents) {
+            sumProgramAttendance += prog.avgAttendancePercentage * prog.totalStudents;
+            totalStudentsForAttendance += prog.totalStudents;
+        }
+        totalDegreeAbsences += prog.totalProgramAbsences || 0;
+        if (prog.avgFeesPaidPercentage !== undefined && prog.totalStudents) {
+            sumProgramFeesPaid += prog.avgFeesPaidPercentage * prog.totalStudents;
+            totalStudentsForFees += prog.totalStudents;
+        }
+        totalStudentsWithOverdueFeesInDegree += prog.totalStudentsWithOverdueFees || 0;
+    });
+
+    const avgAttendancePercentage = totalStudentsForAttendance > 0 ? parseFloat((sumProgramAttendance / totalStudentsForAttendance).toFixed(2)) : undefined;
+    const avgFeesPaidPercentage = totalStudentsForFees > 0 ? parseFloat((sumProgramFeesPaid / totalStudentsForFees).toFixed(2)) : undefined;
 
     return {
         degreeId,
@@ -767,6 +805,10 @@ export const generateMockNewDegree = (
         programs, // Contains new Program objects
         totalStudents: totalStudentsInDegree,
         averageDegreeGPA,
+        avgAttendancePercentage, // Added
+        totalDegreeAbsences, // Added
+        avgFeesPaidPercentage, // Added
+        totalStudentsWithOverdueFeesInDegree, // Added
         // KPIs (some mocked, some aggregated)
         placementRate: degreePlacementKPIs.rate,
         averagePackage: degreePlacementKPIs.avgPackage,
@@ -1049,6 +1091,51 @@ export const generateMockNewInstitutions = ( // Renamed from generateMockInstitu
     const allAlumni = generateMockAlumni(alumniSummaries);
     const allAlumniActivities = generateMockAlumniActivities(allAlumni, 2);
 
+    // Aggregate Institution KPIs from Academic Years
+    let aggInstAttendancePercentage: number | undefined = 0;
+    let aggInstTotalAbsences = 0;
+    let aggInstFeesPaidPercentage: number | undefined = 0;
+    let aggInstTotalStudentsWithOverdueFees = 0;
+    let aggInstTotalApplicants = 0;
+    let aggInstAvgAcceptanceRate: number | undefined = 0;
+    let aggInstTotalEnrolled = 0;
+    const aggInstGradeDistribution: { [key: string]: number } = {};
+    let aggInstTotalAtRisk = 0;
+    let weightedSumInstAttendance = 0;
+    let totalStudentsForInstAttendance = 0;
+    let weightedSumInstFeesPaid = 0;
+    let totalStudentsForInstFees = 0;
+    let weightedSumInstAcceptance = 0;
+    let totalApplicantsForInstRate = 0;
+
+    academicYearsData.forEach(ay => {
+        if (ay.annualAttendancePercentage !== undefined && ay.totalStudents) {
+            weightedSumInstAttendance += ay.annualAttendancePercentage * ay.totalStudents;
+            totalStudentsForInstAttendance += ay.totalStudents;
+        }
+        aggInstTotalAbsences += ay.totalAnnualAbsences || 0;
+        if (ay.annualFeesPaidPercentage !== undefined && ay.totalStudents) {
+            weightedSumInstFeesPaid += ay.annualFeesPaidPercentage * ay.totalStudents;
+            totalStudentsForInstFees += ay.totalStudents;
+        }
+        aggInstTotalStudentsWithOverdueFees += ay.totalStudentsWithOverdueFeesInYear || 0;
+        aggInstTotalApplicants += ay.totalAnnualApplicants || 0;
+        if (ay.avgAnnualAcceptanceRate !== undefined && ay.totalAnnualApplicants) {
+            weightedSumInstAcceptance += ay.avgAnnualAcceptanceRate * ay.totalAnnualApplicants;
+            totalApplicantsForInstRate += ay.totalAnnualApplicants;
+        }
+        aggInstTotalEnrolled += ay.totalAnnualEnrolledCount || 0;
+        if (ay.annualGradeDistribution) {
+            for (const grade in ay.annualGradeDistribution) {
+                aggInstGradeDistribution[grade] = (aggInstGradeDistribution[grade] || 0) + ay.annualGradeDistribution[grade];
+            }
+        }
+        aggInstTotalAtRisk += ay.totalAnnualAtRiskStudents || 0;
+    });
+
+    aggInstAttendancePercentage = totalStudentsForInstAttendance > 0 ? parseFloat((weightedSumInstAttendance / totalStudentsForInstAttendance).toFixed(2)) : undefined;
+    aggInstFeesPaidPercentage = totalStudentsForInstFees > 0 ? parseFloat((weightedSumInstFeesPaid / totalStudentsForInstFees).toFixed(2)) : undefined;
+    aggInstAvgAcceptanceRate = totalApplicantsForInstRate > 0 ? parseFloat((weightedSumInstAcceptance / totalApplicantsForInstRate).toFixed(2)) : undefined;
 
     const institution: Institution = {
         institutionId,
@@ -1094,16 +1181,16 @@ export const generateMockNewInstitutions = ( // Renamed from generateMockInstitu
         allGrievanceTickets: allGrievanceTickets,
         grievanceCSAT: faker.number.float({min:70,max:90, multipleOf: .1}),
         sentimentDistribution: { positive: 70, neutral: 20, negative: 10, total:100},
-        // New KPI fields from Institution type
-        institutionAttendancePercentage: faker.number.float({min:80,max:95,multipleOf: .1}),
-        totalInstitutionAbsences: faker.number.int({min:100,max:1000}),
-        institutionFeesPaidPercentage: faker.number.float({min:85,max:99,multipleOf: .1}),
-        totalStudentsWithOverdueFeesInInstitution: faker.number.int({min:10,max:100}),
-        totalInstitutionApplicants: allApplicants.length,
-        avgInstitutionAcceptanceRate: faker.number.float({min:30,max:70,multipleOf: .1}),
-        totalInstitutionEnrolledCount: institutionWideStudentSummaries.filter(s=>s.enrollmentStatus === 'Active').length,
-        institutionGradeDistribution: {}, // aggregate
-        totalInstitutionAtRiskStudents: institutionWideStudentSummaries.filter(s=>s.cumulativeGPA && s.cumulativeGPA < 2.0).length, // simplified
+        // New KPI fields from Institution type, now aggregated
+        institutionAttendancePercentage: aggInstAttendancePercentage,
+        totalInstitutionAbsences: aggInstTotalAbsences,
+        institutionFeesPaidPercentage: aggInstFeesPaidPercentage,
+        totalStudentsWithOverdueFeesInInstitution: aggInstTotalStudentsWithOverdueFees,
+        totalInstitutionApplicants: aggInstTotalApplicants,
+        avgInstitutionAcceptanceRate: aggInstAvgAcceptanceRate,
+        totalInstitutionEnrolledCount: aggInstTotalEnrolled,
+        institutionGradeDistribution: aggInstGradeDistribution,
+        totalInstitutionAtRiskStudents: aggInstTotalAtRisk,
     };
 
     return [institution];
@@ -1219,7 +1306,7 @@ export const generateMockSemester = (
     allAttendanceRecords: AttendanceRecord[], // All attendance for the institution
     allInvoices: Invoice[] // All invoices for the institution
 ): Semester => {
-    const semesterStudents = studentsInProgramForSemester;
+    const semesterStudents: StudentSummary[] = studentsInProgramForSemester; // Ensure semesterStudents is typed
     const studentIdsInSemester = semesterStudents.map(s => s.studentId);
 
     // Calculate new KPIs for the semester

@@ -6,7 +6,7 @@ import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
 import { HomeOutlined, DollarCircleOutlined, CheckCircleOutlined, IssuesCloseOutlined, ClockCircleOutlined, LineChartOutlined, PieChartOutlined, ArrowLeftOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons'; // Added EyeOutlined, FileTextOutlined
 import { Line, Pie } from '@ant-design/plots';
-import { Institution, StudentSummary, Department, Program as ProgramType, Semester as SemesterType } from '../../../types/hierarchy';
+import { Institution, StudentSummary, Department, Program, Semester, AcademicYear, Degree } from '../../../types/hierarchy';
 // Billing-specific types (Invoice, Payment, PaymentMethod, FeeItem, InvoiceStatus) need to be imported from their correct location.
 // Assuming they might be in a yet-to-be-created 'src/types/billing.ts' or similar, or need to be found.
 // For now, removing them from this import to fix the module path error.
@@ -17,7 +17,7 @@ type Payment = any;
 type PaymentMethod = any;
 type FeeItem = any;
 type InvoiceStatus = any;
-import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { generateMockInvoices, generateMockPayments } from '../../../utils/mockData/billing/generateMockBillingData';
 import { faker } from '@faker-js/faker';
@@ -77,11 +77,11 @@ const BillingFeeCollectionModule: React.FC = () => {
 
         if (currentInstitution) {
           const studentSummariesFromInstitution: StudentSummary[] = [];
-          currentInstitution.academicYears.forEach(ay =>
-            ay.degrees.forEach(deg =>
-              deg.programs.forEach(prog =>
-                prog.semesters.forEach(sem =>
-                  sem.students.forEach(s => {
+          currentInstitution.academicYears.forEach((ay: AcademicYear) =>
+            ay.degrees.forEach((deg: Degree) =>
+              deg.programs.forEach((prog: Program) =>
+                prog.semesters.forEach((sem: Semester) =>
+                  sem.students.forEach((s: StudentSummary) => {
                     if(!studentSummariesFromInstitution.find(es => es.studentId === s.studentId)) {
                       studentSummariesFromInstitution.push({...s, programName: prog.programName});
                     }
@@ -139,13 +139,13 @@ const BillingFeeCollectionModule: React.FC = () => {
     if (!selectedDepartmentForBilling || !institutionData || !allInvoices.length) return [];
     const departmentProgramIds = new Set(selectedDepartmentForBilling.programIds || []);
     const results: SemesterBillingInfo[] = [];
-    institutionData.academicYears.forEach(ay => {
+    institutionData.academicYears.forEach((ay: AcademicYear) => {
       if (filters.academicYear && ay.yearId !== filters.academicYear) return;
-      ay.degrees.forEach(deg => {
-        deg.programs.forEach(prog => {
+      ay.degrees.forEach((deg: Degree) => {
+        deg.programs.forEach((prog: Program) => {
           if (!departmentProgramIds.has(prog.programId)) return;
-          prog.semesters.forEach(sem => {
-            const studentIdsInSemester = new Set(sem.students.map(s => s.studentId));
+          prog.semesters.forEach((sem: Semester) => {
+            const studentIdsInSemester = new Set(sem.students.map((s: StudentSummary) => s.studentId));
             let totalInvoicedInSemester = 0;
             let totalCollectedInSemester = 0;
             const semesterInvoices = allInvoices.filter(inv =>
@@ -172,7 +172,7 @@ const BillingFeeCollectionModule: React.FC = () => {
 
   const invoicesInSelectedSemester = useMemo(() => {
     if (!selectedSemesterForInvoices || !allInvoices.length) return [];
-    const studentIdsInSemester = new Set(selectedSemesterForInvoices.students.map(s => s.studentId));
+    const studentIdsInSemester = new Set(selectedSemesterForInvoices.students.map((s: StudentSummary) => s.studentId));
     return allInvoices.filter(inv =>
         studentIdsInSemester.has(inv.studentId) &&
         dayjs(inv.issueDate).isBetween(dayjs(selectedSemesterForInvoices.startDate), dayjs(selectedSemesterForInvoices.endDate), null, '[]') &&

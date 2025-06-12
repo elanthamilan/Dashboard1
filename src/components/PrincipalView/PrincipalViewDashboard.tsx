@@ -4,7 +4,7 @@ import { Typography, Spin, Empty, Button, Breadcrumb, Row, Col } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
 import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary } from '../../types/hierarchy';
 import { StudentAcademicRecord } from '../../components/StudentPerformanceDashboard/types'; // Added import
-import { generateMockInstitutions, generateMockAcademicRecords } from '../../utils/mockData/academics/generateMockAcademicData'; // generateMockStudentSummary removed if not used directly
+import { generateMockNewInstitutions, generateMockAcademicRecords } from '../../utils/mockData/academics/generateMockAcademicData'; // generateMockStudentSummary removed if not used directly
 import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData';
 import { Student } from '../../components/AttendanceDashboard/types';
 import InstitutionDisplay from './InstitutionDisplay';
@@ -263,7 +263,7 @@ const PrincipalViewDashboard: React.FC = () => {
                 onClick: viewLevel === 'student_detail' ? () => { setViewLevel('student'); setSelectedStudentIdForDetail(null); setCurrentStudentAcademicRecord(null); } : undefined });
         }
     }
-    if (viewLevel === 'student_detail' && selectedStudentIdForDetail && viewLevel !== 'institution_overview') {
+    if (viewLevel === 'student_detail' && selectedStudentIdForDetail) {
         const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
         const studentNameString = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
         items.push({ key: 'student_detail', title: `Student: ${studentNameString || 'N/A'}` });

@@ -8,7 +8,7 @@ import {
     HomeOutlined, CheckCircleOutlined, CloseCircleOutlined, ReadOutlined, WarningOutlined,
     StarOutlined, UserSwitchOutlined, EyeOutlined, ArrowLeftOutlined, UserOutlined as StudentIcon
 } from '@ant-design/icons';
-import { generateMockInstitutions, generateMockAcademicRecords, generateMockStudentSummary } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockNewInstitutions, generateMockAcademicRecords, generateMockStudentSummary } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents, generateMockAttendanceRecords } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added generateMockAttendanceRecords
 import { Institution, StudentSummary, AcademicYear as AcademicYearType, StudentAcademicRecord, Department, CourseEnrollment, Program, FacultyMember } from '../../../types/hierarchy';
 import { Student, AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Added AttendanceRecord
@@ -244,6 +244,14 @@ const AcademicPerformanceModule: React.FC = () => {
     )
   );
 
+  // Define attendanceGradeScatterPlotSection
+  const attendanceGradeScatterPlotSection = React.createElement(Row, { style: { marginTop: '30px' } },
+    React.createElement(Col, { span: 24 },
+      React.createElement(AttendanceGradeScatterPlot, {
+        academicRecords: allAcademicRecords,
+        attendanceRecords: allAttendanceRecords,
+        students: allStudentsInInstitution,
+        title: t('module.academics.charts.attendanceVsGrade', "Attendance vs. Grade"),
         loading: loading,
       })
     )

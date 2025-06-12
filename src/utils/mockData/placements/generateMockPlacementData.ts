@@ -30,7 +30,7 @@ export const generateMockPlacementData = (
       placementRecords.push({
         placementId: `PLACE-INT-${String(placementIdCounter++).padStart(5, '0')}`,
         studentId: student.studentId,
-        programId: student.programId,
+        programId: 'PROG_MOCK_PLACEHOLDER', // Placeholder Program ID
         companyName: faker.company.name(),
         jobTitle: `Intern - ${faker.person.jobTitle()}`,
         packageAmount: parseFloat(faker.finance.amount({ min: 15000, max: 60000, dec: 0 })),
@@ -43,7 +43,7 @@ export const generateMockPlacementData = (
     placementRecords.push({
       placementId: `PLACE-FT-${String(placementIdCounter++).padStart(5, '0')}`,
       studentId: student.studentId,
-      programId: student.programId,
+      programId: 'PROG_MOCK_PLACEHOLDER', // Placeholder Program ID
       companyName: faker.company.name(),
       jobTitle: faker.person.jobTitle(),
       packageAmount: parseFloat(faker.finance.amount({ min: avgPackageBase * 0.5, max: avgPackageBase * 2.2, dec: 0 })),

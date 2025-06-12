@@ -8,7 +8,7 @@ import {
     SolutionOutlined, RiseOutlined, FileTextOutlined, TeamOutlined, AlertOutlined, SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { useGlobalFilters } from '../../contexts/GlobalFilterContext';
-import { generateMockInstitutions } from '../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockNewInstitutions } from '../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { Institution, StudentSummary, Department } from '../../types/hierarchy'; // Added Department
 import { useTranslation } from 'react-i18next';
@@ -51,7 +51,7 @@ const PrincipalDashboardLandingPage: React.FC = () => {
         degree.programs.forEach(program => {
           program.semesters.forEach(semester => {
             if (semester.students) {
-                semester.students.forEach(s => {
+                semester.students.forEach((s: StudentSummary) => {
                     if(s && s.studentId && !studentsMap.has(s.studentId)) {
                          studentsMap.set(s.studentId,s);
                     }

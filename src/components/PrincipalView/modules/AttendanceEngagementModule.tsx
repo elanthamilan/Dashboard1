@@ -14,7 +14,7 @@ import { Bar, Line, Heatmap } from '@ant-design/plots';
 import { Institution, StudentSummary, Program as ProgramType, Semester as SemesterType, CourseEnrollment } from '../../../types/hierarchy';
 import { AttendanceRecord } from '../../AttendanceDashboard/types';
 // Note: AbsenceReason was removed as it's not a defined type in the provided files. It was used as string.
-import { generateMockInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
+import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockAttendanceRecords, generateMockClasses } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Changed import
 import { getWeekNumberWithYear } from '../../../utils/dateUtils';
 import dayjs from 'dayjs';
@@ -158,7 +158,7 @@ const AttendanceEngagementModule: React.FC = () => {
             // Check if semester overlaps with the at-risk period or global date range filters
             // For simplicity, if global date range is wide, or academic year matches, include students.
             // More precise filtering could be added here if semesters have strict non-overlapping dates.
-            sem.students.forEach(s => {
+            sem.students.forEach((s: StudentSummary) => {
               if (!allStudentsCurrentContext.find(existing => existing.studentId === s.studentId)) {
                 allStudentsCurrentContext.push(s);
               }

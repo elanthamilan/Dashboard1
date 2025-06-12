@@ -9,11 +9,6 @@ import { Department } from './departments'; // Will use the updated Department d
 import { Alumnus, AlumniActivity } from './alumni';
 
 // Forward declaration for types used by ParentInstitution
-export type { Institution };
-export type { Faculty };
-export type { Course };
-export type { Section };
-export type { Department } from './departments';
 export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
 export type {
     ReEvaluationRequest, GrievanceTicket,
@@ -78,6 +73,7 @@ export interface StudentSummary {
   studentId: string;
   firstName: string;
   lastName: string;
+  programName?: string;
   // programId: string; // Student might not be directly tied to a single program in this summary view
   // programName: string; // Student might be in multiple sections of different courses
   cumulativeGPA?: number;
@@ -87,8 +83,12 @@ export interface StudentSummary {
   // sectionId?: string; // If a student summary is specific to a section
 }
 
-export interface Semester extends Term {
-  // students: StudentSummary[]; // Students are now in Sections within Courses
+export interface Semester {
+  semesterId: string; // Added semesterId as Term is removed
+  semesterName: string; // Added semesterName as Term is removed
+  startDate: string; // Added startDate as Term is removed
+  endDate: string; // Added endDate as Term is removed
+  students?: StudentSummary[];
   courses: Course[]; // Semester now has Courses
   averageGPA?: number;
   passRate?: number;
@@ -104,12 +104,17 @@ export interface Program {
   programId: string;
   programName: string;
   degreeId: string;
+  departmentId?: string;
   // departmentId?: string; // Removed, Program is under Degree which is under Department
   requiredCredits?: number;
   semesters: Semester[]; // Program still has Semesters
   totalStudents?: number;
   averageProgramGPA?: number;
   graduationRate?: number;
+  avgAttendancePercentage?: number;
+  totalProgramAbsences?: number;
+  avgFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFees?: number;
   // KPIs for Program
   // avgAttendancePercentage?: number; // Attendance is more granular (Course/Section/Student)
   // totalProgramAbsences?: number; // Attendance is more granular
@@ -134,6 +139,10 @@ export interface Degree {
   programs: Program[];
   totalStudents?: number;
   averageDegreeGPA?: number;
+  avgAttendancePercentage?: number;
+  totalDegreeAbsences?: number;
+  avgFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFeesInDegree?: number;
   // KPIs for Degree (Aggregated from Programs)
   // avgAttendancePercentage?: number; // More granular
   // totalDegreeAbsences?: number; // More granular
@@ -158,6 +167,10 @@ export interface AcademicYear {
   degrees: Degree[]; // This remains, assuming AcademicYear is a temporal slice across degrees
   totalStudents?: number;
   overallAverageGPA?: number;
+  annualAttendancePercentage?: number;
+  totalAnnualAbsences?: number;
+  annualFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFeesInYear?: number;
   // KPIs for AcademicYear (Aggregated from Degrees)
   // annualAttendancePercentage?: number;
   // totalAnnualAbsences?: number;
@@ -182,6 +195,10 @@ export interface Institution {
   faculties: Faculty[]; // Changed from departments
   totalStudents?: number;
   overallAverageGPA?: number;
+  institutionAttendancePercentage?: number;
+  totalInstitutionAbsences?: number;
+  institutionFeesPaidPercentage?: number;
+  totalStudentsWithOverdueFeesInInstitution?: number;
   // KPIs for Institution (Aggregated)
   // institutionAttendancePercentage?: number;
   // totalInstitutionAbsences?: number;
