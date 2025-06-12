@@ -9,7 +9,12 @@ import {
     Degree,
     Program,
     Semester,
-    StudentSummary
+    StudentSummary,
+    // Added new types
+    Course,
+    Section,
+    Faculty,
+    ParentInstitution
 } from '../../../types/hierarchy';
 // Import base data types and generators
 // import { Student } from '../../../components/AttendanceDashboard/types'; // Removed duplicate
@@ -150,8 +155,8 @@ export const generateMockStudentSummary = (student: Student, studentAcademicReco
         studentId: student.id,
         firstName: student.firstName,
         lastName: student.lastName,
-        programId: studentAcademicRecord.programId || 'UNDEF_PROG', // Default if not defined
-        programName: studentAcademicRecord.programName || 'Undefined Program', // Default if not defined
+        // programId: studentAcademicRecord.programId || 'UNDEF_PROG', // Removed as per new StudentSummary
+        // programName: studentAcademicRecord.programName || 'Undefined Program', // Removed as per new StudentSummary
         cumulativeGPA: gpa,
         totalCreditsEarned: studentAcademicRecord.totalCreditsEarned,
         enrollmentStatus: getRandomEnrollmentStatus(),
@@ -392,6 +397,787 @@ const calculatePlacementKPIs = (
 
 // --- New Hierarchical Mock Data Generation ---
 
+// Helper to generate term details (used by new Semester)
+const generateTermDetails = (termNumber: number, year: number, programId: string): { termId: string, termName: string, startDate: string, endDate: string } => {
+    const isFall = termNumber % 2 === 0;
+    // Make termId more unique if multiple programs have same year/season terms.
+    // However, programId is not part of Term's ID in the types. For now, keep it simple.
+    const termId = `${isFall ? 'FA' : 'SP'}${year}`;
+    const termName = `${isFall ? 'Fall' : 'Spring'} ${year}`;
+    return {
+        termId,
+        termName,
+        startDate: dayjs(`${year}-${isFall ? '08' : '01'}-15`).toISOString(),
+        endDate: dayjs(`${year}-${isFall ? '12' : '05'}-15`).toISOString(),
+    };
+};
+
+// Helper to pick a subset of students
+const pickRandomSubset = <T>(items: T[], maxCount: number): T[] => {
+    if (!items || items.length === 0) return [];
+    const count = faker.number.int({ min: Math.min(1, items.length), max: Math.min(maxCount, items.length) });
+    return faker.helpers.arrayElements(items, count);
+};
+
+
+// New generator functions from bottom-up
+
+const generateMockSections = (
+    courseId: string,
+    availableStudents: StudentSummary[],
+    numSections: number = faker.number.int({ min: 1, max: 3 })
+): Section[] => {
+    const sections: Section[] = [];
+    const courseStudents = pickRandomSubset(availableStudents, availableStudents.length); // All available for this course, sections will subdivide them
+    let remainingStudents = [...courseStudents];
+
+    for (let i = 0; i < numSections; i++) {
+        const sectionId = `${courseId}-S${i + 1}`;
+        const sectionName = `Section ${String.fromCharCode(65 + i)}`; // A, B, C
+
+        const sectionStudentCount = Math.ceil(courseStudents.length / numSections);
+        const studentsForSection = remainingStudents.splice(0, Math.min(sectionStudentCount, remainingStudents.length));
+
+        if (studentsForSection.length === 0 && courseStudents.length > 0 && sections.length < numSections) {
+            // If running out of students for later sections due to Math.ceil, assign from the course pool if any are left (or allow empty sections)
+            // For mock data, it's okay if not perfectly distributed or some sections are smaller.
+            // Or, ensure enough students were picked for the course initially.
+        }
+
+        sections.push({
+            sectionId,
+            sectionName,
+            courseId,
+            instructorName: faker.person.fullName(),
+            schedule: `${faker.helpers.arrayElement(['Mon/Wed/Fri', 'Tue/Thu'])} ${faker.number.int({ min: 8, max: 15 })}-${faker.number.int({ min: 9, max: 17 })} AM/PM`,
+            students: studentsForSection,
+            studentCount: studentsForSection.length,
+            averageAttendance: faker.number.float({ min: 70, max: 95, multipleOf: 0.5 }), // Mock KPI
+            classroom: `Room ${faker.number.int({min: 101, max: 305})}`
+        });
+    }
+    return sections;
+};
+
+const generateMockCourses = (
+    semesterId: string,
+    availableStudents: StudentSummary[], // Students available for this semester's courses
+    numCourses: number = faker.number.int({ min: 3, max: 6 })
+): Course[] => {
+    const courses: Course[] = [];
+    const subjectAreas = ['CS', 'MATH', 'ENG', 'HIST', 'SCI', 'ART'];
+
+    for (let i = 0; i < numCourses; i++) {
+        const subject = faker.helpers.arrayElement(subjectAreas);
+        const courseNum = faker.number.int({ min: 101, max: 499 });
+        const courseId = `${subject}${courseNum}-${semesterId}`;
+        const courseName = `${faker.commerce.productName()} (${subject} ${courseNum})`;
+
+        // Each course gets a subset of students available for the semester.
+        // This means a student might be in multiple courses, which is realistic.
+        const studentsForCourse = pickRandomSubset(availableStudents, availableStudents.length);
+
+        const sections = generateMockSections(courseId, studentsForCourse);
+        const totalEnrolledInCourse = sections.reduce((sum, sec) => sum + sec.studentCount!, 0);
+
+        courses.push({
+            courseId,
+            courseName,
+            semesterId,
+            sections,
+            courseCode: `${subject} ${courseNum}`,
+            credits: faker.helpers.arrayElement([3, 4]),
+            totalStudentsEnrolled: totalEnrolledInCourse,
+            averageGrade: faker.number.float({ min: 65, max: 90, multipleOf: 0.5 }), // Mock KPI
+            passRate: faker.number.float({ min: 70, max: 98, multipleOf: 0.5 }), // Mock KPI
+            facultyCoordinatorId: `FAC-${faker.string.uuid().substring(0,8)}`
+        });
+    }
+    return courses;
+};
+
+// --- SEMESTER ---
+// Note: The existing `generateMockSemester` is tied to the old structure where Semester has `students: StudentSummary[]`
+// and `courses: CourseEnrollment[]`. The new `Semester` type has `courses: Course[]` and no direct `students` field.
+// We will create `generateMockNewSemester` for the new structure.
+
+const generateMockNewSemester = (
+    termDetails: { termId: string, termName: string, startDate: string, endDate: string },
+    programId: string, // For context, though not directly part of Semester type model
+    availableStudents: StudentSummary[], // Students available for this program's semester
+    allAttendanceRecords: AttendanceRecord[],
+    allInvoices: Invoice[]
+): Semester => {
+    // Students participating in this semester's courses
+    // For simplicity, assume all students available to the program for this semester could take courses.
+    // A more complex model might filter students based on their year/progress.
+    const studentsForSemesterCourses = pickRandomSubset(availableStudents, availableStudents.length);
+
+    const courses = generateMockCourses(termDetails.termId, studentsForSemesterCourses);
+
+    // Aggregate student IDs from all sections in all courses for this semester for KPI calculation
+    const studentIdsInSemesterCourses = new Set<string>();
+    courses.forEach(course => {
+        course.sections.forEach(section => {
+            section.students.forEach(student => {
+                studentIdsInSemesterCourses.add(student.studentId);
+            });
+        });
+    });
+    const uniqueStudentIdsArray = Array.from(studentIdsInSemesterCourses);
+
+    // Calculate KPIs for the semester using students enrolled in its courses
+    const attendanceKPIs = calculateAttendanceKPIs(uniqueStudentIdsArray, allAttendanceRecords, termDetails.startDate, termDetails.endDate);
+    const billingKPIs = calculateBillingKPIs(uniqueStudentIdsArray, allInvoices);
+
+    // Semester GPA and Pass Rate would ideally be calculated from the actual grades in the courses of this semester.
+    // This is complex for mock data. We can mock them or use an average of student cumulative GPAs.
+    let semesterGpaSum = 0;
+    let studentsCountedForGpa = 0;
+    availableStudents.filter(s => uniqueStudentIdsArray.includes(s.studentId)).forEach(student => {
+        if (student.cumulativeGPA !== undefined) {
+            semesterGpaSum += student.cumulativeGPA;
+            studentsCountedForGpa++;
+        }
+    });
+    const averageGPA = studentsCountedForGpa > 0 ? parseFloat((semesterGpaSum / studentsCountedForGpa).toFixed(2)) : undefined;
+
+    const passingStudents = availableStudents.filter(s => uniqueStudentIdsArray.includes(s.studentId) && s.cumulativeGPA !== undefined && s.cumulativeGPA >= 2.0).length;
+    const passRate = uniqueStudentIdsArray.length > 0 ? parseFloat(((passingStudents / uniqueStudentIdsArray.length) * 100).toFixed(2)) : undefined;
+
+
+    return {
+        ...termDetails, // termId, termName, startDate, endDate
+        courses, // This is now Course[]
+        // students field is removed from Semester type
+        averageGPA, // Mocked or aggregated differently
+        passRate,   // Mocked or aggregated differently
+        attendancePercentage: attendanceKPIs.percentage,
+        totalAbsences: attendanceKPIs.totalAbsences,
+        feesPaidPercentage: billingKPIs.feesPaidPercentage,
+        studentsWithOverdueFees: billingKPIs.overdueCount,
+        totalCoursesOffered: courses.length,
+    };
+};
+
+
+// Existing calculateSemesterAverageGPA and calculateSemesterPassRate are based on the old structure.
+// They might need to be removed or adapted if a new way of calculating semester GPA/PassRate from Course grades is implemented.
+// For now, generateMockNewSemester implements its own simple GPA/PassRate logic.
+
+// Remove or comment out old functions that are being replaced or are no longer directly compatible
+// export const generateMockSemester (this is the old one) ...
+
+// --- PROGRAM ---
+// The existing `generateMockProgram` needs to be updated to use `generateMockNewSemester`
+// and to align with the new Program structure (no departmentId directly).
+
+export const generateMockNewProgram = (
+    programConfig: { programId: string, programName: string, requiredCredits: number },
+    degreeId: string,
+    // departmentId is no longer directly on Program, it's on Degree
+    allStudentsInInstitution: Student[], // All students available for potential enrollment
+    allAcademicRecordsInInstitution: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[],
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[],
+    numSemestersToGenerate: number = faker.number.int({min: 2, max: 6}) // e.g., 2 for a 1-year cert, 4 for 2-year, 8 for 4-year
+): Program => {
+    const { programId, programName, requiredCredits } = programConfig;
+
+    // Filter academic records for this specific program to find relevant students
+    const programStudentAcademicRecords = allAcademicRecordsInInstitution.filter(ar => ar.programId === programId);
+    const programStudentIds = new Set(programStudentAcademicRecords.map(ar => ar.studentId));
+
+    // Create StudentSummary objects for students in this program
+    const programStudentSummaries = allStudentsInInstitution
+        .filter(s => programStudentIds.has(s.id))
+        .map(student => {
+            const record = programStudentAcademicRecords.find(r => r.studentId === student.id);
+            return generateMockStudentSummary(student, record!);
+        });
+
+    const semesters: Semester[] = [];
+    const currentYear = dayjs().year();
+    // Generate semesters sequentially (e.g., Fall 2023, Spring 2024, Fall 2024 ...)
+    for (let i = 0; i < numSemestersToGenerate; i++) {
+        const yearOffset = Math.floor(i / 2); // Increments every two semesters
+        const termNumInYear = i % 2; // 0 for Fall-like, 1 for Spring-like
+
+        const termDetails = generateTermDetails(termNumInYear, currentYear - Math.floor(numSemestersToGenerate/2) + yearOffset, programId);
+
+        // Pass only students relevant to this program to the semester generation
+        const activeStudentsForSemester = programStudentSummaries.filter(s => s.enrollmentStatus === 'Active');
+
+        semesters.push(generateMockNewSemester(
+            termDetails,
+            programId,
+            activeStudentsForSemester, // Students for this program
+            allAttendanceRecords,
+            allInvoices
+        ));
+    }
+
+    const totalStudentsInProgram = programStudentSummaries.length;
+    const programStudentIdsArray = Array.from(programStudentIds);
+
+    // Aggregate KPIs for the Program (similar to old generateMockProgram)
+    const programAttendanceKPIs = calculateAttendanceKPIs(programStudentIdsArray, allAttendanceRecords);
+    const programBillingKPIs = calculateBillingKPIs(programStudentIdsArray, allInvoices);
+    const applicantsForProgram = allApplicants.filter(app => app.programId === programId);
+    const programAdmissionKPIs = calculateAdmissionKPIs(applicantsForProgram);
+    const programPlacementKPIs = calculatePlacementKPIs(programStudentIdsArray, programStudentSummaries, allPlacementRecords);
+    const programGradeDistribution = calculateGradeDistribution(programStudentAcademicRecords);
+    const programAtRiskStudents = countAtRiskStudents(programStudentAcademicRecords, programStudentIdsArray);
+
+    let sumOfGpas = 0;
+    let studentsWithGpas = 0;
+    programStudentSummaries.forEach(s => {
+        if (s.cumulativeGPA !== undefined) {
+            sumOfGpas += s.cumulativeGPA;
+            studentsWithGpas++;
+        }
+    });
+    const averageProgramGPA = studentsWithGpas > 0 ? parseFloat((sumOfGpas / studentsWithGpas).toFixed(2)) : undefined;
+
+    const graduatedStudents = programStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated').length;
+    const eligibleForGraduation = programStudentSummaries.filter(s => s.totalCreditsEarned && s.totalCreditsEarned >= requiredCredits).length;
+    let graduationRate = eligibleForGraduation > 0 ? parseFloat(((graduatedStudents / eligibleForGraduation) * 100).toFixed(2)) : faker.number.float({ min: 60, max: 95, multipleOf: 0.01 });
+
+    const passingStudentsInProgram = programStudentSummaries.filter(s => s.cumulativeGPA !== undefined && s.cumulativeGPA >= 2.0).length;
+    const programPassRate = totalStudentsInProgram > 0 ? parseFloat(((passingStudentsInProgram / totalStudentsInProgram) * 100).toFixed(2)) : 0;
+
+    // DATA REALISM (can be kept or adapted)
+    if (programId === "PSY_BS" && averageProgramGPA && programPlacementKPIs.rate) {
+        // averageProgramGPA = parseFloat(Math.max(1.0, averageProgramGPA * 0.85).toFixed(2));
+        // programPlacementKPIs.rate = parseFloat(Math.max(0, programPlacementKPIs.rate - 15).toFixed(2));
+        // graduationRate = parseFloat(Math.max(30, graduationRate * 0.8).toFixed(2));
+    }
+
+    return {
+        programId,
+        programName,
+        degreeId,
+        // departmentId is removed
+        requiredCredits,
+        semesters, // Now uses NewSemester
+        totalStudents: totalStudentsInProgram,
+        averageProgramGPA,
+        graduationRate,
+        programPassRate,
+        // KPIs from calculations
+        placementRate: programPlacementKPIs.rate,
+        averagePackage: programPlacementKPIs.avgPackage,
+        totalPlacedStudents: programPlacementKPIs.placedCount,
+        totalInternships: programPlacementKPIs.internshipCount,
+        avgAttendancePercentage: programAttendanceKPIs.percentage, // Attendance is better at course/section level
+        totalProgramAbsences: programAttendanceKPIs.totalAbsences, // Same as above
+        avgFeesPaidPercentage: programBillingKPIs.feesPaidPercentage, // Fee status might be tracked differently
+        totalStudentsWithOverdueFees: programBillingKPIs.overdueCount, // Same as above
+        applicants: programAdmissionKPIs.applicants,
+        acceptanceRate: programAdmissionKPIs.acceptanceRate,
+        enrolledCount: programAdmissionKPIs.enrolledCount,
+        gradeDistribution: programGradeDistribution, // Aggregated from course grades ideally
+        atRiskStudents: programAtRiskStudents, // Identified based on course performance or overall status
+    };
+};
+
+// Existing generateMockProgram should be replaced or removed.
+// For now, let's assume generateMockNewProgram is the one to be used.
+
+// --- DEGREE ---
+// Update generateMockDegree to generateMockNewDegree
+// It should include departmentId and use generateMockNewProgram
+
+export const generateMockNewDegree = (
+    degreeConfig: { degreeId: string, degreeName: string },
+    departmentId: string,
+    // Student-related data passed down from a higher level (e.g., Faculty or Institution)
+    allStudentsInScope: Student[],
+    allAcademicRecordsInScope: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[],
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[]
+): Degree => {
+    const { degreeId, degreeName } = degreeConfig;
+    const programsInDegreeConfig = degreeProgramMappings[degreeId] || [];
+
+    const programs: Program[] = programsInDegreeConfig.map(pConfig => {
+        // Students for this program are filtered from the scope passed to the Degree
+        return generateMockNewProgram(
+            pConfig,
+            degreeId,
+            allStudentsInScope,
+            allAcademicRecordsInScope,
+            allAttendanceRecords,
+            allInvoices,
+            allApplicants,
+            allPlacementRecords,
+            faker.number.int({ min: 4, max: 8 }) // Number of semesters for the program
+        );
+    });
+
+    // Aggregate Student Summaries and IDs for the Degree from its programs
+    const degreeStudentSummariesMap = new Map<string, StudentSummary>();
+    programs.forEach(prog => {
+        // Re-derive student summaries for this degree's programs from academic records in scope
+        const programStudentRecords = allAcademicRecordsInScope.filter(ar => ar.programId === prog.programId);
+        programStudentRecords.forEach(psr => {
+            if (!degreeStudentSummariesMap.has(psr.studentId)) {
+                 const student = allStudentsInScope.find(s => s.id === psr.studentId);
+                 if(student) {
+                    // Ensure generateMockStudentSummary is available and correctly typed
+                    degreeStudentSummariesMap.set(psr.studentId, generateMockStudentSummary(student, psr));
+                 }
+            }
+        });
+    });
+    const degreeStudentSummaries = Array.from(degreeStudentSummariesMap.values());
+    const degreeStudentIds = degreeStudentSummaries.map(s => s.studentId);
+
+    // Aggregate KPIs for the Degree (similar to old generateMockDegree but using new program structure)
+    let totalStudentsInDegree = degreeStudentSummaries.length;
+    let sumOfProgramGpas = 0;
+    let totalStudentsForGpaCalc = 0;
+    // ... other KPI aggregations ...
+
+    programs.forEach(prog => {
+        if (prog.averageProgramGPA !== undefined && prog.totalStudents) {
+            sumOfProgramGpas += prog.averageProgramGPA * prog.totalStudents;
+            totalStudentsForGpaCalc += prog.totalStudents;
+        }
+        // Aggregate other KPIs from prog similarly
+    });
+
+    const averageDegreeGPA = totalStudentsForGpaCalc > 0 ? parseFloat((sumOfProgramGpas / totalStudentsForGpaCalc).toFixed(2)) : undefined;
+    const degreePlacementKPIs = calculatePlacementKPIs(degreeStudentIds, degreeStudentSummaries, allPlacementRecords);
+    // Mock other KPIs or aggregate them properly
+    const totalApplicants = programs.reduce((sum, p) => sum + (p.applicants || 0), 0);
+    const totalEnrolledCount = programs.reduce((sum, p) => sum + (p.enrolledCount || 0), 0);
+    // Simplified acceptance rate: total enrolled / total applicants for the degree
+    const avgAcceptanceRate = totalApplicants > 0 ? parseFloat(((totalEnrolledCount / totalApplicants) * 100).toFixed(2)) : undefined;
+
+
+    return {
+        degreeId,
+        degreeName,
+        departmentId, // New field
+        programs, // Contains new Program objects
+        totalStudents: totalStudentsInDegree,
+        averageDegreeGPA,
+        // KPIs (some mocked, some aggregated)
+        placementRate: degreePlacementKPIs.rate,
+        averagePackage: degreePlacementKPIs.avgPackage,
+        totalPlacedStudents: degreePlacementKPIs.placedCount,
+        totalInternships: degreePlacementKPIs.internshipCount,
+        totalApplicants,
+        avgAcceptanceRate,
+        totalEnrolledCount,
+        // overallGradeDistribution, totalAtRiskStudents etc. should be aggregated from programs
+        overallGradeDistribution: {}, // Placeholder
+        totalAtRiskStudents: programs.reduce((sum, p) => sum + (p.atRiskStudents || 0), 0), // Example aggregation
+        // Remove attendance/fee KPIs if they are too granular for Degree level now
+    };
+};
+
+
+// --- DEPARTMENT ---
+// Department type from: import { Department } from '../../../types/departments';
+// Department type has: departmentId, departmentName, facultyId, degreeIds, KPIs.
+
+// Predefined department configurations (can be expanded)
+const departmentConfigs = [
+    { departmentId: 'DEPT_STEM', departmentName: 'School of STEM', facultyId: '', degreeConfigs: [mockDegrees[0], mockDegrees[2]] }, // Bachelors, Doctorate for STEM
+    { departmentId: 'DEPT_ARTS', departmentName: 'School of Arts & Humanities', facultyId: '', degreeConfigs: [mockDegrees[0], mockDegrees[1]] }, // Bachelors, Masters for ARTS
+    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', facultyId: '', degreeConfigs: [mockDegrees[1]] } // Masters for Business
+];
+
+export const generateMockDepartments = (
+    facultyId: string,
+    // Student data scoped to the faculty
+    allStudentsInFaculty: Student[],
+    allAcademicRecordsInFaculty: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[], // Full lists, will be filtered by student IDs
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[]
+): Department[] => {
+    const departments: Department[] = [];
+
+    departmentConfigs.forEach(deptConfig => {
+        // Assign facultyId to this department
+        const currentDepartmentId = `${deptConfig.departmentId}-${facultyId.slice(-4)}`; // Make ID unique per faculty
+
+        // Filter students for this department based on programs within degrees of this dept.
+        // This is a bit tricky as programs are defined under degrees.
+        // For mock data, we can assign a portion of faculty students to each department.
+        // Or, more accurately, sum students from degrees generated for this department.
+
+        const degrees: Degree[] = deptConfig.degreeConfigs.map(degConf => {
+            // For each degree, we need to determine the relevant student subset.
+            // Let's assume for now that students passed to generateMockNewDegree are filtered appropriately.
+            // However, generateMockNewDegree itself filters students based on programs.
+            // A simpler approach for department might be to assign a slice of faculty students.
+            return generateMockNewDegree(
+                degConf,
+                currentDepartmentId,
+                allStudentsInFaculty, // Pass all faculty students, degree/program will filter
+                allAcademicRecordsInFaculty,
+                allAttendanceRecords,
+                allInvoices,
+                allApplicants,
+                allPlacementRecords
+            );
+        });
+
+        const degreeIds = degrees.map(d => d.degreeId);
+
+        // Aggregate students and KPIs for the department from its degrees
+        let deptTotalStudents = 0;
+        const deptStudentSummariesMap = new Map<string, StudentSummary>();
+        degrees.forEach(degree => {
+            degree.programs.forEach(prog => {
+                const progStudentRecords = allAcademicRecordsInFaculty.filter(ar => ar.programId === prog.programId);
+                progStudentRecords.forEach(psr => {
+                    if (!deptStudentSummariesMap.has(psr.studentId)) {
+                        const student = allStudentsInFaculty.find(s => s.id === psr.studentId);
+                        if (student) {
+                            deptStudentSummariesMap.set(psr.studentId, generateMockStudentSummary(student, psr));
+                        }
+                    }
+                });
+            });
+        });
+        const deptStudentSummaries = Array.from(deptStudentSummariesMap.values());
+        deptTotalStudents = deptStudentSummaries.length;
+
+        let deptGpaSum = 0;
+        let studentsCountedForDeptGpa = 0;
+        deptStudentSummaries.forEach(s => {
+            if (s.cumulativeGPA !== undefined) {
+                deptGpaSum += s.cumulativeGPA;
+                studentsCountedForDeptGpa++;
+            }
+        });
+        const departmentAverageGPA = studentsCountedForDeptGpa > 0 ? parseFloat((deptGpaSum / studentsCountedForDeptGpa).toFixed(2)) : undefined;
+
+        const deptPlacementKPIs = calculatePlacementKPIs(deptStudentSummaries.map(s=>s.studentId), deptStudentSummaries, allPlacementRecords);
+
+        departments.push({
+            departmentId: currentDepartmentId,
+            departmentName: deptConfig.departmentName,
+            facultyId,
+            degreeIds, // Changed from programIds to degreeIds
+            totalStudents: deptTotalStudents,
+            departmentAverageGPA, // Renamed for clarity from averageGPA
+            departmentPlacementRate: deptPlacementKPIs.rate, // Renamed
+            // departmentPassRate: // Calculate if needed
+            // performanceScore, mockStudentSatisfactionScore can be added later
+        });
+    });
+
+    return departments;
+};
+
+// --- FACULTY ---
+export const generateMockFaculties = (
+    institutionId: string,
+    // Student data scoped to the institution
+    allStudentsInInstitution: Student[],
+    allAcademicRecordsInInstitution: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[],
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[],
+    numFaculties: number = faker.number.int({ min: 2, max: 4 })
+): Faculty[] => {
+    const faculties: Faculty[] = [];
+    const facultyNames = ["Faculty of Engineering", "Faculty of Arts & Sciences", "Faculty of Business", "Faculty of Health Sciences", "Faculty of Design"];
+
+    for (let i = 0; i < numFaculties; i++) {
+        const facultyId = `FACULTY-${institutionId.slice(-4)}-${i + 1}`;
+        const facultyName = faker.helpers.arrayElement(facultyNames.filter(fn => !faculties.find(f=>f.facultyName === fn))) || `${faker.company.bsBuzz()} Faculty`;
+
+        // Distribute a portion of institution's students to this faculty.
+        // This is a simplification. A real system would have explicit student-faculty enrollment.
+        // For mock data, let's say each faculty gets a roughly equal share, with some overlap.
+        const studentsForFaculty = pickRandomSubset(allStudentsInInstitution, Math.ceil(allStudentsInInstitution.length / numFaculties) + 5);
+        const academicRecordsForFaculty = allAcademicRecordsInInstitution.filter(ar =>
+            studentsForFaculty.some(s => s.id === ar.studentId)
+        );
+
+        const departments = generateMockDepartments(
+            facultyId,
+            studentsForFaculty,
+            academicRecordsForFaculty,
+            allAttendanceRecords,
+            allInvoices,
+            allApplicants,
+            allPlacementRecords
+        );
+
+        let totalStudentsInFaculty = 0;
+        let facultyGpaSum = 0;
+        let studentsCountedForFacultyGpa = 0;
+
+        const facultyStudentSummariesMap = new Map<string, StudentSummary>();
+        departments.forEach(dept => {
+            // To get students for faculty GPA, need to look into dept's degrees -> programs -> students
+            // This is similar to how department aggregates students.
+            // For now, we sum unique students from the initial distribution to faculty for KPI calculation.
+        });
+
+        studentsForFaculty.forEach(s => { // Use the initially distributed studentsForFaculty for KPIs
+            const record = academicRecordsForFaculty.find(ar => ar.studentId === s.id);
+            if (record) { // StudentSummary should be generated based on this record
+                const summary = generateMockStudentSummary(s, record);
+                if (!facultyStudentSummariesMap.has(summary.studentId)) {
+                    facultyStudentSummariesMap.set(summary.studentId, summary);
+                }
+            }
+        });
+        const uniqueFacultyStudents = Array.from(facultyStudentSummariesMap.values());
+        totalStudentsInFaculty = uniqueFacultyStudents.length;
+
+        uniqueFacultyStudents.forEach(summary => {
+            if (summary.cumulativeGPA !== undefined) {
+                facultyGpaSum += summary.cumulativeGPA;
+                studentsCountedForFacultyGpa++;
+            }
+        });
+
+        const averageFacultyGPA = studentsCountedForFacultyGpa > 0 ? parseFloat((facultyGpaSum / studentsCountedForFacultyGpa).toFixed(2)) : undefined;
+
+        faculties.push({
+            facultyId,
+            facultyName,
+            institutionId,
+            departments,
+            totalStudents: totalStudentsInFaculty,
+            averageFacultyGPA,
+            totalFacultyMembers: faker.number.int({min: 20, max: 100}), // Mocked
+            researchProjectsCount: faker.number.int({min: 5, max: 50}) // Mocked
+        });
+    }
+    return faculties;
+};
+
+
+// --- INSTITUTION (Update) ---
+export const generateMockNewInstitutions = ( // Renamed from generateMockInstitutions
+    parentInstitutionId: string | undefined, // New optional parameter
+    // numInstitutions: number = 1 // Typically generate one detailed institution per call now
+    allStudentsForInstitution: Student[], // Students specifically for this institution
+    numYears: number = 3, // For AcademicYear data, if generated
+    numApplicantsPerProgramContext: number = 50 // Contextual, might be based on all programs
+): Institution[] => { // Still returns array for flexibility, but usually one
+
+    const allStudents = allStudentsForInstitution;
+    const allAcademicRecords = generateMockAcademicRecords(allStudents);
+    const institutionWideStudentSummaries = allAcademicRecords.map(ar =>
+        generateMockStudentSummary(allStudents.find(s => s.id === ar.studentId)!, ar)
+    );
+    // const institutionStudentIds = institutionWideStudentSummaries.map(s => s.studentId); // Not directly used below
+
+    // Other base data generation (LMS, Placement, Attendance, Invoices, etc.) remains largely the same
+    const allLmsActivities = generateMockLmsActivityData(institutionWideStudentSummaries, 20, 60);
+    const allPlacementRecords = generateMockPlacementData(institutionWideStudentSummaries);
+    const allAttendanceRecords = generateMockAttendanceRecords(allStudents, [], numYears * 365);
+    const allInvoices = generateMockInvoices(allStudents, 5, new Set());
+
+    // Estimate total number of unique programs that will be generated across all faculties/departments/degrees
+    // This is a rough estimate for applicant generation.
+    let totalProgramTemplates = 0;
+    departmentConfigs.forEach(dc => {
+        dc.degreeConfigs.forEach(degC => {
+            totalProgramTemplates += (degreeProgramMappings[degC.degreeId] || []).length;
+        });
+    });
+    const allApplicants = generateMockApplicants(numApplicantsPerProgramContext * totalProgramTemplates);
+
+
+    const institutionId = faker.string.uuid();
+    const institutionName = `${faker.company.name()} University`;
+
+    const faculties = generateMockFaculties(
+        institutionId,
+        allStudents,
+        allAcademicRecords,
+        allAttendanceRecords,
+        allInvoices,
+        allApplicants,
+        allPlacementRecords,
+        faker.number.int({min: 3, max: 5})
+    );
+
+    // Academic Years: This part is complex because programs are now deep within Faculties.
+    // The old generateMockAcademicYear creates its own Degrees/Programs.
+    // For a consistent new hierarchy, AcademicYear should source its structure from the
+    // programs defined under Institution -> Faculty -> Dept -> Degree.
+    // This requires either passing all programs up or carefully filtering.
+    // For now, let's create an empty academicYears array or a simplified one.
+    const academicYearsData: AcademicYear[] = []; // Placeholder for now.
+    // To properly populate AcademicYears, one would need to:
+    // 1. Collect all unique Degree instances from all Departments in all Faculties.
+    // 2. For each AcademicYear, associate these Degrees.
+    // This ensures that the Degrees and Programs in AcademicYears are the same instances.
+    // This is a larger refactoring for generateMockAcademicYear itself.
+
+    let instTotalStudents = 0;
+    let instGpaSum = 0;
+    let instStudentsForGpa = 0;
+
+    faculties.forEach(faculty => {
+        instTotalStudents += faculty.totalStudents || 0;
+        if (faculty.averageFacultyGPA !== undefined && faculty.totalStudents) {
+            instGpaSum += faculty.averageFacultyGPA * faculty.totalStudents;
+            instStudentsForGpa += faculty.totalStudents;
+        }
+    });
+    const overallAverageGPA = instStudentsForGpa > 0 ? parseFloat((instGpaSum / instStudentsForGpa).toFixed(2)) : undefined;
+
+    // Simplified KPI generation for institution level - should be more comprehensive
+    const institutionPlacementKPIs = calculatePlacementKPIs(institutionWideStudentSummaries.map(s=>s.studentId), institutionWideStudentSummaries, allPlacementRecords);
+    const allReEvaluationRequests = generateMockReEvaluationData(institutionWideStudentSummaries, [], 100);
+    const pendingReEvaluationsCount = allReEvaluationRequests.filter(r => r.status === 'Pending').length;
+    const allGrievanceTickets = generateMockGrievanceData(institutionWideStudentSummaries, [], 75);
+    const openGrievancesCount = allGrievanceTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length;
+    // ... other KPIs from the original generateMockInstitutions
+    const alumniSummaries = institutionWideStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated');
+    const allAlumni = generateMockAlumni(alumniSummaries);
+    const allAlumniActivities = generateMockAlumniActivities(allAlumni, 2);
+
+
+    const institution: Institution = {
+        institutionId,
+        institutionName,
+        parentInstitutionId,
+        faculties,
+        academicYears: academicYearsData,
+        totalStudents: instTotalStudents,
+        overallAverageGPA,
+        overallPlacementRate: institutionPlacementKPIs.rate,
+        overallAveragePackage: institutionPlacementKPIs.avgPackage,
+        overallTotalPlacedStudents: institutionPlacementKPIs.placedCount,
+        overallTotalInternships: institutionPlacementKPIs.internshipCount,
+        pendingReEvaluationsCount,
+        openGrievancesCount,
+        // Dummy values for other complex fields, to be properly aggregated/generated
+        departments: undefined, // This should be removed from Institution type if faculties is primary
+        totalReEvaluationsLastMonth: faker.number.int(20),
+        avgGrievanceResolutionTimeDays: faker.number.int({min:1, max:30}),
+        overallCompliancePercentage: faker.number.float({min:70, max:99, multipleOf: .1}),
+        pendingComplianceItemsCount: faker.number.int(10),
+        nextAccreditationReviewDate: dayjs().add(faker.number.int({min:1,max:5}), 'year').toISOString(),
+        accreditationBody: { name: faker.company.name() + " Accreditation Board", code: faker.string.alphanumeric(3).toUpperCase()},
+        complianceItems: [],
+        accreditationStatuses: [],
+        avgFacultyRating: faker.number.float({min:3.5, max:4.8, multipleOf: .1}),
+        facultyEvaluationResponseRate: faker.number.float({min:60, max:90, multipleOf: .1}),
+        facultyMembers: [], // Should be aggregated from faculties/departments
+        facultyEvaluations: [], // Aggregated
+        lmsLoginsLast30Days: faker.number.int(5000),
+        lmsResourceDownloadsLast30Days: faker.number.int(10000),
+        lmsForumPostsLast30Days: faker.number.int(1000),
+        lmsActivities: allLmsActivities,
+        alumni: allAlumni,
+        alumniActivities: allAlumniActivities,
+        alumniEngagementScore: faker.number.float({min:30,max:80, multipleOf: .1}),
+        overallInternshipRate: institutionPlacementKPIs.internshipCount && instTotalStudents > 0 ? parseFloat(((institutionPlacementKPIs.internshipCount / instTotalStudents) * 100).toFixed(1)) : 0,
+        totalCampusCompanies: faker.number.int({min:10, max:100}),
+        allPlacementRecords: allPlacementRecords,
+        allResearchProjects: [], // Aggregated
+        overallCourseCompletionRate: faker.number.float({min:75, max:95, multipleOf: .1}),
+        totalActiveResearchProjects: faker.number.int({min:10, max:100}),
+        allGrievanceTickets: allGrievanceTickets,
+        grievanceCSAT: faker.number.float({min:70,max:90, multipleOf: .1}),
+        sentimentDistribution: { positive: 70, neutral: 20, negative: 10, total:100},
+        // New KPI fields from Institution type
+        institutionAttendancePercentage: faker.number.float({min:80,max:95,multipleOf: .1}),
+        totalInstitutionAbsences: faker.number.int({min:100,max:1000}),
+        institutionFeesPaidPercentage: faker.number.float({min:85,max:99,multipleOf: .1}),
+        totalStudentsWithOverdueFeesInInstitution: faker.number.int({min:10,max:100}),
+        totalInstitutionApplicants: allApplicants.length,
+        avgInstitutionAcceptanceRate: faker.number.float({min:30,max:70,multipleOf: .1}),
+        totalInstitutionEnrolledCount: institutionWideStudentSummaries.filter(s=>s.enrollmentStatus === 'Active').length,
+        institutionGradeDistribution: {}, // aggregate
+        totalInstitutionAtRiskStudents: institutionWideStudentSummaries.filter(s=>s.cumulativeGPA && s.cumulativeGPA < 2.0).length, // simplified
+    };
+
+    return [institution];
+};
+
+
+// --- PARENT INSTITUTION (New Top-Level Generator) ---
+export const generateMockParentInstitutions = (
+    numParentInstitutions: number = 1,
+    numInstitutionsPerParent: number = faker.number.int({min:1, max:2}), // Reduced for manageability
+    numStudentsPerInstitutionContext: number = 150 // Reduced for manageability
+): ParentInstitution[] => {
+    const parentInstitutions: ParentInstitution[] = [];
+
+    for (let i = 0; i < numParentInstitutions; i++) {
+        const parentId = `PARENT-${faker.string.uuid().substring(0,8)}`;
+        const parentName = `${faker.company.name()} System`;
+
+        const institutions: Institution[] = [];
+        let totalStudentsInParent = 0;
+        let parentGpaSum = 0;
+        let studentsCountedForParentGpa = 0;
+
+        for (let j = 0; j < numInstitutionsPerParent; j++) {
+            const studentsForThisInstitution = generateMockStudents(numStudentsPerInstitutionContext);
+
+            const generatedInstitutionArray = generateMockNewInstitutions(
+                parentId,
+                studentsForThisInstitution,
+                3,
+                30 // Reduced numApplicantsPerProgramContext
+            );
+            if (generatedInstitutionArray.length > 0) {
+                const inst = generatedInstitutionArray[0];
+                institutions.push(inst);
+                totalStudentsInParent += inst.totalStudents || 0;
+                if (inst.overallAverageGPA !== undefined && inst.totalStudents) {
+                    parentGpaSum += inst.overallAverageGPA * inst.totalStudents;
+                    studentsCountedForParentGpa += inst.totalStudents;
+                }
+            }
+        }
+
+        const overallAverageGPA = studentsCountedForParentGpa > 0 ? parseFloat((parentGpaSum / studentsCountedForParentGpa).toFixed(2)) : undefined;
+
+        parentInstitutions.push({
+            parentInstitutionId: parentId,
+            parentInstitutionName: parentName,
+            institutions,
+            totalStudents: totalStudentsInParent,
+            overallAverageGPA,
+            totalFaculty: institutions.reduce((sum, inst) => sum + (inst.faculties?.reduce((s,f) => s + (f.totalFacultyMembers || 0),0) || 0),0),
+            totalPrograms: institutions.reduce((sum, inst) => sum + (inst.faculties?.reduce((s,f) => s + (f.departments?.reduce((d_s, d) => d_s + d.degreeIds.length,0) ||0),0) || 0),0),
+            overallPlacementRate: faker.number.float({min:60, max:90, multipleOf: .1}), // Mock
+            totalResearchGrantsValue: faker.number.int({min:1000000, max: 50000000}) // Mock
+        });
+    }
+    return parentInstitutions;
+};
+
+
+// Comment out or remove old generation functions that are superseded
+// export const generateMockInstitutions = (...) // This is the old main function
+
+// The old generateMockDegree, generateMockProgram, generateMockSemester might still be used by generateMockAcademicYear
+// or other parts of the old structure. They need to be carefully phased out or adapted.
+// For now, I've created new versions (generateMockNewDegree, etc.) and they are used by the new top-level generator.
+
+// --- Original Helper Functions (calculateSemesterAverageGPA, etc.) ---
+// These were defined before generateMockSemester and generateMockProgram.
+// They might be incompatible or need adjustment for the new Course/Section structure if reused.
+// For example, calculateSemesterAverageGPA took CourseEnrollment[], not Course[].
+// The new generateMockNewSemester has its own GPA calculation for now.
+
 const calculateSemesterAverageGPA = (students: StudentSummary[], courses: CourseEnrollment[], termId: string): number | undefined => {
     let totalGpaPoints = 0;
     let studentsWithGpa = 0;
@@ -566,8 +1352,476 @@ export const generateMockProgram = (
         degreeId, // Degree type it awards
         departmentId, // Assigned department
         requiredCredits,
-        semesters,
-        totalStudents: programStudentSummaries.length,
+        semesters, // Now uses NewSemester
+        totalStudents: totalStudentsInProgram,
+        averageProgramGPA,
+        graduationRate,
+        programPassRate,
+        // KPIs from calculations
+        placementRate: programPlacementKPIs.rate,
+        averagePackage: programPlacementKPIs.avgPackage,
+        totalPlacedStudents: programPlacementKPIs.placedCount,
+        totalInternships: programPlacementKPIs.internshipCount,
+        avgAttendancePercentage: programAttendanceKPIs.percentage, // Attendance is better at course/section level
+        totalProgramAbsences: programAttendanceKPIs.totalAbsences, // Same as above
+        avgFeesPaidPercentage: programBillingKPIs.feesPaidPercentage, // Fee status might be tracked differently
+        totalStudentsWithOverdueFees: programBillingKPIs.overdueCount, // Same as above
+        applicants: programAdmissionKPIs.applicants,
+        acceptanceRate: programAdmissionKPIs.acceptanceRate,
+        enrolledCount: programAdmissionKPIs.enrolledCount,
+        gradeDistribution: programGradeDistribution, // Aggregated from course grades ideally
+        atRiskStudents: programAtRiskStudents, // Identified based on course performance or overall status
+    };
+};
+
+// Existing generateMockProgram should be replaced or removed.
+// For now, let's assume generateMockNewProgram is the one to be used.
+
+// --- DEGREE ---
+// Update generateMockDegree to generateMockNewDegree
+// It should include departmentId and use generateMockNewProgram
+
+export const generateMockNewDegree = (
+    degreeConfig: { degreeId: string, degreeName: string },
+    departmentId: string,
+    // Student-related data passed down from a higher level (e.g., Faculty or Institution)
+    allStudentsInScope: Student[],
+    allAcademicRecordsInScope: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[],
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[]
+): Degree => {
+    const { degreeId, degreeName } = degreeConfig;
+    const programsInDegreeConfig = degreeProgramMappings[degreeId] || [];
+
+    const programs: Program[] = programsInDegreeConfig.map(pConfig => {
+        // Students for this program are filtered from the scope passed to the Degree
+        return generateMockNewProgram(
+            pConfig,
+            degreeId,
+            allStudentsInScope,
+            allAcademicRecordsInScope,
+            allAttendanceRecords,
+            allInvoices,
+            allApplicants,
+            allPlacementRecords,
+            faker.number.int({ min: 4, max: 8 }) // Number of semesters for the program
+        );
+    });
+
+    // Aggregate Student Summaries and IDs for the Degree from its programs
+    const degreeStudentSummariesMap = new Map<string, StudentSummary>();
+    programs.forEach(prog => {
+        // Re-derive student summaries for this degree's programs from academic records in scope
+        const programStudentRecords = allAcademicRecordsInScope.filter(ar => ar.programId === prog.programId);
+        programStudentRecords.forEach(psr => {
+            if (!degreeStudentSummariesMap.has(psr.studentId)) {
+                 const student = allStudentsInScope.find(s => s.id === psr.studentId);
+                 if(student) {
+                    // Ensure generateMockStudentSummary is available and correctly typed
+                    degreeStudentSummariesMap.set(psr.studentId, generateMockStudentSummary(student, psr));
+                 }
+            }
+        });
+    });
+    const degreeStudentSummaries = Array.from(degreeStudentSummariesMap.values());
+    const degreeStudentIds = degreeStudentSummaries.map(s => s.studentId);
+
+    // Aggregate KPIs for the Degree (similar to old generateMockDegree but using new program structure)
+    let totalStudentsInDegree = degreeStudentSummaries.length;
+    let sumOfProgramGpas = 0;
+    let totalStudentsForGpaCalc = 0;
+    // ... other KPI aggregations ...
+
+    programs.forEach(prog => {
+        if (prog.averageProgramGPA !== undefined && prog.totalStudents) {
+            sumOfProgramGpas += prog.averageProgramGPA * prog.totalStudents;
+            totalStudentsForGpaCalc += prog.totalStudents;
+        }
+        // Aggregate other KPIs from prog similarly
+    });
+
+    const averageDegreeGPA = totalStudentsForGpaCalc > 0 ? parseFloat((sumOfProgramGpas / totalStudentsForGpaCalc).toFixed(2)) : undefined;
+    const degreePlacementKPIs = calculatePlacementKPIs(degreeStudentIds, degreeStudentSummaries, allPlacementRecords);
+    // Mock other KPIs or aggregate them properly
+    const totalApplicants = programs.reduce((sum, p) => sum + (p.applicants || 0), 0);
+    const totalEnrolledCount = programs.reduce((sum, p) => sum + (p.enrolledCount || 0), 0);
+    // Simplified acceptance rate: total enrolled / total applicants for the degree
+    const avgAcceptanceRate = totalApplicants > 0 ? parseFloat(((totalEnrolledCount / totalApplicants) * 100).toFixed(2)) : undefined;
+
+
+    return {
+        degreeId,
+        degreeName,
+        departmentId, // New field
+        programs, // Contains new Program objects
+        totalStudents: totalStudentsInDegree,
+        averageDegreeGPA,
+        // KPIs (some mocked, some aggregated)
+        placementRate: degreePlacementKPIs.rate,
+        averagePackage: degreePlacementKPIs.avgPackage,
+        totalPlacedStudents: degreePlacementKPIs.placedCount,
+        totalInternships: degreePlacementKPIs.internshipCount,
+        totalApplicants,
+        avgAcceptanceRate,
+        totalEnrolledCount,
+        // overallGradeDistribution, totalAtRiskStudents etc. should be aggregated from programs
+        overallGradeDistribution: {}, // Placeholder
+        totalAtRiskStudents: programs.reduce((sum, p) => sum + (p.atRiskStudents || 0), 0), // Example aggregation
+        // Remove attendance/fee KPIs if they are too granular for Degree level now
+    };
+};
+
+
+// --- DEPARTMENT ---
+// Department type from: import { Department } from '../../../types/departments';
+// Department type has: departmentId, departmentName, facultyId, degreeIds, KPIs.
+
+// Predefined department configurations (can be expanded)
+const departmentConfigs = [
+    { departmentId: 'DEPT_STEM', departmentName: 'School of STEM', facultyId: '', degreeConfigs: [mockDegrees[0], mockDegrees[2]] }, // Bachelors, Doctorate for STEM
+    { departmentId: 'DEPT_ARTS', departmentName: 'School of Arts & Humanities', facultyId: '', degreeConfigs: [mockDegrees[0], mockDegrees[1]] }, // Bachelors, Masters for ARTS
+    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', facultyId: '', degreeConfigs: [mockDegrees[1]] } // Masters for Business
+];
+
+export const generateMockDepartments = (
+    facultyId: string,
+    // Student data scoped to the faculty
+    allStudentsInFaculty: Student[],
+    allAcademicRecordsInFaculty: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[], // Full lists, will be filtered by student IDs
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[]
+): Department[] => {
+    const departments: Department[] = [];
+
+    departmentConfigs.forEach(deptConfig => {
+        // Assign facultyId to this department
+        const currentDepartmentId = `${deptConfig.departmentId}-${facultyId.slice(-4)}`; // Make ID unique per faculty
+
+        // Filter students for this department based on programs within degrees of this dept.
+        // This is a bit tricky as programs are defined under degrees.
+        // For mock data, we can assign a portion of faculty students to each department.
+        // Or, more accurately, sum students from degrees generated for this department.
+
+        const degrees: Degree[] = deptConfig.degreeConfigs.map(degConf => {
+            // For each degree, we need to determine the relevant student subset.
+            // Let's assume for now that students passed to generateMockNewDegree are filtered appropriately.
+            // However, generateMockNewDegree itself filters students based on programs.
+            // A simpler approach for department might be to assign a slice of faculty students.
+            return generateMockNewDegree(
+                degConf,
+                currentDepartmentId,
+                allStudentsInFaculty, // Pass all faculty students, degree/program will filter
+                allAcademicRecordsInFaculty,
+                allAttendanceRecords,
+                allInvoices,
+                allApplicants,
+                allPlacementRecords
+            );
+        });
+
+        const degreeIds = degrees.map(d => d.degreeId);
+
+        // Aggregate students and KPIs for the department from its degrees
+        let deptTotalStudents = 0;
+        const deptStudentSummariesMap = new Map<string, StudentSummary>();
+        degrees.forEach(degree => {
+            degree.programs.forEach(prog => {
+                const progStudentRecords = allAcademicRecordsInFaculty.filter(ar => ar.programId === prog.programId);
+                progStudentRecords.forEach(psr => {
+                    if (!deptStudentSummariesMap.has(psr.studentId)) {
+                        const student = allStudentsInFaculty.find(s => s.id === psr.studentId);
+                        if (student) {
+                            deptStudentSummariesMap.set(psr.studentId, generateMockStudentSummary(student, psr));
+                        }
+                    }
+                });
+            });
+        });
+        const deptStudentSummaries = Array.from(deptStudentSummariesMap.values());
+        deptTotalStudents = deptStudentSummaries.length;
+
+        let deptGpaSum = 0;
+        let studentsCountedForDeptGpa = 0;
+        deptStudentSummaries.forEach(s => {
+            if (s.cumulativeGPA !== undefined) {
+                deptGpaSum += s.cumulativeGPA;
+                studentsCountedForDeptGpa++;
+            }
+        });
+        const departmentAverageGPA = studentsCountedForDeptGpa > 0 ? parseFloat((deptGpaSum / studentsCountedForDeptGpa).toFixed(2)) : undefined;
+
+        const deptPlacementKPIs = calculatePlacementKPIs(deptStudentSummaries.map(s=>s.studentId), deptStudentSummaries, allPlacementRecords);
+
+        departments.push({
+            departmentId: currentDepartmentId,
+            departmentName: deptConfig.departmentName,
+            facultyId,
+            degreeIds, // Changed from programIds to degreeIds
+            totalStudents: deptTotalStudents,
+            departmentAverageGPA, // Renamed for clarity from averageGPA
+            departmentPlacementRate: deptPlacementKPIs.rate, // Renamed
+            // departmentPassRate: // Calculate if needed
+            // performanceScore, mockStudentSatisfactionScore can be added later
+        });
+    });
+
+    return departments;
+};
+
+// --- FACULTY ---
+export const generateMockFaculties = (
+    institutionId: string,
+    // Student data scoped to the institution
+    allStudentsInInstitution: Student[],
+    allAcademicRecordsInInstitution: StudentAcademicRecord[],
+    allAttendanceRecords: AttendanceRecord[],
+    allInvoices: Invoice[],
+    allApplicants: Applicant[],
+    allPlacementRecords: PlacementRecord[],
+    numFaculties: number = faker.number.int({ min: 2, max: 4 })
+): Faculty[] => {
+    const faculties: Faculty[] = [];
+    const facultyNames = ["Faculty of Engineering", "Faculty of Arts & Sciences", "Faculty of Business", "Faculty of Health Sciences", "Faculty of Design"];
+
+    for (let i = 0; i < numFaculties; i++) {
+        const facultyId = `FACULTY-${institutionId.slice(-4)}-${i + 1}`;
+        const facultyName = faker.helpers.arrayElement(facultyNames.filter(fn => !faculties.find(f=>f.facultyName === fn))) || `${faker.company.bsBuzz()} Faculty`;
+
+        // Distribute a portion of institution's students to this faculty.
+        // This is a simplification. A real system would have explicit student-faculty enrollment.
+        // For mock data, let's say each faculty gets a roughly equal share, with some overlap.
+        const studentsForFaculty = pickRandomSubset(allStudentsInInstitution, Math.ceil(allStudentsInInstitution.length / numFaculties) + 5);
+        const academicRecordsForFaculty = allAcademicRecordsInInstitution.filter(ar =>
+            studentsForFaculty.some(s => s.id === ar.studentId)
+        );
+
+        const departments = generateMockDepartments(
+            facultyId,
+            studentsForFaculty,
+            academicRecordsForFaculty,
+            allAttendanceRecords,
+            allInvoices,
+            allApplicants,
+            allPlacementRecords
+        );
+
+        let totalStudentsInFaculty = 0;
+        let facultyGpaSum = 0;
+        let studentsCountedForFacultyGpa = 0;
+
+        const facultyStudentSummariesMap = new Map<string, StudentSummary>();
+        departments.forEach(dept => {
+            // To get students for faculty GPA, need to look into dept's degrees -> programs -> students
+            // This is similar to how department aggregates students.
+            dept.degreeIds.forEach(degreeId => { // Assuming degreeIds are populated correctly
+                const degree = mockDegrees.find(d => d.degreeId === degreeId); // Need full Degree objects from dept
+                // This is insufficient; generateMockDepartments returns Department with degreeIds (string[])
+                // It should ideally return Department with Degree[] or we need to reconstruct.
+                // For now, let's sum up dept.totalStudents as a proxy.
+            });
+            // This is a simplification: sum of department totals might double count if students are in multiple depts (not typical)
+            // A better way: aggregate unique students from the departments' student lists.
+            // For now, let's use the studentsForFaculty list for KPI calculation for faculty level.
+        });
+
+        studentsForFaculty.forEach(s => {
+            const record = academicRecordsForFaculty.find(ar => ar.studentId === s.id);
+            if (record?.cumulativeGPA !== undefined) {
+                facultyGpaSum += record.cumulativeGPA;
+                studentsCountedForFacultyGpa++;
+            }
+        });
+        totalStudentsInFaculty = studentsForFaculty.length; // Based on initial distribution
+
+        const averageFacultyGPA = studentsCountedForFacultyGpa > 0 ? parseFloat((facultyGpaSum / studentsCountedForFacultyGpa).toFixed(2)) : undefined;
+
+        faculties.push({
+            facultyId,
+            facultyName,
+            institutionId,
+            departments,
+            totalStudents: totalStudentsInFaculty,
+            averageFacultyGPA,
+            totalFacultyMembers: faker.number.int({min: 20, max: 100}), // Mocked
+            researchProjectsCount: faker.number.int({min: 5, max: 50}) // Mocked
+        });
+    }
+    return faculties;
+};
+
+
+// --- INSTITUTION (Update) ---
+export const generateMockNewInstitutions = ( // Renamed from generateMockInstitutions
+    parentInstitutionId: string | undefined, // New optional parameter
+    // numInstitutions: number = 1 // Typically generate one detailed institution per call now
+    allStudentsForParentInst: Student[], // All students for the parent, to be used by this institution
+    numYears: number = 3,
+    numApplicantsPerProgram: number = 50
+): Institution[] => { // Still returns array for flexibility, but usually one
+
+    // For a single institution, all students passed are for this institution.
+    const allStudents = allStudentsForParentInst;
+    const allAcademicRecords = generateMockAcademicRecords(allStudents);
+    const institutionWideStudentSummaries = allAcademicRecords.map(ar =>
+        generateMockStudentSummary(allStudents.find(s => s.id === ar.studentId)!, ar)
+    );
+    const institutionStudentIds = institutionWideStudentSummaries.map(s => s.studentId);
+
+    // Other base data generation (LMS, Placement, Attendance, Invoices, etc.) remains largely the same
+    const allLmsActivities = generateMockLmsActivityData(institutionWideStudentSummaries, 20, 60);
+    const allPlacementRecords = generateMockPlacementData(institutionWideStudentSummaries);
+    const allAttendanceRecords = generateMockAttendanceRecords(allStudents, [], numYears * 365);
+    const allInvoices = generateMockInvoices(allStudents, 5, new Set()); // Simplified overdue cohort for now
+    const allApplicants = generateMockApplicants(numApplicantsPerProgram * programs.length); // `programs` is old global
+
+    const institutionId = faker.string.uuid();
+    const institutionName = `${faker.company.name()} University`;
+
+    // Generate Faculties instead of Departments directly
+    const faculties = generateMockFaculties(
+        institutionId,
+        allStudents,
+        allAcademicRecords,
+        allAttendanceRecords,
+        allInvoices,
+        allApplicants,
+        allPlacementRecords,
+        faker.number.int({min: 3, max: 5}) // Number of faculties per institution
+    );
+
+    // Academic Years generation needs to be reviewed.
+    // The old generateMockAcademicYear creates Degrees -> Programs.
+    // These programs should ideally be the same instances as those within Department -> Degree -> Program.
+    // The new structure is Institution -> Faculty -> Department -> Degree -> Program.
+    // AcademicYear might be a cross-cutting concern, e.g., showing all degrees offered in a year.
+    // For now, let's keep AcademicYear generation but ensure data consistency if possible.
+    // The challenge is linking programs from faculties/departments back into academic year views.
+
+    // Simplified AcademicYears for now, focusing on the new Faculty structure.
+    // A deeper refactor would be needed for AcademicYear to correctly reflect programs from the new hierarchy.
+    const academicYearsData: AcademicYear[] = []; // Placeholder or generate with careful consideration
+
+    // Aggregating KPIs for the institution from FACULTIES now
+    let instTotalStudents = 0;
+    let instGpaSum = 0;
+    let instStudentsForGpa = 0;
+
+    faculties.forEach(faculty => {
+        // Sum students from faculties. Ensure unique count if a student could be in multiple (not typical).
+        instTotalStudents += faculty.totalStudents || 0;
+        if (faculty.averageFacultyGPA !== undefined && faculty.totalStudents) {
+            instGpaSum += faculty.averageFacultyGPA * faculty.totalStudents;
+            instStudentsForGpa += faculty.totalStudents;
+        }
+    });
+    const overallAverageGPA = instStudentsForGpa > 0 ? parseFloat((instGpaSum / instStudentsForGpa).toFixed(2)) : undefined;
+
+    // Other institution-wide KPIs (re-evaluation, grievances, compliance, etc.)
+    // can be generated similarly to the old `generateMockInstitutions` function.
+    // For brevity, these are omitted here but should be reintegrated.
+    const allReEvaluationRequests = generateMockReEvaluationData(institutionWideStudentSummaries, [], 100); // CourseEnrollment part needs update
+    const pendingReEvaluationsCount = allReEvaluationRequests.filter(r => r.status === 'Pending').length;
+    const allGrievanceTickets = generateMockGrievanceData(institutionWideStudentSummaries, [], 75);
+    const openGrievancesCount = allGrievanceTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length;
+    // ... and so on for other KPIs ...
+
+    const institution: Institution = {
+        institutionId,
+        institutionName,
+        parentInstitutionId, // New field
+        faculties, // New field, replaces departments
+        academicYears: academicYearsData, // Needs careful integration
+        totalStudents: instTotalStudents,
+        overallAverageGPA,
+        // Many other KPIs from the old generateMockInstitutions should be added back here
+        // For example: placement, alumni, LMS, compliance, etc.
+        // These would be aggregated from faculty/department data or generated for the institution.
+        overallPlacementRate: faker.number.float({min:60,max:90, multipleOf: 0.1}), // Mock
+        pendingReEvaluationsCount,
+        openGrievancesCount,
+        // ... other fields from the Institution type
+    };
+
+    return [institution]; // Return as an array
+};
+
+
+// --- PARENT INSTITUTION (New Top-Level Generator) ---
+export const generateMockParentInstitutions = (
+    numParentInstitutions: number = 1,
+    numInstitutionsPerParent: number = faker.number.int({min:1, max:3}),
+    numStudentsPerInstitution: number = 200 // Average number of students for each institution
+): ParentInstitution[] => {
+    const parentInstitutions: ParentInstitution[] = [];
+
+    for (let i = 0; i < numParentInstitutions; i++) {
+        const parentId = `PARENT-${faker.string.uuid().substring(0,8)}`;
+        const parentName = `${faker.company.name()} System`;
+
+        const institutions: Institution[] = [];
+        let totalStudentsInParent = 0;
+        let parentGpaSum = 0;
+        let studentsCountedForParentGpa = 0;
+
+        // Generate a pool of students for this ParentInstitution, then distribute.
+        // Or, generate students per institution and aggregate. Let's do the latter for simplicity here.
+
+        for (let j = 0; j < numInstitutionsPerParent; j++) {
+            // Generate a distinct set of students for each institution under this parent
+            const studentsForThisInstitution = generateMockStudents(numStudentsPerInstitution);
+
+            const generatedInstitutionArray = generateMockNewInstitutions(
+                parentId,
+                studentsForThisInstitution, // Pass the specific students for this institution
+                3, // numYears for academic data
+                50 // numApplicantsPerProgram
+            );
+            if (generatedInstitutionArray.length > 0) {
+                const inst = generatedInstitutionArray[0];
+                institutions.push(inst);
+                totalStudentsInParent += inst.totalStudents || 0;
+                if (inst.overallAverageGPA !== undefined && inst.totalStudents) {
+                    parentGpaSum += inst.overallAverageGPA * inst.totalStudents;
+                    studentsCountedForParentGpa += inst.totalStudents;
+                }
+            }
+        }
+
+        const overallAverageGPA = studentsCountedForParentGpa > 0 ? parseFloat((parentGpaSum / studentsCountedForParentGpa).toFixed(2)) : undefined;
+
+        parentInstitutions.push({
+            parentInstitutionId: parentId,
+            parentInstitutionName: parentName,
+            institutions,
+            totalStudents: totalStudentsInParent,
+            overallAverageGPA,
+            totalFaculty: institutions.reduce((sum, inst) => sum + (inst.faculties?.reduce((s,f) => s + (f.totalFacultyMembers || 0),0) || 0),0), // Example KPI
+            totalPrograms: institutions.reduce((sum, inst) => sum + (inst.faculties?.reduce((s,f) => s + (f.departments?.reduce((d_s, d) => d_s + d.degreeIds.length,0) ||0),0) || 0),0), // Approximation
+            // overallPlacementRate, totalResearchGrantsValue etc. can be aggregated or mocked
+        });
+    }
+    return parentInstitutions;
+};
+
+
+// Comment out or remove old generation functions that are superseded
+// export const generateMockInstitutions = (...) // This is the old one
+
+// The old generateMockDegree, generateMockProgram, generateMockSemester might still be used by generateMockAcademicYear
+// or other parts of the old structure. They need to be carefully phased out or adapted.
+// For now, I've created new versions (generateMockNewDegree, etc.)
+
+// --- Original Helper Functions (calculateSemesterAverageGPA, etc.) ---
+// These were defined before generateMockSemester and generateMockProgram.
+// They might be incompatible or need adjustment for the new Course/Section structure if reused.
+// For example, calculateSemesterAverageGPA took CourseEnrollment[], not Course[].
+// The new generateMockNewSemester has its own GPA calculation for now.
+
+const calculateSemesterAverageGPA = (students: StudentSummary[], courses: CourseEnrollment[], termId: string): number | undefined => {
         averageProgramGPA, // Potentially modified
         graduationRate, // Potentially modified
         programPassRate,
@@ -1029,63 +2283,38 @@ export const generateMockInstitutions = (
     const allProgramsGeneratedForDepartments: Program[] = [];
 
     departmentDefinitions.forEach(deptDef => {
-        const programsInThisDepartmentConfig = programs.filter(p => deptDef.programIds.includes(p.id));
+        const programsInThisDepartmentConfig = programs.filter(p => deptDef.programIds.includes(p.id)); // `programs` is old global
         const departmentProgramInstances: Program[] = [];
 
-        programsInThisDepartmentConfig.forEach(progConfig => {
-            const programInstance = generateMockProgram(
-                progConfig.id,
-                progConfig.name,
-                mockDegrees.find(d => degreeProgramMappings[d.degreeId]?.some(dp => dp.programId === progConfig.id))?.degreeId || "UNKNOWN_DEG",
-                deptDef.departmentId,
-                progConfig.requiredCredits,
-                allStudents,
-                allAcademicRecords,
-                allAttendanceRecords,
-                allInvoices,
-                allApplicants,
-                allPlacementRecords,
-                allTermsAcrossYears
-            );
-            departmentProgramInstances.push(programInstance);
-            allProgramsGeneratedForDepartments.push(programInstance);
-        });
+        // This section needs to use generateMockNewProgram and the new hierarchy
+        // For now, this department generation is part of the OLD generateMockInstitutions
+        // It will be superseded by generateMockFaculties -> generateMockDepartments
+        // This block can be removed when generateMockInstitutions is fully replaced.
 
-        const deptStudentSummaries = institutionWideStudentSummaries.filter(summary =>
-            departmentProgramInstances.some(p => p.programId === summary.programId)
-        );
-        const deptStudentIds = deptStudentSummaries.map(s => s.studentId);
-
-        let deptGpaSum = 0;
-        deptStudentSummaries.forEach(s => { if (s.cumulativeGPA) deptGpaSum += s.cumulativeGPA; });
-        const deptAverageGPA = deptStudentSummaries.length > 0 && deptStudentSummaries.filter(s => s.cumulativeGPA !== undefined).length > 0
-            ? parseFloat((deptGpaSum / deptStudentSummaries.filter(s => s.cumulativeGPA !== undefined).length).toFixed(2))
-            : undefined;
-
-        const deptPlacementKPIs = calculatePlacementKPIs(deptStudentIds, deptStudentSummaries, allPlacementRecords);
-        const deptMockStudentSatisfactionScore = faker.number.float({ min: 70, max: 95, multipleOf: 0.1 });
-
-        let deptPerformanceScore = 0;
-        const normalizedGPA = deptAverageGPA ? (deptAverageGPA / 4.0) * 100 : 0;
-        const placementRate = deptPlacementKPIs.rate || 0;
-        deptPerformanceScore = (normalizedGPA * 0.4) + (placementRate * 0.4) + (deptMockStudentSatisfactionScore * 0.2);
-
-        institutionDepartments.push({
-            departmentId: deptDef.departmentId,
-            departmentName: deptDef.departmentName,
-            programIds: departmentProgramInstances.map(p => p.programId),
-            totalStudents: deptStudentSummaries.length,
-            averageGPA: deptAverageGPA,
-            placementRate: deptPlacementKPIs.rate,
-            averagePassRate: departmentProgramInstances.length > 0
-                ? parseFloat((departmentProgramInstances.reduce((acc, p) => acc + (p.programPassRate || 0), 0) / departmentProgramInstances.filter(p => p.programPassRate !== undefined).length || 0).toFixed(2))
-                : 0,
-            mockStudentSatisfactionScore: deptMockStudentSatisfactionScore,
-            performanceScore: parseFloat(deptPerformanceScore.toFixed(2)),
-        });
+        // programsInThisDepartmentConfig.forEach(progConfig => {
+        //     const programInstance = generateMockProgram( // OLD generateMockProgram
+        //         progConfig.id,
+        //         progConfig.name,
+        //         mockDegrees.find(d => degreeProgramMappings[d.degreeId]?.some(dp => dp.programId === progConfig.id))?.degreeId || "UNKNOWN_DEG",
+        //         deptDef.departmentId,
+        //         progConfig.requiredCredits,
+        //         allStudents,
+        //         allAcademicRecords,
+        //         allAttendanceRecords,
+        //         allInvoices,
+        //         allApplicants,
+        //         allPlacementRecords,
+        //         allTermsAcrossYears
+        //     );
+        //     departmentProgramInstances.push(programInstance);
+        //     allProgramsGeneratedForDepartments.push(programInstance);
+        // });
+        // ... rest of old department logic ...
     });
 
-    const complianceItems = generateMockComplianceItems(institutionDepartments, 50);
+    // This is part of the old generateMockInstitutions.
+    // For the new structure, compliance items would be associated with the new Institution object.
+    // const complianceItems = generateMockComplianceItems(institutionDepartments, 50); // institutionDepartments is from old structure
     const accreditationStatuses = generateMockAccreditationStatusSummary(2);
 
     const compliantItemsCount = complianceItems.filter(item => item.status === 'Compliant').length;
@@ -1306,3 +2535,13 @@ export const generateMockInstitutions = (
 // export const generateMockAcademicRecords = (students: Student[]): StudentAcademicRecord[] => {
 //   return students.map((student, index) => generateMockStudentAcademicRecord(student, index));
 // };
+
+// Make sure generateMockParentInstitutions is the primary export if it's the new entry point.
+// The old generateMockInstitutions might be kept for compatibility or removed.
+// For now, explicitly comment out the old generateMockInstitutions export if it exists.
+// export const generateMockInstitutions = ... // This was the old one
+
+// The new top-level export should be:
+// export { generateMockParentInstitutions };
+// However, tools might not support changing exports directly.
+// The calling code will need to be updated to use generateMockParentInstitutions.

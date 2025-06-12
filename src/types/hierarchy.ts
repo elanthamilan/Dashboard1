@@ -1,13 +1,18 @@
-import { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
+import { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types'; // StudentAcademicRecord might be used by StudentSummary or similar
 import { PlacementRecord } from './placement';
 import {
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,
-    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject // Added ResearchProject
+    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject
 } from './academics';
-import { Department } from './departments';
+import { Department } from './departments'; // Will use the updated Department definition
 import { Alumnus, AlumniActivity } from './alumni';
 
+// Forward declaration for types used by ParentInstitution
+export type { Institution };
+export type { Faculty };
+export type { Course };
+export type { Section };
 export type { Department } from './departments';
 export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
 export type {
@@ -16,20 +21,75 @@ export type {
     FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject
 } from './academics';
 
+// New Type: ParentInstitution
+export interface ParentInstitution {
+  parentInstitutionId: string;
+  parentInstitutionName: string;
+  institutions: Institution[];
+  totalStudents?: number;
+  overallAverageGPA?: number;
+  // Add other aggregated KPIs as needed
+  totalFaculty?: number;
+  totalPrograms?: number;
+  overallPlacementRate?: number;
+  totalResearchGrantsValue?: number;
+}
+
+// New Type: Faculty
+export interface Faculty {
+  facultyId: string;
+  facultyName: string;
+  institutionId: string;
+  departments: Department[];
+  totalStudents?: number;
+  averageFacultyGPA?: number;
+  totalFacultyMembers?: number;
+  researchProjectsCount?: number;
+}
+
+// New Type: Course
+export interface Course {
+  courseId: string;
+  courseName: string;
+  semesterId: string; // or termId
+  sections: Section[];
+  courseCode?: string;
+  credits?: number;
+  averageGrade?: number;
+  passRate?: number;
+  totalStudentsEnrolled?: number;
+  facultyCoordinatorId?: string; // Optional: Link to a faculty member
+}
+
+// New Type: Section
+export interface Section {
+  sectionId: string;
+  sectionName: string; // e.g., "Section A", "Batch 1"
+  courseId: string;
+  instructorName?: string; // Could be instructorId linking to FacultyMember
+  schedule?: string; // e.g., "Mon/Wed/Fri 9-10 AM"
+  students: StudentSummary[]; // List of students in this section
+  averageAttendance?: number;
+  studentCount?: number;
+  classroom?: string; // Optional: Classroom location
+}
+
 export interface StudentSummary {
   studentId: string;
   firstName: string;
   lastName: string;
-  programId: string;
-  programName: string;
+  // programId: string; // Student might not be directly tied to a single program in this summary view
+  // programName: string; // Student might be in multiple sections of different courses
   cumulativeGPA?: number;
   totalCreditsEarned?: number;
   enrollmentStatus?: 'Active' | 'Inactive' | 'Graduated';
   expectedGraduationDate?: string;
+  // sectionId?: string; // If a student summary is specific to a section
 }
 
 export interface Semester extends Term {
-  students: StudentSummary[];
+  // students: StudentSummary[]; // Students are now in Sections within Courses
+  courses: Course[]; // Semester now has Courses
   averageGPA?: number;
   passRate?: number;
   // New KPIs for Semester
@@ -37,46 +97,48 @@ export interface Semester extends Term {
   totalAbsences?: number;
   feesPaidPercentage?: number;
   studentsWithOverdueFees?: number;
+  totalCoursesOffered?: number;
 }
 
 export interface Program {
   programId: string;
   programName: string;
-  degreeId: string; // This might become optional or change if a Program is primarily linked to a Department
-  departmentId?: string; // Program now belongs to a department
+  degreeId: string;
+  // departmentId?: string; // Removed, Program is under Degree which is under Department
   requiredCredits?: number;
-  semesters: Semester[];
+  semesters: Semester[]; // Program still has Semesters
   totalStudents?: number;
   averageProgramGPA?: number;
   graduationRate?: number;
-  // New KPIs for Program
-  avgAttendancePercentage?: number;
-  totalProgramAbsences?: number;
-  avgFeesPaidPercentage?: number;
-  totalStudentsWithOverdueFees?: number;
+  // KPIs for Program
+  // avgAttendancePercentage?: number; // Attendance is more granular (Course/Section/Student)
+  // totalProgramAbsences?: number; // Attendance is more granular
+  // avgFeesPaidPercentage?: number; // Fees might be tracked differently
+  // totalStudentsWithOverdueFees?: number; // Fees might be tracked differently
   applicants?: number;
   acceptanceRate?: number;
   enrolledCount?: number;
-  gradeDistribution?: { [gradeCategory: string]: number };
-  atRiskStudents?: number;
+  gradeDistribution?: { [gradeCategory: string]: number }; // Could be aggregated from courses
+  atRiskStudents?: number; // Could be identified based on course performance
   placementRate?: number;
   averagePackage?: number;
   totalPlacedStudents?: number;
   totalInternships?: number;
-  programPassRate?: number; // Percentage of students in the program with GPA >= 2.0
+  programPassRate?: number; // Percentage of students in the program with GPA >= 2.0 (or relevant pass criteria)
 }
 
 export interface Degree {
   degreeId: string;
   degreeName: string;
+  departmentId: string; // Degree is under a Department
   programs: Program[];
   totalStudents?: number;
   averageDegreeGPA?: number;
-  // New KPIs for Degree (Aggregated from Programs)
-  avgAttendancePercentage?: number;
-  totalDegreeAbsences?: number;
-  avgFeesPaidPercentage?: number;
-  totalStudentsWithOverdueFeesInDegree?: number;
+  // KPIs for Degree (Aggregated from Programs)
+  // avgAttendancePercentage?: number; // More granular
+  // totalDegreeAbsences?: number; // More granular
+  // avgFeesPaidPercentage?: number; // Potentially
+  // totalStudentsWithOverdueFeesInDegree?: number; // Potentially
   totalApplicants?: number;
   avgAcceptanceRate?: number;
   totalEnrolledCount?: number;
@@ -93,14 +155,14 @@ export interface AcademicYear {
   yearName: string;
   startDate: string;
   endDate: string;
-  degrees: Degree[];
+  degrees: Degree[]; // This remains, assuming AcademicYear is a temporal slice across degrees
   totalStudents?: number;
   overallAverageGPA?: number;
-  // New KPIs for AcademicYear (Aggregated from Degrees)
-  annualAttendancePercentage?: number;
-  totalAnnualAbsences?: number;
-  annualFeesPaidPercentage?: number;
-  totalStudentsWithOverdueFeesInYear?: number;
+  // KPIs for AcademicYear (Aggregated from Degrees)
+  // annualAttendancePercentage?: number;
+  // totalAnnualAbsences?: number;
+  // annualFeesPaidPercentage?: number;
+  // totalStudentsWithOverdueFeesInYear?: number;
   totalAnnualApplicants?: number;
   avgAnnualAcceptanceRate?: number;
   totalAnnualEnrolledCount?: number;
@@ -115,14 +177,16 @@ export interface AcademicYear {
 export interface Institution {
   institutionId: string;
   institutionName: string;
-  academicYears: AcademicYear[];
+  parentInstitutionId?: string; // Optional: Link to parent system
+  academicYears: AcademicYear[]; // This might change if Faculties become the primary container under Institution
+  faculties: Faculty[]; // Changed from departments
   totalStudents?: number;
   overallAverageGPA?: number;
-  // New KPIs for Institution (Aggregated from AcademicYears)
-  institutionAttendancePercentage?: number;
-  totalInstitutionAbsences?: number;
-  institutionFeesPaidPercentage?: number;
-  totalStudentsWithOverdueFeesInInstitution?: number;
+  // KPIs for Institution (Aggregated)
+  // institutionAttendancePercentage?: number;
+  // totalInstitutionAbsences?: number;
+  // institutionFeesPaidPercentage?: number;
+  // totalStudentsWithOverdueFeesInInstitution?: number;
   totalInstitutionApplicants?: number;
   avgInstitutionAcceptanceRate?: number;
   totalInstitutionEnrolledCount?: number;
@@ -134,38 +198,41 @@ export interface Institution {
   overallTotalInternships?: number;
   pendingReEvaluationsCount?: number;
   totalReEvaluationsLastMonth?: number;
-  departments?: Department[]; // Institution has a list of departments
+  // departments?: Department[]; // Replaced by faculties
   openGrievancesCount?: number;
   avgGrievanceResolutionTimeDays?: number;
   overallCompliancePercentage?: number;
   pendingComplianceItemsCount?: number;
   nextAccreditationReviewDate?: string;
-  accreditationBody?: AccreditingBody;
+  accreditationBody?: AccreditingBody; // Consider if this should be at ParentInstitution level too
   complianceItems?: ComplianceItem[];
   accreditationStatuses?: AccreditationStatusSummary[];
-  avgFacultyRating?: number;
-  facultyEvaluationResponseRate?: number;
-  facultyMembers?: FacultyMember[];
-  facultyEvaluations?: FacultyEvaluation[];
-  // LMS Engagement Metrics
+  avgFacultyRating?: number; // This might be better aggregated at Faculty level
+  facultyEvaluationResponseRate?: number; // Or Faculty level
+  facultyMembers?: FacultyMember[]; // Could be linked at Faculty/Department level primarily
+  facultyEvaluations?: FacultyEvaluation[]; // Or Faculty level
+  // LMS Engagement Metrics (Potentially aggregated or specific to institution services)
   lmsLoginsLast30Days?: number;
   lmsResourceDownloadsLast30Days?: number;
   lmsForumPostsLast30Days?: number;
-  lmsActivities?: LmsActivity[]; // Optional: to store all raw activities for the institution
+  lmsActivities?: LmsActivity[];
   // Alumni and Enhanced Placement Metrics
   alumni?: Alumnus[];
   alumniActivities?: AlumniActivity[];
-  alumniEngagementScore?: number; // A calculated score e.g. 0-100
+  alumniEngagementScore?: number;
   overallInternshipRate?: number;
   totalCampusCompanies?: number;
-  allPlacementRecords?: PlacementRecord[]; // Add all placement records for detailed analysis
-  // Faculty & Research Metrics
-  allResearchProjects?: ResearchProject[];
-  avgTeachingHoursDelivered?: number;
-  overallCourseCompletionRate?: number;
-  totalActiveResearchProjects?: number;
+  allPlacementRecords?: PlacementRecord[];
+  // Faculty & Research Metrics (some might move to Faculty/Department)
+  allResearchProjects?: ResearchProject[]; // Aggregated
+  // avgTeachingHoursDelivered?: number; // Better at Faculty/Department
+  overallCourseCompletionRate?: number; // Aggregated from courses
+  totalActiveResearchProjects?: number; // Aggregated
   // Grievance Metrics
   allGrievanceTickets?: GrievanceTicket[];
-  grievanceCSAT?: number; // Percentage
+  grievanceCSAT?: number;
   sentimentDistribution?: { positive: number; neutral: number; negative: number; total: number };
 }
+
+// Ensure all new types are exported if not already done by defining them with 'export interface'
+// export type { ParentInstitution, Faculty, Course, Section }; // Already exported
