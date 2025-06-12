@@ -227,22 +227,16 @@ const AttendanceLogTable: React.FC<AttendanceLogTableProps> = ({
                 </Button>
             </Col>
         </Row>
-      <Table
-                    placeholder={t('attendanceLogTable.filters.searchPlaceholder', 'Search Student/Class...')}
-                    onSearch={value => setSearchText(value)}
-                    onChange={e => setSearchText(e.target.value)}
-                    allowClear
-                />
-            </Col>
-        columns={columns}
-        dataSource={processedAndFilteredRecords}
-        loading={loading}
-        rowKey="id"
-        pagination={{...tableParams.pagination, total: processedAndFilteredRecords.length}}
-        onChange={handleTableChange}
-        scroll={{ x: 'max-content' }}
-        size="middle"
-      />
+        <Table
+            columns={columns}
+            dataSource={processedAndFilteredRecords}
+            loading={loading}
+            rowKey="id"
+            pagination={{ ...tableParams.pagination, total: processedAndFilteredRecords.length }}
+            onChange={handleTableChange}
+            scroll={{ x: 'max-content' }}
+            size="middle"
+        />
     </Card>
   );
 };

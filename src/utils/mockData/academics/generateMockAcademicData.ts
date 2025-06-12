@@ -1908,26 +1908,6 @@ export const generateMockParentInstitutions = (
 // For example, calculateSemesterAverageGPA took CourseEnrollment[], not Course[].
 // The new generateMockNewSemester has its own GPA calculation for now.
 
-const calculateSemesterAverageGPA = (students: StudentSummary[], courses: CourseEnrollment[], termId: string): number | undefined => {
-        averageProgramGPA, // Potentially modified
-        graduationRate, // Potentially modified
-        programPassRate,
-        placementRate: programPlacementKPIs.rate, // Potentially modified
-        averagePackage: programPlacementKPIs.avgPackage,
-        totalPlacedStudents: programPlacementKPIs.placedCount,
-        totalInternships: programPlacementKPIs.internshipCount,
-        avgAttendancePercentage: programAttendanceKPIs.percentage,
-        totalProgramAbsences: programAttendanceKPIs.totalAbsences,
-        avgFeesPaidPercentage: programBillingKPIs.feesPaidPercentage,
-        totalStudentsWithOverdueFees: programBillingKPIs.overdueCount,
-        applicants: programAdmissionKPIs.applicants,
-        acceptanceRate: programAdmissionKPIs.acceptanceRate,
-        enrolledCount: programAdmissionKPIs.enrolledCount,
-        gradeDistribution: programGradeDistribution,
-        atRiskStudents: programAtRiskStudents, // Potentially modified
-    };
-};
-
 // Predefined mock program structures for degrees
 // This could be expanded or made more dynamic
 const degreeProgramMappings: { [degreeId: string]: { programId: string, programName: string, requiredCredits: number }[] } = {
