@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, Col, Row, Typography, Button } from 'antd';
 import { Institution, AcademicYear } from '../../types/hierarchy'; // Adjust path as needed
 import { useTranslation } from 'react-i18next';
-import KPICard from '../KPICard'; // Assuming KPICard is in the parent directory
+import KPICard from './KPICard'; // Assuming KPICard is in the parent directory
 import OverallGradeDistributionChart from './charts/OverallGradeDistributionChart';
 import MiniInstitutionAttendanceChart from './charts/MiniInstitutionAttendanceChart';
 import MiniAdmissionsSnapshotChart from './charts/MiniAdmissionsSnapshotChart';
@@ -22,7 +22,7 @@ const InstitutionOverviewDisplay: React.FC<InstitutionOverviewDisplayProps> = ({
   const kpis = [
     { titleKey: 'kpi.totalStudents', value: institution.totalStudents ?? 'N/A', icon: <UserOutlined /> },
     { titleKey: 'kpi.overallAverageGPA', value: institution.overallAverageGPA?.toFixed(2) ?? 'N/A', icon: <SolutionOutlined /> },
-    { titleKey: 'kpi.overallPlacementRate', value: institution.overallPlacementRate, suffix: '%', precision: 1, icon: <RiseOutlined /> },
+    { titleKey: 'kpi.overallPlacementRate', value: institution.overallPlacementRate ?? 'N/A', suffix: '%', precision: 1, icon: <RiseOutlined /> },
     { titleKey: 'kpi.totalAtRiskStudents', value: institution.totalInstitutionAtRiskStudents ?? 'N/A', icon: <AlertOutlined /> },
     { titleKey: 'kpi.studentsWithOverdueFees', value: institution.totalStudentsWithOverdueFeesInInstitution ?? 'N/A', icon: <FallOutlined /> },
     { titleKey: 'kpi.openGrievances', value: institution.openGrievancesCount ?? 'N/A', icon: <IssuesCloseOutlined /> },

@@ -29,9 +29,9 @@ const degreeProgramMappings: { [degreeId: string]: { programId: string, programN
 // Department definitions - needed for filtering applicants by department
 // This should ideally come from institutionData if available, or a shared config
 const departmentDefinitions: DepartmentType[] = [
-    { departmentId: 'DEPT_SCI_ENG', departmentName: 'School of Science & Engineering', degreeIds: ['CS_BS', 'CS_MS', 'CS_PHD', 'PHY_BS'] }, // Assuming PHY_BS for example
-    { departmentId: 'DEPT_ARTS_HUM', departmentName: 'School of Arts & Humanities', degreeIds: ['ENG_BA', 'ART_MFA', 'PSY_BS', 'HIST_BA'] },
-    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', degreeIds: ['MBA_GEN', 'FIN_MS'] },
+    { departmentId: 'DEPT_SCI_ENG', facultyId: '', departmentName: 'School of Science & Engineering', degreeIds: ['CS_BS', 'CS_MS', 'CS_PHD', 'PHY_BS'] }, // Assuming PHY_BS for example
+    { departmentId: 'DEPT_ARTS_HUM', facultyId: '', departmentName: 'School of Arts & Humanities', degreeIds: ['ENG_BA', 'ART_MFA', 'PSY_BS', 'HIST_BA'] },
+    { departmentId: 'DEPT_BUSINESS', facultyId: '', departmentName: 'School of Business', degreeIds: ['MBA_GEN', 'FIN_MS'] },
 ];
 
 
@@ -51,7 +51,7 @@ const AdmissionsModule: React.FC = () => {
     setLoading(true);
     try {
       const tempStudents = generateMockStudents(500); // Assuming 500 students for the institution context
-      const instDataArray = generateMockInstitutions(tempStudents, 3, 50); // Pass Student[]
+      const instDataArray = generateMockNewInstitutions(undefined, tempStudents, 3, 50); // Pass Student[]
       if (instDataArray && instDataArray.length > 0) {
         setInstitutionData(instDataArray[0]);
       }

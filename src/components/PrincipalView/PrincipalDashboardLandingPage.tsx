@@ -28,7 +28,7 @@ const PrincipalDashboardLandingPage: React.FC = () => {
     setLoading(true);
     try {
       const tempStudents = generateMockStudents(500);
-      const data = generateMockInstitutions(tempStudents, 3, 50);
+      const data = generateMockNewInstitutions(undefined, tempStudents, 3, 50);
       if (data && data.length > 0) {
         setInstitutionData(data[0]);
       } else {
@@ -94,7 +94,7 @@ const PrincipalDashboardLandingPage: React.FC = () => {
   const placementSuccessRate = institutionData?.overallPlacementRate ?? 0;
   const pendingReEvaluations = institutionData?.pendingReEvaluationsCount ?? 0;
 
-  const departmentScores = institutionData?.departments?.map(dept => dept.performanceScore).filter(score => score !== undefined) as number[];
+  const departmentScores = institutionData?.faculties?.flatMap(faculty => faculty.departments).map(dept => dept.performanceScore).filter(score => score !== undefined) as number[];
   const avgDeptPerfScore = departmentScores && departmentScores.length > 0
     ? parseFloat((departmentScores.reduce((sum, score) => sum + score, 0) / departmentScores.length).toFixed(1))
     : 0;

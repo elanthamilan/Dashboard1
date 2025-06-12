@@ -54,7 +54,7 @@ const PrincipalViewDashboard: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     // Use the memoized records for initializing institutions to ensure consistency
-    const mockInstitutions = generateMockInstitutions(allMockStudents, 3, 50);
+    const mockInstitutions = generateMockNewInstitutions(undefined, allMockStudents, 3, 50);
     setInstitutions(mockInstitutions);
     setLoading(false);
   }, [allMockStudents, allMockAcademicRecords]);
@@ -142,7 +142,7 @@ const PrincipalViewDashboard: React.FC = () => {
 
   const handleSelectSemester = useCallback((semesterId: string) => {
     if (selectedProgram) {
-      const semester = selectedProgram.semesters.find(s => s.termId === semesterId);
+      const semester = selectedProgram.semesters.find(s => s.semesterId === semesterId);
       if (semester) {
         setSelectedSemester(semester);
         resetSelections('student');

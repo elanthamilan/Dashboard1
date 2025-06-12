@@ -28,7 +28,7 @@ const StudentSummaryList: React.FC<StudentSummaryListProps> = ({ students, onSel
     { title: 'ID', dataIndex: 'studentId', key: 'studentId', width: 100, sorter: (a, b) => a.studentId.localeCompare(b.studentId) },
     { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 150, sorter: (a, b) => a.firstName.localeCompare(b.firstName) },
     { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 150, sorter: (a, b) => a.lastName.localeCompare(b.lastName) },
-    { title: 'Program', dataIndex: 'programName', key: 'programName', responsive: ['md'], sorter: (a, b) => a.programName.localeCompare(b.programName) },
+    { title: 'Program', dataIndex: 'programName', key: 'programName', responsive: ['md'], sorter: (a, b) => (a.programName || '').localeCompare(b.programName || '') },
     { title: 'GPA', dataIndex: 'cumulativeGPA', key: 'cumulativeGPA', width: 100, sorter: (a, b) => (a.cumulativeGPA || 0) - (b.cumulativeGPA || 0), render: (gpa?: number) => gpa?.toFixed(2) || 'N/A' },
     {
       title: 'Attendance (%)',

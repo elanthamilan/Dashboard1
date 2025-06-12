@@ -10,6 +10,7 @@ import { Alumnus, AlumniActivity } from './alumni';
 
 // Forward declaration for types used by ParentInstitution
 export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
+export type { Department } from './departments';
 export type {
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,

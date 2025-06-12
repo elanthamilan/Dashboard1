@@ -54,7 +54,7 @@ const AcademicPerformanceModule: React.FC = () => {
       const baseStudents = generateMockStudents(500); // Generate students once
       setAllStudentsForSummaries(baseStudents); // Set state for summaries
 
-      const instDataArray = generateMockInstitutions(baseStudents, 3, 50); // Use students for institutions
+      const instDataArray = generateMockNewInstitutions(undefined, baseStudents, 3, 50); // Use students for institutions
       if (instDataArray && instDataArray.length > 0) {
         setInstitutionData(instDataArray[0]);
       }
@@ -126,7 +126,7 @@ const AcademicPerformanceModule: React.FC = () => {
         children: React.createElement(Text, null, stringValue)
       };
     });
-  const topDepartmentsData = useMemo(() => { if (!institutionData?.departments) return []; return [...institutionData.departments].sort((a, b) => (b.performanceScore || 0) - (a.performanceScore || 0)).slice(0, 5);}, [institutionData?.departments]);
+  const topDepartmentsData = useMemo(() => { if (!institutionData?.faculties) return []; return [...institutionData.faculties.flatMap(faculty => faculty.departments)].sort((a, b) => (b.performanceScore || 0) - (a.performanceScore || 0)).slice(0, 5);}, [institutionData?.faculties]);
   const handleViewDepartmentCourses = (department: Department) => { setSelectedDepartmentForCourses(department); setSelectedCourseForBatches(null); setSelectedStudentForPerformance(null); setViewingFacultyPerformance(false); };
   const departmentTableColumns = [ { title: t('module.academics.table.departmentName'), dataIndex: 'departmentName', key: 'departmentName', sorter: (a: Department, b: Department) => a.departmentName.localeCompare(b.departmentName) }, { title: t('module.academics.table.performanceScore'), dataIndex: 'performanceScore', key: 'performanceScore', render: (score?: number) => score !== undefined ? `${score.toFixed(1)}/100` : t('common.notApplicableShort'), sorter: (a: Department, b: Department) => (a.performanceScore || 0) - (b.performanceScore || 0), align: 'right' as const }, { title: t('module.academics.table.avgGPA'), dataIndex: 'averageGPA', key: 'averageGPA', render: (gpa?: number) => gpa !== undefined ? gpa.toFixed(2) : t('common.notApplicableShort'), sorter: (a: Department, b: Department) => (a.averageGPA || 0) - (b.averageGPA || 0), align: 'right' as const }, { title: t('module.academics.table.avgPassRate'), dataIndex: 'averagePassRate', key: 'averagePassRate', render: (rate?: number) => rate !== undefined ? `${rate.toFixed(2)}%` : t('common.notApplicableShort'), sorter: (a: Department, b: Department) => (a.averagePassRate || 0) - (b.averagePassRate || 0), align: 'right' as const }, { title: t('common.actions'), key: 'actions', render: (_: any, record: Department) => React.createElement(Button, { type: "link", icon: React.createElement(EyeOutlined), onClick: () => handleViewDepartmentCourses(record) }, t('common.viewCourses', "View Courses")) }];
 
@@ -225,13 +225,13 @@ const AcademicPerformanceModule: React.FC = () => {
   const facultyEvalSnapshotSection = React.createElement(Row, { gutter: [16,16], style: {marginTop: '20px'}}, facultyEvalKpis.map(kpi => React.createElement(Col, { xs: 24, sm:12, md:12, lg:6, key: kpi.titleKey}, React.createElement(Card, {bordered:false, style:{boxShadow: '0 2px 8px rgba(0,0,0,0.09)'}}, React.createElement(Statistic, {title: t(kpi.titleKey), value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle:{color: '#3f8600'}})))));
 
   const departmentGpaChartData = useMemo(() => {
-    if (!institutionData?.departments) return [];
-    return institutionData.departments.map(dept => ({
+    if (!institutionData?.faculties) return [];
+    return institutionData.faculties.flatMap(faculty => faculty.departments).map(dept => ({
       id: dept.departmentId,
       name: dept.departmentName,
       averageGpa: dept.averageGPA,
     }));
-  }, [institutionData?.departments]);
+  }, [institutionData?.faculties]);
 
   const departmentGpaChartSection = React.createElement(Row, { style: { marginTop: '30px' } },
     React.createElement(Col, { span: 24 },
@@ -250,7 +250,12 @@ const AcademicPerformanceModule: React.FC = () => {
       React.createElement(AttendanceGradeScatterPlot, {
         academicRecords: allAcademicRecords,
         attendanceRecords: allAttendanceRecords,
-        students: allStudentsInInstitution,
+        students: allStudentsInInstitution.map(summary => ({
+          id: summary.studentId,
+          firstName: summary.firstName,
+          lastName: summary.lastName,
+          // gradeLevel and homeroom are optional in Student type
+        })),
         title: t('module.academics.charts.attendanceVsGrade', "Attendance vs. Grade"),
         loading: loading,
       })

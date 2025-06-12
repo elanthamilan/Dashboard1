@@ -144,7 +144,7 @@ const AttendanceEngagementModule: React.FC = () => {
     const periodEndDate = dayjs(todayStr);
     const periodStartDate = periodEndDate.subtract(AT_RISK_PERIOD_DAYS, 'day');
 
-    let allStudentsCurrentContext: StudentSummary[] = [];
+    const allStudentsCurrentContext: StudentSummary[] = [];
     institutionData.academicYears.forEach(ay => {
       if (filters.academicYear && ay.yearId !== filters.academicYear) return;
       ay.degrees.forEach(deg => {
@@ -158,7 +158,7 @@ const AttendanceEngagementModule: React.FC = () => {
             // Check if semester overlaps with the at-risk period or global date range filters
             // For simplicity, if global date range is wide, or academic year matches, include students.
             // More precise filtering could be added here if semesters have strict non-overlapping dates.
-            sem.students.forEach((s: StudentSummary) => {
+            (sem.students || []).forEach((s: StudentSummary) => {
               if (!allStudentsCurrentContext.find(existing => existing.studentId === s.studentId)) {
                 allStudentsCurrentContext.push(s);
               }
@@ -240,7 +240,7 @@ const AttendanceEngagementModule: React.FC = () => {
                    : selectedProgramForAttendance.programName
         });
         if (selectedSemesterForClasses) {
-            items.push({ key: 'semester', title: selectedSemesterForClasses.termName });
+            items.push({ key: 'semester', title: selectedSemesterForClasses.semesterName });
         }
     } else {
         items.push({ key: 'moduleTitle', title: t(`module.${MODULE_KEY}.title`, "Attendance & Engagement")});

@@ -53,7 +53,7 @@ const PlacementAlumniModule: React.FC = () => {
         ay.degrees.forEach(deg =>
           deg.programs.forEach(prog =>
             prog.semesters.forEach(sem =>
-              sem.students.forEach((s: StudentSummary) => {
+              (sem.students || []).forEach((s: StudentSummary) => {
                 if(!studentSummaries.find(es => es.studentId === s.studentId)) {
                   // departmentId is not a property of StudentSummary, removing it.
                   studentSummaries.push({...s, programName: prog.programName });

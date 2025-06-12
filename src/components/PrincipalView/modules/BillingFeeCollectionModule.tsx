@@ -40,7 +40,7 @@ interface KpiItem {
 }
 
 // Type for semester billing info used in tables and state
-type SemesterBillingInfo = SemesterType & {
+type SemesterBillingInfo = Semester & {
   programName: string;
   totalInvoiced: number;
   totalCollected: number;
@@ -71,7 +71,7 @@ const BillingFeeCollectionModule: React.FC = () => {
       setError(null);
       try {
         const tempStudents = generateMockStudents(1); // Generate students first
-        const mockInstitutions = generateMockInstitutions(tempStudents, 3, 50); // Pass Student[]
+        const mockInstitutions = generateMockNewInstitutions(undefined, tempStudents, 3, 50); // Pass Student[]
         const currentInstitution = mockInstitutions[0];
         setInstitutionData(currentInstitution);
 
@@ -81,7 +81,7 @@ const BillingFeeCollectionModule: React.FC = () => {
             ay.degrees.forEach((deg: Degree) =>
               deg.programs.forEach((prog: Program) =>
                 prog.semesters.forEach((sem: Semester) =>
-                  sem.students.forEach((s: StudentSummary) => {
+                  (sem.students || []).forEach((s: StudentSummary) => {
                     if(!studentSummariesFromInstitution.find(es => es.studentId === s.studentId)) {
                       studentSummariesFromInstitution.push({...s, programName: prog.programName});
                     }
@@ -133,7 +133,7 @@ const BillingFeeCollectionModule: React.FC = () => {
 
   const monthlyCollectionsData = useMemo(() => { /* ... */ return []; }, [filteredInvoices, filteredPayments, t]); // Stubbed
   const paymentModeData = useMemo(() => { /* ... */ return []; }, [filteredInvoices, filteredPayments, t]); // Stubbed
-  const availableDepartments = useMemo(() => { /* ... */ return institutionData?.departments || []; }, [institutionData]);
+  const availableDepartments = useMemo(() => { /* ... */ return institutionData?.faculties?.flatMap(f => f.departments) || []; }, [institutionData]);
 
   const semestersInSelectedDeptForBilling = useMemo((): SemesterBillingInfo[] => {
     if (!selectedDepartmentForBilling || !institutionData || !allInvoices.length) return [];
@@ -143,9 +143,9 @@ const BillingFeeCollectionModule: React.FC = () => {
       if (filters.academicYear && ay.yearId !== filters.academicYear) return;
       ay.degrees.forEach((deg: Degree) => {
         deg.programs.forEach((prog: Program) => {
-          if (!departmentProgramIds.has(prog.programId)) return;
+          if (!departmentDegreeIds.has(prog.programId)) return;
           prog.semesters.forEach((sem: Semester) => {
-            const studentIdsInSemester = new Set(sem.students.map((s: StudentSummary) => s.studentId));
+            const studentIdsInSemester = new Set((sem.students || []).map((s: StudentSummary) => s.studentId));
             let totalInvoicedInSemester = 0;
             let totalCollectedInSemester = 0;
             const semesterInvoices = allInvoices.filter(inv =>
@@ -172,7 +172,7 @@ const BillingFeeCollectionModule: React.FC = () => {
 
   const invoicesInSelectedSemester = useMemo(() => {
     if (!selectedSemesterForInvoices || !allInvoices.length) return [];
-    const studentIdsInSemester = new Set(selectedSemesterForInvoices.students.map((s: StudentSummary) => s.studentId));
+    const studentIdsInSemester = new Set((selectedSemesterForInvoices.students || []).map((s: StudentSummary) => s.studentId));
     return allInvoices.filter(inv =>
         studentIdsInSemester.has(inv.studentId) &&
         dayjs(inv.issueDate).isBetween(dayjs(selectedSemesterForInvoices.startDate), dayjs(selectedSemesterForInvoices.endDate), null, '[]') &&
