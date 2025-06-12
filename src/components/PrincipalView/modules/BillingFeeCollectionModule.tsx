@@ -137,7 +137,7 @@ const BillingFeeCollectionModule: React.FC = () => {
 
   const semestersInSelectedDeptForBilling = useMemo((): SemesterBillingInfo[] => {
     if (!selectedDepartmentForBilling || !institutionData || !allInvoices.length) return [];
-    const departmentProgramIds = new Set(selectedDepartmentForBilling.programIds || []);
+    const departmentDegreeIds = new Set(selectedDepartmentForBilling.degreeIds || []); // Changed programIds to degreeIds
     const results: SemesterBillingInfo[] = [];
     institutionData.academicYears.forEach((ay: AcademicYear) => {
       if (filters.academicYear && ay.yearId !== filters.academicYear) return;
@@ -167,7 +167,7 @@ const BillingFeeCollectionModule: React.FC = () => {
         });
       });
     });
-    return results.sort((a,b) => `${a.programName} - ${a.termName}`.localeCompare(`${b.programName} - ${b.termName}`));
+    return results.sort((a,b) => `${a.programName} - ${a.semesterName}`.localeCompare(`${b.programName} - ${b.semesterName}`));
   }, [selectedDepartmentForBilling, institutionData, allInvoices, allPayments, filters.academicYear, filters.dateRange]);
 
   const invoicesInSelectedSemester = useMemo(() => {
@@ -214,7 +214,7 @@ const BillingFeeCollectionModule: React.FC = () => {
         });
     }
     if (selectedSemesterForInvoices) {
-        items.push({ key: 'semester', title: selectedSemesterForInvoices.termName });
+        items.push({ key: 'semester', title: selectedSemesterForInvoices.semesterName }); // Changed termName to semesterName
     }
     return items;
   }, [selectedDepartmentForBilling, selectedSemesterForInvoices, t]);
@@ -283,7 +283,7 @@ const BillingFeeCollectionModule: React.FC = () => {
     return React.createElement('div', { style: { padding: '20px' } },
       React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }), // Changed children to items
       departmentSelectorSection, // Keep selector for context, but disable it
-      React.createElement(Title, { level: 3, style:{ marginTop: '20px' } }, t('module.billing.invoiceListTitle', "Invoices for {programName} - {semesterName}", { programName: selectedSemesterForInvoices.programName, semesterName: selectedSemesterForInvoices.termName })),
+      React.createElement(Title, { level: 3, style:{ marginTop: '20px' } }, t('module.billing.invoiceListTitle', "Invoices for {programName} - {semesterName}", { programName: selectedSemesterForInvoices.programName, semesterName: selectedSemesterForInvoices.semesterName })), // Changed termName to semesterName
       React.createElement(Table, { dataSource: invoicesInSelectedSemester, columns: invoiceTableColumns, rowKey: 'invoiceId', pagination: {pageSize:10}, style:{marginTop:20}, locale: {emptyText: t('common.noInvoicesFound', "No invoices found for this semester.")}}),
       invoiceDetailModal,
       React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30 } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems })) // Changed children to items

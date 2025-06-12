@@ -35,7 +35,7 @@ const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester
       if (semester.students && semester.students.length > 0) {
         for (const student of semester.students) {
           reportData.push({
-            semesterName: semester.termName,
+            semesterName: semester.semesterName,
             studentId: student.studentId,
             firstName: student.firstName,
             lastName: student.lastName,
@@ -73,7 +73,7 @@ const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester
         dataSource={semesters}
         renderItem={semester => (
           <List.Item>
-            <Card title={semester.termName}>
+            <Card title={semester.semesterName}>
               <Row gutter={16}>
                 <Col span={12}>
                   <Statistic title="Total Students" value={semester.students?.length || 0} />
@@ -116,7 +116,7 @@ const SemesterList: React.FC<SemesterListProps> = ({ semesters, onSelectSemester
                   <Statistic title="Overdue Fees (Students)" value={semester.studentsWithOverdueFees ?? 'N/A'} />
                 </Col>
               </Row>
-              <Button type="primary" style={{ marginTop: '20px' }} onClick={() => onSelectSemester(semester.termId)}>
+              <Button type="primary" style={{ marginTop: '20px' }} onClick={() => onSelectSemester(semester.semesterId)}>
                 View Students
               </Button>
             </Card>

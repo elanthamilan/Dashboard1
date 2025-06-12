@@ -259,7 +259,7 @@ const PrincipalViewDashboard: React.FC = () => {
     }
     if (viewLevel !== 'institution_overview' && selectedSemester) {
         if (viewLevel === 'student' || viewLevel === 'student_detail') {
-            items.push({ key: 'semester', title: selectedSemester.termName,
+            items.push({ key: 'semester', title: selectedSemester.semesterName,
                 onClick: viewLevel === 'student_detail' ? () => { setViewLevel('student'); setSelectedStudentIdForDetail(null); setCurrentStudentAcademicRecord(null); } : undefined });
         }
     }
@@ -299,8 +299,8 @@ const PrincipalViewDashboard: React.FC = () => {
     currentDisplayTitle = selectedProgram.programName;
     content = <SemesterList semesters={selectedProgram.semesters} onSelectSemester={handleSelectSemester} />;
   } else if (selectedSemester && viewLevel === 'student') {
-    currentDisplayTitle = selectedSemester.termName;
-    content = <StudentSummaryList students={selectedSemester.students} onSelectStudent={handleSelectStudentForDetail} />;
+    currentDisplayTitle = selectedSemester.semesterName;
+    content = <StudentSummaryList students={selectedSemester.students || []} onSelectStudent={handleSelectStudentForDetail} />;
   } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
     const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
     const studentDisplayName = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;

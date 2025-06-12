@@ -46,8 +46,9 @@ import { generateMockLmsActivityData } from '../engagement/generateMockLmsActivi
 import { generateMockAlumni, generateMockAlumniActivities } from '../alumni/generateMockAlumniData'; // Added for Alumni Data
 
 
-// Mock Degree definitions (moved earlier as it's used by departmentConfigs)
-const mockDegrees: Degree[] = [ // Changed from const mockDegrees = [ to const mockDegrees: Degree[] = [
+// Mock Degree configurations
+interface MockDegreeConfig { degreeId: string; degreeName: string; }
+const mockDegreeConfigs: MockDegreeConfig[] = [
     { degreeId: "BACHELORS", degreeName: "Bachelor's Degrees" },
     { degreeId: "MASTERS", degreeName: "Master's Degrees" },
     { degreeId: "DOCTORATE", degreeName: "Doctorate Degrees" },
@@ -555,7 +556,10 @@ const generateMockNewSemester = (
     const semesterStudentSummaries = availableStudents.filter(s => uniqueStudentIdsArray.includes(s.studentId));
 
     return {
-        ...termDetails, // termId, termName, startDate, endDate
+        semesterId: termDetails.termId, // Corrected from ...termDetails
+        semesterName: termDetails.termName, // Corrected from ...termDetails
+        startDate: termDetails.startDate,
+        endDate: termDetails.endDate,
         courses, // This is now Course[]
         students: semesterStudentSummaries, // Added students field
         averageGPA, // Mocked or aggregated differently
@@ -831,9 +835,9 @@ export const generateMockNewDegree = (
 
 // Predefined department configurations (can be expanded)
 const departmentConfigs = [
-    { departmentId: 'DEPT_STEM', departmentName: 'School of STEM', facultyId: '', degreeConfigs: [mockDegrees[0], mockDegrees[2]] }, // Bachelors, Doctorate for STEM
-    { departmentId: 'DEPT_ARTS', departmentName: 'School of Arts & Humanities', facultyId: '', degreeConfigs: [mockDegrees[0], mockDegrees[1]] }, // Bachelors, Masters for ARTS
-    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', facultyId: '', degreeConfigs: [mockDegrees[1]] } // Masters for Business
+    { departmentId: 'DEPT_STEM', departmentName: 'School of STEM', facultyId: '', degreeConfigs: [mockDegreeConfigs[0], mockDegreeConfigs[2]] }, // Bachelors, Doctorate for STEM
+    { departmentId: 'DEPT_ARTS', departmentName: 'School of Arts & Humanities', facultyId: '', degreeConfigs: [mockDegreeConfigs[0], mockDegreeConfigs[1]] }, // Bachelors, Masters for ARTS
+    { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', facultyId: '', degreeConfigs: [mockDegreeConfigs[1]] } // Masters for Business
 ];
 
 export const generateMockDepartments = (
@@ -915,6 +919,13 @@ export const generateMockDepartments = (
             totalStudents: deptTotalStudents,
             departmentAverageGPA, // Renamed for clarity from averageGPA
             departmentPlacementRate: deptPlacementKPIs.rate, // Renamed
+            // Populate facultyMembers and facultyEvaluations for the department
+            facultyMembers: generateMockFacultyMembers([{ departmentId: currentDepartmentId, departmentName: deptConfig.departmentName }], 5), // Generate 5 members per dept
+            facultyEvaluations: generateMockFacultyEvaluations(
+                (generateMockFacultyMembers([{ departmentId: currentDepartmentId, departmentName: deptConfig.departmentName }], 1) || []), // Generate 1 member to ensure list is not empty for evals
+                deptStudentSummaries,
+                2 // 2 evals per faculty member
+            ),
             // departmentPassRate: // Calculate if needed
             // performanceScore, mockStudentSatisfactionScore can be added later
         });
@@ -1086,6 +1097,29 @@ export const generateMockNewInstitutions = ( // Renamed from generateMockInstitu
     const pendingReEvaluationsCount = allReEvaluationRequests.filter(r => r.status === 'Pending').length;
     const allGrievanceTickets = generateMockGrievanceData(institutionWideStudentSummaries, [], 75);
     const openGrievancesCount = allGrievanceTickets.filter(t => t.status === 'Open' || t.status === 'In Progress').length;
+
+    // Generate compliance and accreditation data for the new institution
+    const complianceItems = generateMockComplianceItems(faculties.flatMap(f => f.departments), 50); // Pass departments from new faculty structure
+    const accreditationStatuses = generateMockAccreditationStatusSummary(2);
+    const overallCompliancePercentage = complianceItems.length > 0
+        ? parseFloat(((complianceItems.filter(item => item.status === 'Compliant').length / complianceItems.length) * 100).toFixed(1))
+        : 100;
+    const pendingComplianceItemsCount = complianceItems.filter(
+        item => item.status === 'In Progress' || item.status === 'Pending Review'
+    ).length;
+    let nextAccreditationReviewDate: string | undefined = undefined;
+    let primaryAccreditationBody: AccreditingBody | undefined = undefined;
+    if (accreditationStatuses.length > 0) {
+        primaryAccreditationBody = accreditationStatuses[0].body;
+        const futureDates: string[] = [];
+        accreditationStatuses.forEach(as => {
+            if (as.validUntil && dayjs(as.validUntil).isAfter(dayjs())) futureDates.push(as.validUntil);
+            const reviewCycleDate = dayjs(as.nextMajorReviewCycle, 'YYYY').endOf('year');
+            if (reviewCycleDate.isAfter(dayjs())) futureDates.push(reviewCycleDate.toISOString());
+        });
+        if (futureDates.length > 0) nextAccreditationReviewDate = futureDates.sort((a,b) => dayjs(a).valueOf() - dayjs(b).valueOf())[0];
+    }
+
     // ... other KPIs from the original generateMockInstitutions
     const alumniSummaries = institutionWideStudentSummaries.filter(s => s.enrollmentStatus === 'Graduated');
     const allAlumni = generateMockAlumni(alumniSummaries);
@@ -1153,18 +1187,20 @@ export const generateMockNewInstitutions = ( // Renamed from generateMockInstitu
         openGrievancesCount,
         // Dummy values for other complex fields, to be properly aggregated/generated
         departments: undefined, // This should be removed from Institution type if faculties is primary
-        totalReEvaluationsLastMonth: faker.number.int(20),
-        avgGrievanceResolutionTimeDays: faker.number.int({min:1, max:30}),
-        overallCompliancePercentage: faker.number.float({min:70, max:99, multipleOf: .1}),
-        pendingComplianceItemsCount: faker.number.int(10),
-        nextAccreditationReviewDate: dayjs().add(faker.number.int({min:1,max:5}), 'year').toISOString(),
-        accreditationBody: { name: faker.company.name() + " Accreditation Board", code: faker.string.alphanumeric(3).toUpperCase()},
-        complianceItems: [],
-        accreditationStatuses: [],
+        totalReEvaluationsLastMonth: faker.number.int(20), // Example, could be calculated
+        avgGrievanceResolutionTimeDays: faker.number.int({min:1, max:30}), // Example
+        overallCompliancePercentage: overallCompliancePercentage, // Now calculated
+        pendingComplianceItemsCount: pendingComplianceItemsCount, // Now calculated
+        nextAccreditationReviewDate: nextAccreditationReviewDate, // Now calculated
+        accreditationBody: primaryAccreditationBody, // Now calculated
+        complianceItems: complianceItems, // Now generated
+        accreditationStatuses: accreditationStatuses, // Now generated
+        // TODO: Aggregate avgFacultyRating and facultyEvaluationResponseRate from facultyEvaluations
+        // For now, using placeholders.
         avgFacultyRating: faker.number.float({min:3.5, max:4.8, multipleOf: .1}),
         facultyEvaluationResponseRate: faker.number.float({min:60, max:90, multipleOf: .1}),
-        facultyMembers: [], // Should be aggregated from faculties/departments
-        facultyEvaluations: [], // Aggregated
+        facultyMembers: faculties.flatMap(f => f.departments.flatMap(d => d.facultyMembers || [])), // Aggregate from departments if available, else needs direct generation/assignment
+        facultyEvaluations: faculties.flatMap(f => f.departments.flatMap(d => d.facultyEvaluations || [])), // Aggregate similarly
         lmsLoginsLast30Days: faker.number.int(5000),
         lmsResourceDownloadsLast30Days: faker.number.int(10000),
         lmsForumPostsLast30Days: faker.number.int(1000),
@@ -1327,11 +1363,11 @@ export const generateMockSemester = (
     }
 
     return {
-        termId: term.termId,
-        termName: term.termName, // Corrected from semesterName to termName
+        semesterId: term.termId, // Changed from termId
+        semesterName: term.termName, // Changed from termName
         startDate: term.startDate,
         endDate: term.endDate,
-        courses: term.courses,
+        courses: [], // TODO: This is a temporary fix. Semester expects Course[], but term.courses is CourseEnrollment[].
         students: semesterStudents,
         averageGPA: calculateSemesterAverageGPA(semesterStudents, term.courses, term.termId),
         passRate: calculateSemesterPassRate(semesterStudents, term.courses, term.termId),
@@ -1705,7 +1741,7 @@ export const generateMockFaculties = (
             // To get students for faculty GPA, need to look into dept's degrees -> programs -> students
             // This is similar to how department aggregates students.
             dept.degreeIds.forEach(degreeId => { // Assuming degreeIds are populated correctly
-                const degree = mockDegrees.find(d => d.degreeId === degreeId); // Need full Degree objects from dept
+                const degree = mockDegreeConfigs.find(d => d.degreeId === degreeId); // Changed mockDegrees to mockDegreeConfigs
                 // This is insufficient; generateMockDepartments returns Department with degreeIds (string[])
                 // It should ideally return Department with Degree[] or we need to reconstruct.
                 // For now, let's sum up dept.totalStudents as a proxy.
@@ -1763,7 +1799,7 @@ export const generateMockNewInstitutions = ( // Renamed from generateMockInstitu
     const allPlacementRecords = generateMockPlacementData(institutionWideStudentSummaries);
     const allAttendanceRecords = generateMockAttendanceRecords(allStudents, [], numYears * 365);
     const allInvoices = generateMockInvoices(allStudents, 5, new Set()); // Simplified overdue cohort for now
-    const allApplicants = generateMockApplicants(numApplicantsPerProgram * programs.length); // `programs` is old global
+    const allApplicants = generateMockApplicants(numApplicantsPerProgramContext * totalProgramTemplates); // Used totalProgramTemplates and function param
 
     const institutionId = faker.string.uuid();
     const institutionName = `${faker.company.name()} University`;
@@ -2078,7 +2114,7 @@ export const generateMockDegree = (
     const avgDegreeAttendance = totalStudentsForAttendanceCalculation > 0 ? parseFloat((sumOfProgramAttendance / totalStudentsForAttendanceCalculation).toFixed(2)) : undefined;
     const avgDegreeFeesPaid = totalStudentsForFeesCalculation > 0 ? parseFloat((sumOfProgramFeesPaid / totalStudentsForFeesCalculation).toFixed(2)) : undefined;
     const avgDegreeAcceptanceRate = totalApplicantsForAcceptanceRateCalculation > 0 ? parseFloat((sumOfProgramAcceptanceRates / totalApplicantsForAcceptanceRateCalculation).toFixed(2)) : undefined;
-
+    // This is the OLD generateMockDegree function. Ensure it also has the new KPI fields.
     return {
         degreeId,
         degreeName,
@@ -2092,21 +2128,17 @@ export const generateMockDegree = (
         avgAttendancePercentage: avgDegreeAttendance,
         totalDegreeAbsences,
         avgFeesPaidPercentage: avgDegreeFeesPaid,
-        totalStudentsWithOverdueFeesInDegree,
+        totalStudentsWithOverdueFeesInDegree, // Corrected from totalStudentsWithOverdueFeesInDegree
         totalApplicants: totalDegreeApplicants,
         avgAcceptanceRate: avgDegreeAcceptanceRate,
         totalEnrolledCount: totalDegreeEnrolled,
         overallGradeDistribution,
         totalAtRiskStudents: totalAtRiskInDegree,
+        // departmentId is NOT part of the old generateMockDegree's direct return, it's on Program within.
     };
 };
 
-// Mock Degree definitions
-const mockDegrees = [
-    { degreeId: "BACHELORS", degreeName: "Bachelor's Degrees" },
-    { degreeId: "MASTERS", degreeName: "Master's Degrees" },
-    { degreeId: "DOCTORATE", degreeName: "Doctorate Degrees" },
-];
+// Mock Degree definitions are now mockDegreeConfigs at the top
 
 export const generateMockAcademicYear = (
     yearId: string, // e.g., "2022-2023"
@@ -2362,7 +2394,7 @@ export const generateMockInstitutions = (
         //     const programInstance = generateMockProgram( // OLD generateMockProgram
         //         progConfig.id,
         //         progConfig.name,
-        //         mockDegrees.find(d => degreeProgramMappings[d.degreeId]?.some(dp => dp.programId === progConfig.id))?.degreeId || "UNKNOWN_DEG",
+        //         mockDegreeConfigs.find(d => degreeProgramMappings[d.degreeId]?.some(dp => dp.programId === progConfig.id))?.degreeId || "UNKNOWN_DEG", // Changed mockDegrees
         //         deptDef.departmentId,
         //         progConfig.requiredCredits,
         //         allStudents,
@@ -2381,7 +2413,7 @@ export const generateMockInstitutions = (
 
     // This is part of the old generateMockInstitutions.
     // For the new structure, compliance items would be associated with the new Institution object.
-    // const complianceItems = generateMockComplianceItems(institutionDepartments, 50); // institutionDepartments is from old structure
+    const complianceItems = generateMockComplianceItems(institutionDepartments, 50); // Call the function
     const accreditationStatuses = generateMockAccreditationStatusSummary(2);
 
     const compliantItemsCount = complianceItems.filter(item => item.status === 'Compliant').length;
@@ -2391,6 +2423,10 @@ export const generateMockInstitutions = (
     const pendingComplianceItemsCount = complianceItems.filter(
         item => item.status === 'In Progress' || item.status === 'Pending Review'
     ).length;
+    // TODO: Define or pass complianceItems if these calculations are needed for the old generateMockInstitutions
+    // const overallCompliancePercentage = 0; // Placeholder - REMOVED
+    // const pendingComplianceItemsCount = 0; // Placeholder - REMOVED
+
 
     let nextAccreditationReviewDate: string | undefined = undefined;
     let primaryAccreditationBody: AccreditingBody | undefined = undefined;
@@ -2550,6 +2586,7 @@ export const generateMockInstitutions = (
     const institution: Institution = {
         institutionId,
         institutionName,
+        faculties: [], // Added missing 'faculties' property
         academicYears: academicYearsData,
         totalStudents: institutionWideStudentSummaries.length,
         overallAverageGPA: overallInstitutionGPA,
@@ -2593,6 +2630,13 @@ export const generateMockInstitutions = (
         overallInternshipRate,
         totalCampusCompanies,
         allPlacementRecords: allPlacementRecords, // Add all placement records
+        // Ensure all other required fields for Institution are present or set to undefined if optional
+        parentInstitutionId: undefined, // Assuming it's optional and not set here
+        complianceItems: complianceItems, // Added complianceItems
+        // researchProjects, etc. might need to be added if they are not optional
+        // Ensure all other fields from Institution type are covered
+        allResearchProjects: [], // Placeholder
+        allGrievanceTickets: allGrievanceTickets, // Already generated
     };
 
     return [institution];

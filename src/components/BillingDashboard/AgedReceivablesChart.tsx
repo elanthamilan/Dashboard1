@@ -26,7 +26,7 @@ const AgedReceivablesChart: React.FC<AgedReceivablesChartProps> = ({ invoices, p
 
     const paymentsMap = new Map<string, number>();
     payments.forEach(payment => {
-      paymentsMap.set(payment.invoiceId, (paymentsMap.get(payment.invoiceId) || 0) + payment.amount);
+      paymentsMap.set(payment.invoiceId, (paymentsMap.get(payment.invoiceId) || 0) + payment.amountPaid);
     });
 
     const BUCKETS = {
@@ -39,7 +39,7 @@ const AgedReceivablesChart: React.FC<AgedReceivablesChartProps> = ({ invoices, p
     invoices.forEach(invoice => {
       if (invoice.status === 'Paid') return; // Only interested in unpaid/overdue
 
-      const totalPaid = paymentsMap.get(invoice.id) || 0;
+      const totalPaid = paymentsMap.get(invoice.invoiceId) || 0;
       const outstandingAmount = invoice.totalAmount - totalPaid;
 
       if (outstandingAmount <= 0) return;
