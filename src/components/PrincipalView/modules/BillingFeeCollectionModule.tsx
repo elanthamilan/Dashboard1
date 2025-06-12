@@ -1,3 +1,6 @@
+// IMPORTANT: This component currently uses MOCK DATA.
+// TODO: Replace mock data generation (e.g., generateMockInvoices, generateMockPayments, generateMockNewInstitutions)
+// with actual data fetching logic from an API or state management system.
 import React, { useState, useEffect, useMemo } from 'react';
 import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, Alert, Select, Button, Table, Modal, Tag, List, DescriptionsProps } from 'antd'; // Added Modal, Tag, List, DescriptionsProps
 import type { ColumnsType } from 'antd/es/table'; // For table columns typing
@@ -70,6 +73,8 @@ const BillingFeeCollectionModule: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
+        // IMPORTANT: This component currently uses MOCK DATA.
+        // TODO: Replace mock data generation with actual data fetching logic.
         const tempStudents = generateMockStudents(1); // Generate students first
         const mockInstitutions = generateMockNewInstitutions(undefined, tempStudents, 3, 50); // Pass Student[]
         const currentInstitution = mockInstitutions[0];
@@ -99,6 +104,8 @@ const BillingFeeCollectionModule: React.FC = () => {
             lastName: s.lastName,
             // gradeLevel and homeroom are optional in Student type, can be omitted
           }));
+          // IMPORTANT: This component currently uses MOCK DATA.
+          // TODO: Replace mock data generation with actual data fetching logic.
           const invoices = generateMockInvoices(studentsForInvoices, 5);
           setAllInvoices(invoices);
           const payments = generateMockPayments(invoices); // Assuming generateMockPayments takes Invoice[]
@@ -294,7 +301,76 @@ const BillingFeeCollectionModule: React.FC = () => {
   if (selectedDepartmentForBilling) { /* ... same as before, ensure "View Invoices" button calls handleSemesterSelect(record) ... */ }
 
   // Overview Display
-  return React.createElement('div', { /* ... same as before, ensure departmentSelectorSection is included ... */ });
+  // Reconstructing the overview display based on common patterns for chart rendering
+  const overviewDisplay = React.createElement('div', { style: { padding: '20px' } },
+    React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
+    React.createElement(Title, { level: 2 }, t(`module.${MODULE_KEY}.title`, "Billing & Fee Collection")),
+    React.createElement(Paragraph, null, t('module.billing.descriptionPlaceholder', "Overview of billing, fee collections, and payment statuses.")),
+    departmentSelectorSection, // Assuming this is part of the overview
+    React.createElement(Title, { level: 3, style: { marginTop: '20px' } }, t('module.billing.kpiSectionTitle', "Summary KPIs")),
+    React.createElement(Row, { gutter: [16, 16] }, summaryKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 12, lg: 6, key: kpi.key }, React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, React.createElement(Statistic, { title: t(kpi.title), value: kpi.value, precision: kpi.precision, prefix: kpi.prefix, suffix: kpi.suffix, valueStyle: { color: kpi.color || '#3f8600' } }))))),
+    React.createElement(Row, { gutter: [16, 16], style: { marginTop: '30px' } },
+      React.createElement(Col, { xs: 24, lg: 12 },
+        React.createElement(Card, { title: React.createElement(Text, null, React.createElement(LineChartOutlined, { style: { marginRight: 8 }}), t('module.billing.charts.monthlyCollections', "Monthly Collections Trend")) },
+          (monthlyCollectionsData && monthlyCollectionsData.length > 0)
+            ? React.createElement(Line, lineConfig as any)
+            : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this period."))
+        )
+      ),
+      React.createElement(Col, { xs: 24, lg: 12 },
+        React.createElement(Card, { title: React.createElement(Text, null, React.createElement(PieChartOutlined, { style: { marginRight: 8 }}), t('module.billing.charts.paymentModes', "Payment Modes Distribution")) },
+          (paymentModeData && paymentModeData.length > 0)
+            ? React.createElement(Pie, pieConfig as any)
+            : React.createElement(Text, null, t('common.noDataAvailable', "No data available for this period."))
+        )
+      )
+    ),
+    React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
+  );
+
+  if (selectedDepartmentForBilling && selectedSemesterForInvoices) {
+    // Invoice List View (already defined and seems correct)
+    const invoiceTableColumns = [
+      { title: t('module.billing.invoiceId', "Invoice ID"), dataIndex: 'invoiceId', key: 'invoiceId' },
+      { title: t('module.billing.studentName', "Student Name"), dataIndex: 'studentName', key: 'studentName' },
+      { title: t('module.billing.amount', "Amount"), dataIndex: 'totalAmount', key: 'totalAmount', render: (val:number) => `$${val.toLocaleString()}` },
+      { title: t('module.billing.dueDate', "Due Date"), dataIndex: 'dueDate', key: 'dueDate', render: (d:string) => dayjs(d).format('YYYY-MM-DD') },
+      { title: t('module.billing.status', "Status"), dataIndex: 'status', key: 'status', render: (status: InvoiceStatus) => React.createElement(Tag, {color: status === 'Paid' ? 'green' : status === 'Overdue' ? 'red' : 'orange'}, status)},
+      { title: t('common.actions', 'Actions'), key: 'actions', render: (_:any, record:Invoice) => React.createElement(Button, {icon: React.createElement(FileTextOutlined), onClick:() => handleInvoiceSelect(record)}, t('common.viewDetails', "View Details"))}
+    ];
+    return React.createElement('div', { style: { padding: '20px' } },
+      React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
+      departmentSelectorSection, // Keep selector for context
+      React.createElement(Button, { type: "link", icon: React.createElement(ArrowLeftOutlined), onClick: () => handleSemesterSelect(null), style: { marginBottom: '16px', display:'block', paddingLeft:0 } }, t('module.billing.backToSemesters', "Back to Semesters for {deptName}", {deptName: selectedDepartmentForBilling.departmentName})),
+      React.createElement(Title, { level: 3, style:{ marginTop: '0px' } }, t('module.billing.invoiceListTitle', "Invoices for {programName} - {semesterName}", { programName: selectedSemesterForInvoices.programName, semesterName: selectedSemesterForInvoices.semesterName })),
+      React.createElement(Table, { dataSource: invoicesInSelectedSemester, columns: invoiceTableColumns, rowKey: 'invoiceId', pagination: {pageSize:10}, style:{marginTop:20}, locale: {emptyText: t('common.noInvoicesFound', "No invoices found for this semester.")}}),
+      invoiceDetailModal,
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30, display: 'none'  } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
+    );
+  }
+
+  if (selectedDepartmentForBilling) {
+    // Semesters in Department View (assumed to be defined correctly in "/* ... same as before ... */")
+    // For placeholder, we'll just show a back button and title
+     const semesterTableColumns: ColumnsType<SemesterBillingInfo> = [
+        { title: t('module.billing.semesterName', "Semester Name"), dataIndex: 'semesterName', key: 'semesterName', render: (text: string, record: SemesterBillingInfo) => `${record.programName} - ${text}` },
+        { title: t('module.billing.totalInvoiced', "Total Invoiced"), dataIndex: 'totalInvoiced', key: 'totalInvoiced', render: (val:number) => `$${val.toLocaleString()}`, align: 'right' },
+        { title: t('module.billing.totalCollected', "Total Collected"), dataIndex: 'totalCollected', key: 'totalCollected', render: (val:number) => `$${val.toLocaleString()}`, align: 'right' },
+        { title: t('module.billing.totalOutstanding', "Total Outstanding"), dataIndex: 'totalOutstanding', key: 'totalOutstanding', render: (val:number) => `$${val.toLocaleString()}`, align: 'right' },
+        { title: t('common.actions'), key: 'actions', render: (_: any, record: SemesterBillingInfo) => React.createElement(Button, {icon: React.createElement(EyeOutlined), onClick:() => handleSemesterSelect(record)}, t('module.billing.viewInvoices', "View Invoices"))}
+    ];
+    return React.createElement('div', { style: { padding: '20px' } },
+      React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
+      departmentSelectorSection, // Keep selector for context
+      React.createElement(Button, { type: "link", icon: React.createElement(ArrowLeftOutlined), onClick: () => handleDepartmentSelect(null), style: { marginBottom: '16px', display:'block', paddingLeft:0 } }, t('module.billing.backToDepartments', "Back to Department List")),
+      React.createElement(Title, { level: 3, style:{ marginTop: '0px' } }, t('module.billing.semesterListTitle', "Semesters in {deptName}", { deptName: selectedDepartmentForBilling.departmentName })),
+      React.createElement(Table, { dataSource: semestersInSelectedDeptForBilling, columns: semesterTableColumns, rowKey: 'semesterId', pagination: {pageSize:10}, style:{marginTop:20}, locale: {emptyText: t('common.noSemestersFound', "No semesters found for this department.")}}),
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30, display: 'none'  } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
+    );
+  }
+
+  return overviewDisplay;
+  // No common.moduleSpecificContentPlaceholder found for removal.
 };
 
 export default BillingFeeCollectionModule;

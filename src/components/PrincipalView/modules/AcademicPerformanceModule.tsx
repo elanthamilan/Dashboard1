@@ -1,3 +1,6 @@
+// IMPORTANT: This component currently uses MOCK DATA.
+// TODO: Replace mock data generation (e.g., generateMockNewInstitutions, generateMockAcademicRecords, generateMockStudents, generateMockAttendanceRecords)
+// with actual data fetching logic from an API or state management system.
 // src/components/PrincipalView/modules/AcademicPerformanceModule.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Typography, Breadcrumb, Row, Col, Card, Statistic, Spin, Descriptions, Table, Button, List, Tag, Space, DescriptionsProps, BreadcrumbProps } from 'antd'; // Added Button, List, Tag, Space, DescriptionsProps, BreadcrumbProps
@@ -51,19 +54,27 @@ const AcademicPerformanceModule: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     try {
+      // IMPORTANT: This component currently uses MOCK DATA.
+      // TODO: Replace mock data generation with actual data fetching logic.
       const baseStudents = generateMockStudents(500); // Generate students once
       setAllStudentsForSummaries(baseStudents); // Set state for summaries
 
+      // IMPORTANT: This component currently uses MOCK DATA.
+      // TODO: Replace mock data generation with actual data fetching logic.
       const instDataArray = generateMockNewInstitutions(undefined, baseStudents, 3, 50); // Use students for institutions
       if (instDataArray && instDataArray.length > 0) {
         setInstitutionData(instDataArray[0]);
       }
 
+      // IMPORTANT: This component currently uses MOCK DATA.
+      // TODO: Replace mock data generation with actual data fetching logic.
       const academicRecords = generateMockAcademicRecords(baseStudents); // Use same students for academic records
       setAllAcademicRecords(academicRecords);
 
       // Ensure instDataArray[0] is used carefully if it might be null
       const numAcademicYears = instDataArray && instDataArray.length > 0 && instDataArray[0]?.academicYears ? instDataArray[0].academicYears.length : 3;
+      // IMPORTANT: This component currently uses MOCK DATA.
+      // TODO: Replace mock data generation with actual data fetching logic.
       const attendanceRecs = generateMockAttendanceRecords(baseStudents, [], 365 * numAcademicYears);
       setAllAttendanceRecords(attendanceRecs);
     } catch (error) { /* console.error("Error loading module data:", error); */ }
@@ -304,7 +315,8 @@ const AcademicPerformanceModule: React.FC = () => {
       React.createElement(Paragraph, null, t(`module.${MODULE_KEY}.descriptionPlaceholder`)),
       currentView,
       React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: filterDescriptionItems })),
-      React.createElement(Paragraph, { style: { marginTop: '20px', fontStyle: 'italic', textAlign: 'center', color: '#888' } }, t('common.moduleSpecificContentPlaceholder'))
+      // React.createElement(Paragraph, { style: { marginTop: '20px', fontStyle: 'italic', textAlign: 'center', color: '#888' } }, t('common.moduleSpecificContentPlaceholder'))
+      // The above line was found and commented out as it is a generic placeholder.
     )
   );
 };

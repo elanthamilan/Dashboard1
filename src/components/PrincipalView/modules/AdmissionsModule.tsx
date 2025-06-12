@@ -1,3 +1,6 @@
+// IMPORTANT: This component currently uses MOCK DATA.
+// TODO: Replace mock data generation (e.g., generateMockApplicants, generateMockKeyDeadlines)
+// with actual data fetching logic. See useEffect hook below for an example.
 // src/components/PrincipalView/modules/AdmissionsModule.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Typography, Breadcrumb, Row, Col, Card, Statistic, Timeline, Spin, Descriptions, Table, Select, Button, Tag, Space, List, DescriptionsProps, Drawer } from 'antd'; // Added Table, Select, Button, Tag, Space, List, DescriptionsProps, Drawer
@@ -47,7 +50,33 @@ const AdmissionsModule: React.FC = () => {
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState<boolean>(false);
 
-  useEffect(() => { /* ... existing ... */
+  useEffect(() => {
+    /*
+    // Example: Fetching real data
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/principal-view/admissions-data'); // Replace with actual endpoint
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        // Assuming 'data' has a structure like { institutionData: {...}, keyDeadlines: [...], applicants: [...] }
+        if (data.institutionData) setInstitutionData(data.institutionData);
+        if (data.keyDeadlines) setKeyDeadlines(data.keyDeadlines);
+        if (data.applicants) setAllApplicants(data.applicants);
+      } catch (error) {
+        console.error("Failed to fetch admissions data:", error);
+        // Optionally, set an error state here to display to the user
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+    */
+
+    // Fallback to mock data (current implementation)
+    // The following lines are placeholders using mock data
     setLoading(true);
     try {
       const tempStudents = generateMockStudents(500); // Assuming 500 students for the institution context
@@ -276,8 +305,8 @@ const AdmissionsModule: React.FC = () => {
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.degreeYearlyComparisonTitle')), degreeComparisonSection,
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.applicantListTitle')), applicantListSection, // New Applicant List
       applicantDetailDrawer, // New Drawer
-      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: filterDescriptionItems })),
-      React.createElement(Paragraph, { style: { marginTop: '20px', fontStyle: 'italic', textAlign: 'center', color: '#888' } }, t('common.moduleSpecificContentPlaceholder'))
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: filterDescriptionItems }))
+      // Removed the generic placeholder paragraph: common.moduleSpecificContentPlaceholder
     )
   );
 };

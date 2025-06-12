@@ -59,7 +59,7 @@
     },
     "reEvaluationTrends": {
       "title": "Re-evaluation Trends",
-      "tooltip": "Trends in grade re-evaluations or changes. (Data N/A)"
+      "tooltip": "Trends in grade re-evaluations or changes."
     },
     "placementSuccessRate": {
       "title": "Placement Success Rate",

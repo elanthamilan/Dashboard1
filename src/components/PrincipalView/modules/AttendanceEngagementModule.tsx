@@ -1,3 +1,6 @@
+// IMPORTANT: This component currently uses MOCK DATA.
+// TODO: Replace mock data generation (e.g., generateMockAttendanceRecords, generateMockNewInstitutions)
+// with actual data fetching logic from an API or state management system.
 import React, { useState, useEffect, useMemo } from 'react';
 import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, Alert, Select, Button, Table, Timeline, DescriptionsProps } from 'antd'; // Added Timeline, DescriptionsProps
 import type { ColumnsType } from 'antd/es/table';
@@ -76,6 +79,50 @@ const AttendanceEngagementModule: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [latestDateInRecords, setLatestDateInRecords] = useState<string>(formatDateYYYYMMDD(new Date()));
 
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    try {
+      // IMPORTANT: This component currently uses MOCK DATA.
+      // TODO: Replace mock data generation with actual data fetching logic.
+      const instDataArray = generateMockNewInstitutions(1, undefined, 3, 50); // For a single institution
+      if (instDataArray && instDataArray.length > 0) {
+        const currentInstitution = instDataArray[0];
+        setInstitutionData(currentInstitution);
+
+        // Generate attendance records for all students in this institution
+        const studentIdsForAttendance: { studentId: string, programId?: string }[] = [];
+        currentInstitution.academicYears.forEach(ay => {
+          ay.degrees.forEach(deg => {
+            deg.programs.forEach(prog => {
+              prog.semesters.forEach(sem => {
+                (sem.students || []).forEach((s: StudentSummary) => {
+                  studentIdsForAttendance.push({ studentId: s.studentId, programId: prog.programId });
+                });
+              });
+            });
+          });
+        });
+
+        // IMPORTANT: This component currently uses MOCK DATA.
+        // TODO: Replace mock data generation with actual data fetching logic.
+        const records = generateMockAttendanceRecords(studentIdsForAttendance.map(s => s.studentId), true); // Pass student IDs
+        setAllAttendanceRecords(records);
+        if (records.length > 0) {
+          const maxDate = new Date(Math.max(...records.map(r => new Date(r.date).getTime())));
+          setLatestDateInRecords(formatDateYYYYMMDD(maxDate));
+        }
+      } else {
+        setError(t('common.errorNoInstitutionData'));
+      }
+    } catch (e) {
+      console.error("Error loading attendance data:", e);
+      setError(t('common.errorLoadingData'));
+    } finally {
+      setLoading(false);
+    }
+  }, [t, filters.academicYear]); // Assuming filters.academicYear might influence which institution or records are fetched
+
   // Drilldown states
   const [selectedProgramForAttendance, setSelectedProgramForAttendance] = useState<{ programId: string; programName: string; } | null>(null);
   const [selectedSemesterForClasses, setSelectedSemesterForClasses] = useState<(SemesterType & { programName?: string }) | null>(null);
@@ -84,7 +131,7 @@ const AttendanceEngagementModule: React.FC = () => {
   const [viewingAtRiskStudents, setViewingAtRiskStudents] = useState(false);
   const [selectedStudentForAttendanceDetail, setSelectedStudentForAttendanceDetail] = useState<(StudentSummary & { calculatedAttendanceRate?: number; recentAbsences?: number }) | null>(null);
 
-  useEffect(() => { /* ... same as before ... */ }, [filters.academicYear, t]);
+  // useEffect(() => { /* ... same as before ... */ }, [filters.academicYear, t]); // Original useEffect is now replaced by the one above
 
   const todayStr = latestDateInRecords;
 

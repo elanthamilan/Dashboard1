@@ -1,3 +1,6 @@
+// IMPORTANT: This component currently uses MOCK DATA.
+// TODO: Replace mock data generation (generateMockNewInstitutions, generateMockStudents)
+// with actual data fetching logic from an API or state management system.
 // src/components/PrincipalView/PrincipalDashboardLandingPage.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { Typography, Divider, Row, Col, Spin } from 'antd';
@@ -27,6 +30,8 @@ const PrincipalDashboardLandingPage: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     try {
+      // IMPORTANT: This component currently uses MOCK DATA.
+      // TODO: Replace mock data generation with actual data fetching logic.
       const tempStudents = generateMockStudents(500);
       const data = generateMockNewInstitutions(undefined, tempStudents, 3, 50);
       if (data && data.length > 0) {
