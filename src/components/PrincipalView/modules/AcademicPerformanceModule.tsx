@@ -7,6 +7,7 @@ import { Typography, Breadcrumb, Row, Col, Card, Statistic, Spin, Descriptions, 
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
+import { fetchData } from '../../../utils/apiUtils';
 import {
     HomeOutlined, CheckCircleOutlined, CloseCircleOutlined, ReadOutlined, WarningOutlined,
     StarOutlined, UserSwitchOutlined, EyeOutlined, ArrowLeftOutlined, UserOutlined as StudentIcon
@@ -30,6 +31,13 @@ const { Title, Paragraph, Text } = Typography;
 
 const MODULE_KEY = 'academics';
 
+interface AcademicPerformanceData {
+  institutionData: Institution | null;
+  academicRecords: StudentAcademicRecord[];
+  students: Student[]; // Assuming API provides raw Student data
+  attendanceRecords: AttendanceRecord[];
+}
+
 interface CoursePerformance { courseId: string; courseName: string; passRate: number; avgGpa: number; enrolledCount: number; }
 interface SimpleCourseInfo { courseId: string; courseName: string; }
 interface CourseOfferingInfo extends SimpleCourseInfo { offeringId: string; programId: string; termId: string; programName: string; semesterName: string; enrolledInOffering: number; passRateInOffering?: number; avgGpaInOffering?: number; } // Added programId, termId
@@ -46,6 +54,7 @@ const AcademicPerformanceModule: React.FC = () => {
   const [allStudentsForSummaries, setAllStudentsForSummaries] = useState<Student[]>([]);
   const [allAttendanceRecords, setAllAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedDepartmentForCourses, setSelectedDepartmentForCourses] = useState<Department | null>(null);
   const [selectedCourseForBatches, setSelectedCourseForBatches] = useState<SimpleCourseInfo | null>(null);
   const [selectedOfferingDetails, setSelectedOfferingDetails] = useState<CourseOfferingInfo | null>(null);
@@ -53,34 +62,44 @@ const AcademicPerformanceModule: React.FC = () => {
   const [viewingFacultyPerformance, setViewingFacultyPerformance] = useState<boolean>(false);
 
   useEffect(() => {
-    setLoading(true);
-    try {
-      // IMPORTANT: This component currently uses MOCK DATA.
-      // TODO: Replace mock data generation with actual data fetching logic.
-      const baseStudents = generateMockStudents(500); // Generate students once
-      setAllStudentsForSummaries(baseStudents); // Set state for summaries
+    const loadAcademicPerformanceData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchData<AcademicPerformanceData>('/principal-view/academic-performance');
 
-      // IMPORTANT: This component currently uses MOCK DATA.
-      // TODO: Replace mock data generation with actual data fetching logic.
-      const instDataArray = generateMockNewInstitutions(undefined, baseStudents, 3, 50); // Use students for institutions
-      if (instDataArray && instDataArray.length > 0) {
-        setInstitutionData(instDataArray[0]);
+        setInstitutionData(data.institutionData);
+        setAllAcademicRecords(data.academicRecords || []);
+        setAllStudentsForSummaries(data.students || []);
+        setAllAttendanceRecords(data.attendanceRecords || []);
+
+      } catch (err: any) {
+        console.error("Failed to fetch academic performance data:", err);
+        setError(err.message || 'Failed to fetch academic performance data');
+
+        // Fallback to mock data if API fails
+        console.warn('Falling back to mock data for AcademicPerformanceModule due to API error.');
+        const baseStudents = generateMockStudents(500);
+        setAllStudentsForSummaries(baseStudents);
+
+        const instDataArray = generateMockNewInstitutions(undefined, baseStudents, 3, 50);
+        if (instDataArray && instDataArray.length > 0) {
+          setInstitutionData(instDataArray[0]);
+        }
+
+        const academicRecords = generateMockAcademicRecords(baseStudents);
+        setAllAcademicRecords(academicRecords);
+
+        const numAcademicYears = instDataArray && instDataArray.length > 0 && instDataArray[0]?.academicYears ? instDataArray[0].academicYears.length : 3;
+        const attendanceRecs = generateMockAttendanceRecords(baseStudents, [], 365 * numAcademicYears); // Assuming generateMockClasses is not needed or classes are part of student data
+        setAllAttendanceRecords(attendanceRecs);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // IMPORTANT: This component currently uses MOCK DATA.
-      // TODO: Replace mock data generation with actual data fetching logic.
-      const academicRecords = generateMockAcademicRecords(baseStudents); // Use same students for academic records
-      setAllAcademicRecords(academicRecords);
-
-      // Ensure instDataArray[0] is used carefully if it might be null
-      const numAcademicYears = instDataArray && instDataArray.length > 0 && instDataArray[0]?.academicYears ? instDataArray[0].academicYears.length : 3;
-      // IMPORTANT: This component currently uses MOCK DATA.
-      // TODO: Replace mock data generation with actual data fetching logic.
-      const attendanceRecs = generateMockAttendanceRecords(baseStudents, [], 365 * numAcademicYears);
-      setAllAttendanceRecords(attendanceRecs);
-    } catch (error) { /* console.error("Error loading module data:", error); */ }
-    finally { setLoading(false); }
-  }, []);
+    loadAcademicPerformanceData();
+  }, []); // Empty dependency array to run once on mount
 
   const allStudentsInInstitution = useMemo((): StudentSummary[] => { if (!institutionData || allStudentsForSummaries.length === 0 || allAcademicRecords.length === 0) return []; const studentsMap = new Map<string, StudentSummary>(); allStudentsForSummaries.forEach(student => { const academicRecord = allAcademicRecords.find(ar => ar.studentId === student.id); if (academicRecord) { const summary = generateMockStudentSummary(student, academicRecord); studentsMap.set(student.id, summary); } }); return Array.from(studentsMap.values());}, [institutionData, allStudentsForSummaries, allAcademicRecords]);
   const overallPassPercentage = useMemo(() => { if (allStudentsInInstitution.length === 0) return 0; const passingStudents = allStudentsInInstitution.filter(s => s.cumulativeGPA !== undefined && s.cumulativeGPA >= 2.0).length; return parseFloat(((passingStudents / allStudentsInInstitution.length) * 100).toFixed(2)); }, [allStudentsInInstitution]);

@@ -1,17 +1,69 @@
-import React from 'react';
-import { Typography, Breadcrumb, Card, Descriptions } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Typography, Breadcrumb, Card, Descriptions, Spin, List, Table, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
 import { HomeOutlined } from '@ant-design/icons';
+import { fetchData } from '../../../utils/apiUtils';
+import { Department, FacultyMember, Program } from '../../../types/hierarchy';
 
 const { Title, Paragraph, Text } = Typography;
 
 const MODULE_KEY = 'departmentFaculty';
 
+interface DepartmentFacultyStats {
+  totalDepartments?: number;
+  totalFaculty?: number;
+  avgFacultyStudentRatio?: number;
+}
+
+interface DepartmentFacultyData {
+  departments?: Department[];
+  facultyMembers?: FacultyMember[];
+  programs?: Program[];
+  stats?: DepartmentFacultyStats;
+  message?: string;
+}
+
 const DepartmentFacultyModule: React.FC = () => {
   const { t } = useTranslation();
   const filters = useGlobalFilters();
+
+  const [deptFacultyData, setDeptFacultyData] = useState<DepartmentFacultyData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadDeptFacultyData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await fetchData<DepartmentFacultyData>('/principal-view/department-faculty');
+        setDeptFacultyData(result);
+      } catch (err: any) {
+        console.error("Failed to fetch department & faculty data:", err);
+        setError(err.message || 'Failed to fetch department & faculty data');
+        // Fallback to minimal mock data
+        setDeptFacultyData({
+          message: "Mock data active for Department & Faculty due to API failure.",
+          departments: [
+            { departmentId: 'D001', departmentName: 'Computer Science', facultyId: 'F001', degreeIds: ['CS_BS', 'CS_MS'], headOfDepartment: { memberId: 'FM001', name: 'Dr. Ada Lovelace' }, facultyCount: 10, studentCount: 150 },
+            { departmentId: 'D002', departmentName: 'Physics', facultyId: 'F002', degreeIds: ['PHY_BS'], headOfDepartment: { memberId: 'FM002', name: 'Dr. Albert Einstein' }, facultyCount: 8, studentCount: 120 }
+          ],
+          facultyMembers: [
+            { memberId: 'FM001', name: 'Dr. Ada Lovelace', departmentId: 'D001', designation: 'Professor & HOD', email: 'ada@example.com', expertiseAreas: ['Algorithms', 'AI'] },
+            { memberId: 'FM003', name: 'Dr. Charles Babbage', departmentId: 'D001', designation: 'Associate Professor', email: 'charles@example.com', expertiseAreas: ['Computer Architecture'] },
+            { memberId: 'FM002', name: 'Dr. Albert Einstein', departmentId: 'D002', designation: 'Professor & HOD', email: 'albert@example.com', expertiseAreas: ['Relativity', 'Quantum Mechanics'] }
+          ],
+          stats: { totalDepartments: 2, totalFaculty: 3 }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDeptFacultyData();
+  }, []); // Empty dependency array to run once on mount
 
   return (
     <div style={{ padding: '20px' }}>
@@ -30,7 +82,7 @@ const DepartmentFacultyModule: React.FC = () => {
         {t(`module.${MODULE_KEY}.descriptionPlaceholder`)}
       </Paragraph>
 
-      <Card title={t('common.currentGlobalFilters', "Current Global Filters")} style={{ marginTop: 20 }}>
+      <Card title={t('common.currentGlobalFilters', "Current Global Filters")} style={{ marginTop: 20, display: 'none' }}>
         <Descriptions bordered column={1} size="small">
           <Descriptions.Item label={t('filters.academicYear', "Academic Year")}>
             <Text>{filters.academicYear || t('common.notSet', "Not Set")}</Text>
@@ -50,9 +102,68 @@ const DepartmentFacultyModule: React.FC = () => {
         </Descriptions>
       </Card>
 
-      <Paragraph style={{ marginTop: '20px', fontStyle: 'italic' }}>
-        {t('common.moduleSpecificContentPlaceholder', "Module-specific content, charts, and tables will be displayed here.")}
-      </Paragraph>
+      <div style={{ marginTop: '20px' }}>
+        {loading && <Spin tip={t('common.loadingData', "Loading data...")} />}
+        {error && <Paragraph type="danger">{t('common.errorLoadingData', "Error loading data:")} {error}</Paragraph>}
+
+        {deptFacultyData?.message && (
+          <Paragraph style={{ marginTop: '10px', fontStyle: 'italic' }}>{deptFacultyData.message}</Paragraph>
+        )}
+
+        {!loading && !error && deptFacultyData && (
+          <>
+            {deptFacultyData.stats && (
+              <Card title={t(`module.${MODULE_KEY}.statsTitle`, "Overall Statistics")} style={{ marginBottom: 20 }}>
+                <Descriptions bordered column={1} size="small">
+                  <Descriptions.Item label={t(`module.${MODULE_KEY}.totalDepartments`, "Total Departments")}>
+                    {deptFacultyData.stats.totalDepartments ?? t('common.notAvailable', 'N/A')}
+                  </Descriptions.Item>
+                  <Descriptions.Item label={t(`module.${MODULE_KEY}.totalFaculty`, "Total Faculty Members")}>
+                    {deptFacultyData.stats.totalFaculty ?? t('common.notAvailable', 'N/A')}
+                  </Descriptions.Item>
+                  {/* Add more stats as they become available */}
+                </Descriptions>
+              </Card>
+            )}
+
+            {deptFacultyData.departments && deptFacultyData.departments.length > 0 && (
+              <Card title={t(`module.${MODULE_KEY}.departmentsListTitle`, "Departments")} style={{ marginBottom: 20 }}>
+                <List
+                  itemLayout="horizontal"
+                  dataSource={deptFacultyData.departments}
+                  renderItem={dept => (
+                    <List.Item>
+                      <List.Item.Meta
+                        title={dept.departmentName}
+                        description={`${t('module.academics.headOfDepartment', "HOD")}: ${dept.headOfDepartment?.name || t('common.notAssigned', 'Not Assigned')}, ${t('module.academics.facultyCount', "Faculty")}: ${dept.facultyCount || 0}, ${t('module.academics.studentCount', "Students")}: ${dept.studentCount || 0}`}
+                      />
+                    </List.Item>
+                  )}
+                />
+              </Card>
+            )}
+
+            {deptFacultyData.facultyMembers && deptFacultyData.facultyMembers.length > 0 && (
+              <Card title={t(`module.${MODULE_KEY}.facultyListTitle`, "Faculty Members")}>
+                <Table
+                  dataSource={deptFacultyData.facultyMembers}
+                  columns={[
+                    { title: t('module.academics.facultyName', "Name"), dataIndex: 'name', key: 'name' },
+                    { title: t('module.academics.departmentName', "Department"), dataIndex: 'departmentId', key: 'departmentId', render: (deptId) => deptFacultyData.departments?.find(d => d.departmentId === deptId)?.departmentName || deptId },
+                    { title: t('module.academics.designation', "Designation"), dataIndex: 'designation', key: 'designation' },
+                    { title: t('module.academics.expertiseAreas', "Expertise Areas"), dataIndex: 'expertiseAreas', key: 'expertiseAreas', render: (areas: string[]) => areas?.join(', ') },
+                  ]}
+                  rowKey="memberId"
+                  pagination={{ pageSize: 5 }}
+                />
+              </Card>
+            )}
+          </>
+        )}
+        {!loading && !error && !deptFacultyData?.departments && !deptFacultyData?.facultyMembers && !deptFacultyData?.stats && !deptFacultyData?.message && (
+          <Paragraph>{t('common.noDataAvailable', "No department or faculty data available.")}</Paragraph>
+        )}
+      </div>
     </div>
   );
 };

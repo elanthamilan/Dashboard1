@@ -11,6 +11,7 @@ import {
     HomeOutlined, UsergroupAddOutlined, CheckSquareOutlined, PercentageOutlined,
     AimOutlined, CalendarOutlined, UserOutlined as UserIconForTimeline, EyeOutlined
 } from '@ant-design/icons'; // Added EyeOutlined
+import { fetchData } from '../../../utils/apiUtils';
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType, Degree, Department as DepartmentType } from '../../../types/hierarchy'; // Added Degree, DepartmentType
@@ -21,6 +22,12 @@ import { Pie, Funnel, Line, Column } from '@ant-design/plots';
 import { DotMap } from '@ant-design/maps';
 
 const { Title, Text, Paragraph } = Typography;
+
+interface AdmissionsData {
+  institutionData: Institution | null;
+  keyDeadlines: KeyDeadline[];
+  applicants: Applicant[];
+}
 
 const stageOrderAndNames: { [key: number]: string } = { /* ... as before ... */
     1: 'module.admissions.funnel.applied',2: 'module.admissions.funnel.screened',3: 'module.admissions.funnel.interviewScheduled',4: 'module.admissions.funnel.interviewComplete',5: 'module.admissions.funnel.offerMade',6: 'module.admissions.funnel.offerAccepted',7: 'module.admissions.funnel.enrolled',
@@ -45,52 +52,45 @@ const AdmissionsModule: React.FC = () => {
   const [keyDeadlines, setKeyDeadlines] = useState<KeyDeadline[]>([]);
   const [allApplicants, setAllApplicants] = useState<Applicant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [selectedDegreeForComparison, setSelectedDegreeForComparison] = useState<string | null>(null);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState<boolean>(false);
 
   useEffect(() => {
-    /*
-    // Example: Fetching real data
-    const fetchData = async () => {
+    const loadAdmissionsData = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const response = await fetch('/api/principal-view/admissions-data'); // Replace with actual endpoint
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        // Assuming 'data' has a structure like { institutionData: {...}, keyDeadlines: [...], applicants: [...] }
+        // Use a placeholder endpoint for now
+        const data = await fetchData<AdmissionsData>('/principal-view/admissions');
         if (data.institutionData) setInstitutionData(data.institutionData);
         if (data.keyDeadlines) setKeyDeadlines(data.keyDeadlines);
         if (data.applicants) setAllApplicants(data.applicants);
-      } catch (error) {
-        console.error("Failed to fetch admissions data:", error);
-        // Optionally, set an error state here to display to the user
+      } catch (err: any) {
+        console.error("Failed to fetch admissions data:", err);
+        setError(err.message || 'Failed to fetch admissions data');
+        // Fallback to mock data if API fails, to keep UI functional for demo
+        // This fallback can be removed once the API is stable
+        console.warn('Falling back to mock data for AdmissionsModule due to API error.');
+        const tempStudents = generateMockStudents(500);
+        const instDataArray = generateMockNewInstitutions(undefined, tempStudents, 3, 50);
+        if (instDataArray && instDataArray.length > 0) {
+          setInstitutionData(instDataArray[0]);
+        }
+        const deadlines = generateMockKeyDeadlines(5);
+        setKeyDeadlines(deadlines);
+        const applicants = generateMockApplicants(1000);
+        setAllApplicants(applicants);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-    */
 
-    // Fallback to mock data (current implementation)
-    // The following lines are placeholders using mock data
-    setLoading(true);
-    try {
-      const tempStudents = generateMockStudents(500); // Assuming 500 students for the institution context
-      const instDataArray = generateMockNewInstitutions(undefined, tempStudents, 3, 50); // Pass Student[]
-      if (instDataArray && instDataArray.length > 0) {
-        setInstitutionData(instDataArray[0]);
-      }
-      const deadlines = generateMockKeyDeadlines(5);
-      setKeyDeadlines(deadlines);
-      const applicants = generateMockApplicants(1000); // This call remains, assumes it takes a number
-      setAllApplicants(applicants);
-    } catch (error) { /* console.error("Error loading module data:", error); */ }
-    finally { setLoading(false); }
-  }, []);
+    loadAdmissionsData();
+  }, [filters.academicYear]); // Assuming filters.academicYear might be a dependency for the API call
+
   useEffect(() => { setMapReady(true); }, []);
 
   const totalApplications = institutionData?.totalInstitutionApplicants ?? 0;

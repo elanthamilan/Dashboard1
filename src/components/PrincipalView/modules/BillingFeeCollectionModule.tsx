@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table'; // For table columns typing
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
+import { fetchData } from '../../../utils/apiUtils';
 import { HomeOutlined, DollarCircleOutlined, CheckCircleOutlined, IssuesCloseOutlined, ClockCircleOutlined, LineChartOutlined, PieChartOutlined, ArrowLeftOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons'; // Added EyeOutlined, FileTextOutlined
 import { Line, Pie } from '@ant-design/plots';
 import { Institution, StudentSummary, Department, Program, Semester, AcademicYear, Degree } from '../../../types/hierarchy';
@@ -22,6 +23,12 @@ dayjs.extend(isBetween);
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const MODULE_KEY = 'billing';
+
+interface BillingModuleData {
+  institutionData: Institution | null;
+  invoices: Invoice[];
+  payments: Payment[];
+}
 
 interface KpiItem {
   key: string;
@@ -60,14 +67,45 @@ const BillingFeeCollectionModule: React.FC = () => {
   const [isInvoiceDetailModalVisible, setIsInvoiceDetailModalVisible] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadBillingData = async () => {
       setLoading(true);
-      setError(null);
+      setError(null); // Assuming 'error' state variable is already present
       try {
-        // IMPORTANT: This component currently uses MOCK DATA.
-        // TODO: Replace mock data generation with actual data fetching logic.
-        const tempStudents = generateMockStudents(1); // Generate students first
-        const mockInstitutions = generateMockNewInstitutions(undefined, tempStudents, 3, 50); // Pass Student[]
+        const apiData = await fetchData<BillingModuleData>('/principal-view/billing');
+
+        setInstitutionData(apiData.institutionData);
+        setAllInvoices(apiData.invoices || []);
+        setAllPayments(apiData.payments || []);
+
+        // Derive allStudentsSummaryList from the fetched institutionData
+        if (apiData.institutionData) {
+          const studentSummariesFromInstitution: StudentSummary[] = [];
+          apiData.institutionData.academicYears.forEach((ay: AcademicYear) => // Ensure AcademicYear is imported
+            ay.degrees.forEach((deg: Degree) => // Ensure Degree is imported
+              deg.programs.forEach((prog: Program) => // Ensure Program is imported
+                prog.semesters.forEach((sem: Semester) => // Ensure Semester is imported
+                  (sem.students || []).forEach((s: StudentSummary) => {
+                    if(!studentSummariesFromInstitution.find(es => es.studentId === s.studentId)) {
+                      studentSummariesFromInstitution.push({...s, programName: prog.programName});
+                    }
+                  })
+                )
+              )
+            )
+          );
+          setAllStudentsSummaryList(studentSummariesFromInstitution);
+        } else {
+          setAllStudentsSummaryList([]);
+        }
+
+      } catch (err: any) {
+        console.error("Failed to fetch billing data:", err);
+        setError(err.message || 'Failed to fetch billing data');
+
+        // Fallback to mock data
+        console.warn('Falling back to mock data for BillingFeeCollectionModule due to API error.');
+        const tempStudents = generateMockStudents(1);
+        const mockInstitutions = generateMockNewInstitutions(undefined, tempStudents, 3, 50);
         const currentInstitution = mockInstitutions[0];
         setInstitutionData(currentInstitution);
 
@@ -88,23 +126,21 @@ const BillingFeeCollectionModule: React.FC = () => {
           );
           setAllStudentsSummaryList(studentSummariesFromInstitution);
 
-          // Map StudentSummary[] to Student[] for generateMockInvoices
           const studentsForInvoices = studentSummariesFromInstitution.map(s => ({
             id: s.studentId,
             firstName: s.firstName,
             lastName: s.lastName,
-            // gradeLevel and homeroom are optional in Student type, can be omitted
           }));
-          // IMPORTANT: This component currently uses MOCK DATA.
-          // TODO: Replace mock data generation with actual data fetching logic.
           const invoices = generateMockInvoices(studentsForInvoices, 5);
           setAllInvoices(invoices);
-          const payments = generateMockPayments(invoices); // Assuming generateMockPayments takes Invoice[]
+          const payments = generateMockPayments(invoices);
           setAllPayments(payments);
         }
-      } catch (err) { /* ... */ } finally { setLoading(false); }
+      } finally {
+        setLoading(false);
+      }
     };
-    fetchData();
+    loadBillingData();
   }, [filters.academicYear, t]);
 
   const { filteredInvoices, filteredPayments } = useMemo(() => {

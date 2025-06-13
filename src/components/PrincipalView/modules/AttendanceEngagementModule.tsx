@@ -14,6 +14,7 @@ import {
   LoginOutlined, DownloadOutlined, MessageOutlined, EyeOutlined, ArrowLeftOutlined
 } from '@ant-design/icons';
 import { Bar, Line, Heatmap } from '@ant-design/plots';
+import { fetchData } from '../../../utils/apiUtils';
 import { Institution, StudentSummary, Program as ProgramType, Semester as SemesterType, CourseEnrollment } from '../../../types/hierarchy';
 import { AttendanceRecord } from '../../../types/attendance';
 // Note: AbsenceReason was removed as it's not a defined type in the provided files. It was used as string.
@@ -31,6 +32,13 @@ const AT_RISK_THRESHOLD = 75; // Attendance percentage below which a student is 
 const AT_RISK_PERIOD_DAYS = 30; // Look at attendance for the last 30 days for at-risk status
 
 const formatDateYYYYMMDD = (date: Date): string => date.toISOString().split('T')[0];
+
+interface AttendanceData {
+  institutionData: Institution | null;
+  attendanceRecords: AttendanceRecord[];
+  // If mock classes were to be fetched, they'd be part of this.
+  // For now, assuming generateMockClasses might still be used client-side for simplicity if not part of main data load.
+}
 
 interface KpiItem {
   key: string;
@@ -80,50 +88,73 @@ const AttendanceEngagementModule: React.FC = () => {
   const [latestDateInRecords, setLatestDateInRecords] = useState<string>(formatDateYYYYMMDD(new Date()));
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    try {
-      // IMPORTANT: This component currently uses MOCK DATA.
-      // TODO: Replace mock data generation with actual data fetching logic.
-      const instDataArray = generateMockNewInstitutions(undefined, [], 3, 50); // For a single institution, parentId is undefined, students array to be filled by mock
-      if (instDataArray && instDataArray.length > 0) {
-        const currentInstitution = instDataArray[0];
-        setInstitutionData(currentInstitution);
+    const loadAttendanceData = async () => {
+      setLoading(true);
+      setError(null); // Assuming 'error' state variable is already present from previous module's pattern
+      try {
+        // Use a placeholder endpoint for now
+        const data = await fetchData<AttendanceData>('/principal-view/attendance');
 
-        // Generate attendance records for all students in this institution
-        const studentIdsForAttendance: { studentId: string, programId?: string }[] = [];
-        currentInstitution.academicYears.forEach(ay => {
-          ay.degrees.forEach(deg => {
-            deg.programs.forEach(prog => {
-              prog.semesters.forEach(sem => {
-                (sem.students || []).forEach((s: StudentSummary) => {
-                  studentIdsForAttendance.push({ studentId: s.studentId, programId: prog.programId });
+        if (data.institutionData) {
+          setInstitutionData(data.institutionData);
+        }
+        if (data.attendanceRecords) {
+          setAllAttendanceRecords(data.attendanceRecords);
+          if (data.attendanceRecords.length > 0) {
+            const maxDate = new Date(Math.max(...data.attendanceRecords.map(r => new Date(r.date).getTime())));
+            setLatestDateInRecords(formatDateYYYYMMDD(maxDate)); // formatDateYYYYMMDD should be defined in the file
+          } else {
+            setLatestDateInRecords(formatDateYYYYMMDD(new Date())); // Default to today if no records
+          }
+        } else {
+          // If API returns no attendanceRecords, initialize as empty and set date
+          setAllAttendanceRecords([]);
+          setLatestDateInRecords(formatDateYYYYMMDD(new Date()));
+        }
+
+      } catch (err: any) {
+        console.error("Failed to fetch attendance data:", err);
+        setError(err.message || 'Failed to fetch attendance data');
+
+        // Fallback to mock data if API fails
+        console.warn('Falling back to mock data for AttendanceEngagementModule due to API error.');
+        const instDataArray = generateMockNewInstitutions(undefined, [], 3, 50);
+        if (instDataArray && instDataArray.length > 0) {
+          const currentInstitution = instDataArray[0];
+          setInstitutionData(currentInstitution);
+
+          const studentIdsForAttendance: { studentId: string, programId?: string }[] = [];
+          currentInstitution.academicYears.forEach(ay => {
+            ay.degrees.forEach(deg => {
+              deg.programs.forEach(prog => {
+                prog.semesters.forEach(sem => {
+                  (sem.students || []).forEach((s: StudentSummary) => { // Ensure StudentSummary is imported
+                    studentIdsForAttendance.push({ studentId: s.studentId, programId: prog.programId });
+                  });
                 });
               });
             });
           });
-        });
-
-        // IMPORTANT: This component currently uses MOCK DATA.
-        // TODO: Replace mock data generation with actual data fetching logic.
-        const studentIds = studentIdsForAttendance.map(s => s.studentId);
-        const classesForMock = generateMockClasses(5); // Generate some mock classes for context
-        const records = generateMockAttendanceRecords(studentIds, classesForMock, 365); // Pass student IDs, classes, and days
-        setAllAttendanceRecords(records);
-        if (records.length > 0) {
-          const maxDate = new Date(Math.max(...records.map(r => new Date(r.date).getTime())));
-          setLatestDateInRecords(formatDateYYYYMMDD(maxDate));
+          const studentIds = studentIdsForAttendance.map(s => s.studentId);
+          const classesForMock = generateMockClasses(5);
+          const records = generateMockAttendanceRecords(studentIds, classesForMock, 365);
+          setAllAttendanceRecords(records);
+          if (records.length > 0) {
+            const maxDate = new Date(Math.max(...records.map(r => new Date(r.date).getTime())));
+            setLatestDateInRecords(formatDateYYYYMMDD(maxDate));
+          } else {
+             setLatestDateInRecords(formatDateYYYYMMDD(new Date()));
+          }
+        } else {
+          setError(t('common.errorNoInstitutionData')); // t should be available from useTranslation
         }
-      } else {
-        setError(t('common.errorNoInstitutionData'));
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      console.error("Error loading attendance data:", e);
-      setError(t('common.errorLoadingData'));
-    } finally {
-      setLoading(false);
-    }
-  }, [t, filters.academicYear]); // Assuming filters.academicYear might influence which institution or records are fetched
+    };
+
+    loadAttendanceData();
+  }, [t, filters.academicYear]);
 
   // Drilldown states
   const [selectedProgramForAttendance, setSelectedProgramForAttendance] = useState<{ programId: string; programName: string; } | null>(null);
