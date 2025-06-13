@@ -9,8 +9,9 @@ import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
 import {
     HomeOutlined, UsergroupAddOutlined, CheckSquareOutlined, PercentageOutlined,
-    AimOutlined, CalendarOutlined, UserOutlined as UserIconForTimeline, EyeOutlined
-} from '@ant-design/icons'; // Added EyeOutlined
+    AimOutlined, CalendarOutlined, UserOutlined as UserIconForTimeline, EyeOutlined,
+    PieChartOutlined, BarChartOutlined
+} from '@ant-design/icons'; // Added EyeOutlined, PieChartOutlined, BarChartOutlined
 import { fetchData } from '../../../utils/apiUtils';
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
@@ -18,8 +19,9 @@ import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType,
 import { KeyDeadline, Applicant, ApplicationStatus } from '../../../types/admissions';
 import { generateMockKeyDeadlines, generateMockApplicants } from '../../../utils/mockData/admissions/generateMockApplicants';
 import dayjs from 'dayjs';
-import { Pie, Funnel, Line, Column } from '@ant-design/plots';
+import { Pie, Funnel, Line, Column } from '@ant-design/plots'; // Column is already imported for Degree Comparison
 import { DotMap } from '@ant-design/maps';
+import { Empty } from 'antd'; // Added Empty
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -57,6 +59,7 @@ const AdmissionsModule: React.FC = () => {
   const [selectedDegreeForComparison, setSelectedDegreeForComparison] = useState<string | null>(null);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState<boolean>(false);
+  const [selectedProgramForFunnel, setSelectedProgramForFunnel] = useState<string | null>(null);
 
   useEffect(() => {
     const loadAdmissionsData = async () => {
@@ -112,11 +115,269 @@ const AdmissionsModule: React.FC = () => {
     { title: t('module.admissions.title') }
   ];
 
+  // Gender Distribution Data
+  const genderDistributionData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const counts = allApplicants.reduce((acc, app) => {
+      const gender = app.gender || t('common.unknown', 'Unknown');
+      acc[gender] = (acc[gender] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(counts).map(([type, value]) => ({ type, value }));
+  }, [allApplicants, t]);
+
+  // Age Distribution Data (e.g., into buckets)
+  const ageDistributionData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const ageBuckets: Record<string, number> = {
+      '17-20': 0, '21-23': 0, '24-26': 0, '27-30': 0, '31+': 0,
+      [t('common.unknown', 'Unknown')]: 0
+    };
+    allApplicants.forEach(app => {
+      const age = app.age;
+      if (age === undefined || age === null) {
+        ageBuckets[t('common.unknown', 'Unknown')]++;
+      } else if (age >= 17 && age <= 20) ageBuckets['17-20']++;
+      else if (age >= 21 && age <= 23) ageBuckets['21-23']++;
+      else if (age >= 24 && age <= 26) ageBuckets['24-26']++;
+      else if (age >= 27 && age <= 30) ageBuckets['27-30']++;
+      else if (age >= 31) ageBuckets['31+']++;
+      else ageBuckets[t('common.unknown', 'Unknown')]++; // Should not happen if age is number
+    });
+    return Object.entries(ageBuckets).map(([ageRange, count]) => ({ ageRange, count })).filter(entry => entry.count > 0); // Filter out empty buckets for cleaner chart
+  }, [allApplicants, t]);
+
+  // Nationality Breakdown Data (Top N)
+  const topN = 7; // Show top 7 nationalities, rest as 'Other'
+  const nationalityBreakdownData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const counts = allApplicants.reduce((acc, app) => {
+      const nationality = app.nationality || t('common.unknown', 'Unknown');
+      acc[nationality] = (acc[nationality] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const sortedNationalities = Object.entries(counts)
+      .sort(([, countA], [, countB]) => countB - countA);
+
+    if (sortedNationalities.length <= topN) {
+      return sortedNationalities.map(([nationality, count]) => ({ nationality, count }));
+    }
+
+    const topEntries = sortedNationalities.slice(0, topN);
+    const otherCount = sortedNationalities.slice(topN).reduce((sum, [, count]) => sum + count, 0);
+
+    return [
+      ...topEntries.map(([nationality, count]) => ({ nationality, count })),
+      { nationality: t('common.other', 'Other'), count: otherCount }
+    ].filter(entry => entry.count > 0);
+  }, [allApplicants, t]);
+
   const categoryData = useMemo(() => { if (!allApplicants || allApplicants.length === 0) return []; const counts: { [key: string]: number } = {}; allApplicants.forEach(applicant => { const category = applicant.reservationCategory || t('common.unknown'); counts[category] = (counts[category] || 0) + 1; }); return Object.entries(counts).map(([type, value]) => ({ type, value })); }, [allApplicants, t]);
   const pieChartConfig = { appendPadding: 10, data: categoryData, angleField: 'value', colorField: 'type', radius: 0.8, label: { type: 'inner', offset: '-30%', content: ({ percent }: any) => `${(percent * 100).toFixed(0)}%`, style: { textAlign: 'center', fontSize: 14, fill: '#fff' } }, interactions: [{ type: 'element-active' }], legend: { layout: 'horizontal', position: 'bottom' } as const };
 
-  const funnelData = useMemo(() => { if (!allApplicants || allApplicants.length === 0) return []; const stageCounts: { [key: number]: number } = {}; allApplicants.forEach(applicant => { stageCounts[applicant.funnelStage] = (stageCounts[applicant.funnelStage] || 0) + 1; }); return Object.entries(stageOrderAndNames).map(([stageNum, nameKey]) => ({ stage: t(nameKey), value: stageCounts[Number(stageNum)] || 0, stageKey: nameKey })).sort((a,b) => Number(Object.keys(stageOrderAndNames).find(k => stageOrderAndNames[Number(k)] === a.stageKey)) - Number(Object.keys(stageOrderAndNames).find(k => stageOrderAndNames[Number(k)] === b.stageKey))); }, [allApplicants, t]);
-  const funnelChartConfig = { data: funnelData, xField: 'stage', yField: 'value', seriesField: 'stage', legend: false as const, conversionTag: { formatter: (data: { prev?: number, next?: number } | undefined) => { if (data && typeof data.prev === 'number' && typeof data.next === 'number' && data.prev > 0) { return `Conv. ${((data.next / data.prev) * 100).toFixed(1)}%`; } return ''; } }, tooltip: { formatter: (datum: any) => ({ name: datum.stage, value: `${datum.value} ${t('module.admissions.funnel.applicantsSuffix', 'Applicants')}` })}, label: { formatter: (datum: any) => String(datum.value), style: { fill: '#fff', fontSize: 12, stroke: '#000', lineWidth: 0.5 }}};
+  // Stage-to-Stage Conversion Rates
+  const funnelStageConversionData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const definedFunnelOrder: ApplicationStatus[] = ['Applied', 'Screened', 'Interview Scheduled', 'Interview Complete', 'Offer Made', 'Offer Accepted', 'Enrollment Confirmed'];
+    let lastStageCount = allApplicants.length;
+
+    const conversions = [];
+    for (let i = 0; i < definedFunnelOrder.length - 1; i++) {
+      const currentStage = definedFunnelOrder[i];
+      const nextStage = definedFunnelOrder[i+1];
+
+      const reachedNextStageCount = allApplicants.filter(app =>
+        app.funnelStageDates?.[nextStage] !== undefined &&
+        (app.funnelStageDates?.[currentStage] !== undefined || currentStage === 'Applied')
+      ).length;
+
+      const reachedCurrentStageCount = allApplicants.filter(app =>
+        app.funnelStageDates?.[currentStage] !== undefined || currentStage === 'Applied'
+       ).length;
+
+      if (i === 0) lastStageCount = reachedCurrentStageCount;
+
+      const conversionRate = lastStageCount > 0 ? (reachedNextStageCount / lastStageCount) * 100 : 0;
+      conversions.push({
+        key: `${i}`,
+        fromStage: t(`module.admissions.funnel.${currentStage.toLowerCase().replace(/\s+/g, '')}`, currentStage),
+        toStage: t(`module.admissions.funnel.${nextStage.toLowerCase().replace(/\s+/g, '')}`, nextStage),
+        initialCount: lastStageCount,
+        finalCount: reachedNextStageCount,
+        rate: parseFloat(conversionRate.toFixed(1)),
+      });
+      lastStageCount = reachedNextStageCount;
+    }
+    return conversions;
+  }, [allApplicants, t]);
+
+  // Average Time in Each Funnel Stage
+  const avgTimeInFunnelStageData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const definedFunnelOrder: ApplicationStatus[] = ['Applied', 'Screened', 'Interview Scheduled', 'Interview Complete', 'Offer Made', 'Offer Accepted'];
+    const stageDurations: Record<string, number[]> = {};
+
+    allApplicants.forEach(app => {
+      for (let i = 0; i < definedFunnelOrder.length; i++) {
+        const currentStage = definedFunnelOrder[i];
+        const nextStageInSequence = definedFunnelOrder[i+1];
+
+        const currentStageDateStr = app.funnelStageDates?.[currentStage];
+        let nextActualStageDateStr: string | undefined;
+
+        if (currentStageDateStr) {
+          // Find the date of the *actual* next stage the applicant reached, even if it's not nextInSequence
+          const subsequentStageEntry = Object.entries(app.funnelStageDates || {})
+            .map(([st, dt]) => ({ stage: st as ApplicationStatus, date: dayjs(dt) }))
+            .filter(entry => dayjs(entry.date).isAfter(dayjs(currentStageDateStr)))
+            .sort((a,b) => a.date.valueOf() - b.date.valueOf())
+            .find(() => true);
+          nextActualStageDateStr = subsequentStageEntry?.date.toISOString();
+        }
+
+        // Only calculate duration if this stage was reached and there was a subsequent stage recorded
+        if (currentStageDateStr && nextActualStageDateStr) {
+          const duration = dayjs(nextActualStageDateStr).diff(dayjs(currentStageDateStr), 'day');
+          if (duration >= 0) {
+            if (!stageDurations[currentStage]) stageDurations[currentStage] = [];
+            stageDurations[currentStage].push(duration);
+          }
+        }
+      }
+    });
+    return Object.entries(stageDurations).map(([stage, durations]) => ({
+      stage: t(`module.admissions.funnel.${stage.toLowerCase().replace(/\s+/g, '')}`, stage),
+      avgDays: parseFloat((durations.reduce((a, b) => a + b, 0) / durations.length).toFixed(1)),
+    }));
+  }, [allApplicants, t]);
+
+  // Applications per Program
+  const applicationsPerProgramData = useMemo(() => {
+       if (!allApplicants || allApplicants.length === 0) return [];
+       const counts = allApplicants.reduce((acc, app) => {
+           const program = app.programName || t('common.unknownProgram', 'Unknown Program');
+           acc[program] = (acc[program] || 0) + 1;
+           return acc;
+       }, {} as Record<string, number>);
+       return Object.entries(counts).map(([programName, count]) => ({ programName, count })).sort((a,b) => b.count - a.count);
+   }, [allApplicants, t]);
+
+   // Gender Distribution per Program
+   const genderDistByProgramData = useMemo(() => {
+       if (!allApplicants || allApplicants.length === 0) return [];
+       const programGenderCounts: Record<string, Record<string, number>> = {};
+       allApplicants.forEach(app => {
+           const program = app.programName || t('common.unknownProgram', 'Unknown Program');
+           const gender = app.gender || t('common.unknown', 'Unknown');
+           if (!programGenderCounts[program]) programGenderCounts[program] = {};
+           programGenderCounts[program][gender] = (programGenderCounts[program][gender] || 0) + 1;
+       });
+       return Object.entries(programGenderCounts).flatMap(([programName, genderCounts]) =>
+           Object.entries(genderCounts).map(([gender, count]) => ({ programName, gender, count }))
+       );
+   }, [allApplicants, t]);
+
+   // Funnel data for selected program
+   const programSpecificFunnelData = useMemo(() => {
+       const applicantsToUse = selectedProgramForFunnel
+           ? allApplicants.filter(app => app.programId === selectedProgramForFunnel)
+           : allApplicants;
+
+       if (!applicantsToUse || applicantsToUse.length === 0) return [];
+       const definedStageOrderAndNames: { [key: number]: string } = stageOrderAndNames; // Use existing
+
+       const stageCounts: { [key: number]: number } = {};
+       applicantsToUse.forEach(applicant => {
+           stageCounts[applicant.funnelStage] = (stageCounts[applicant.funnelStage] || 0) + 1;
+       });
+       return Object.entries(definedStageOrderAndNames)
+           .map(([stageNum, nameKey]) => ({
+               stage: t(`module.admissions.funnel.${nameKey.toLowerCase().replace(/\s+/g, '')}`, nameKey),
+               value: stageCounts[Number(stageNum)] || 0,
+               stageKey: nameKey
+           }))
+           .sort((a, b) => {
+               const aIndex = Object.keys(definedStageOrderAndNames).find(k => definedStageOrderAndNames[Number(k)] === a.stageKey);
+               const bIndex = Object.keys(definedStageOrderAndNames).find(k => definedStageOrderAndNames[Number(k)] === b.stageKey);
+               return Number(aIndex) - Number(bIndex);
+           });
+   }, [allApplicants, selectedProgramForFunnel, t, stageOrderAndNames]);
+
+   // Program options for Select dropdown
+   const programOptionsForFunnel = useMemo(() => {
+       if (!allApplicants) return [];
+       const uniquePrograms = Array.from(new Set(allApplicants.map(app => app.programId)))
+           .map(id => ({
+               value: id,
+               label: allApplicants.find(app => app.programId === id)?.programName || id
+           }));
+       return [{ value: null, label: t('common.allPrograms', "All Programs") }, ...uniquePrograms];
+   }, [allApplicants, t]);
+
+  // Applications by Source
+  const appsBySourceData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const counts = allApplicants.reduce((acc, app) => {
+      const source = app.applicationSource || t('common.unknown', 'Unknown');
+      acc[source] = (acc[source] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(counts).map(([type, value]) => ({ type, value })).sort((a,b) => b.value - a.value);
+  }, [allApplicants, t]);
+
+  // Applications Over Time (Monthly)
+  const appsOverTimeData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const counts = allApplicants.reduce((acc, app) => {
+      const monthYear = dayjs(app.applicationDate).format('YYYY-MM');
+      acc[monthYear] = (acc[monthYear] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(counts)
+      .map(([monthYear, count]) => ({ monthYear, count }))
+      .sort((a, b) => a.monthYear.localeCompare(b.monthYear));
+  }, [allApplicants]);
+
+  // Offers Made Over Time (Monthly) - Can be combined with Apps Over Time
+  const offersOverTimeData = useMemo(() => {
+       if (!allApplicants || allApplicants.length === 0) return [];
+       const counts: Record<string, number> = {};
+       allApplicants.forEach(app => {
+           const offerDateStr = app.funnelStageDates?.['Offer Made'];
+           if (offerDateStr) {
+               const monthYear = dayjs(offerDateStr).format('YYYY-MM');
+               counts[monthYear] = (counts[monthYear] || 0) + 1;
+           }
+       });
+       return Object.entries(counts)
+           .map(([monthYear, count]) => ({ monthYear, count }))
+           .sort((a, b) => a.monthYear.localeCompare(b.monthYear));
+   }, [allApplicants]);
+
+   // Combined Application and Offer Trends
+   const combinedAppOfferTrendData = useMemo(() => {
+       const trends: Array<{ time: string; value: number; category: string }> = [];
+       appsOverTimeData.forEach(item => trends.push({ time: item.monthYear, value: item.count, category: t('module.admissions.trends.applications', 'Applications') }));
+       offersOverTimeData.forEach(item => trends.push({ time: item.monthYear, value: item.count, category: t('module.admissions.trends.offersMade', 'Offers Made') }));
+       return trends.sort((a,b) => a.time.localeCompare(b.time));
+   }, [appsOverTimeData, offersOverTimeData, t]);
+
+  // Applicants by Previous Degree Type
+  const prevDegreeTypeData = useMemo(() => {
+    if (!allApplicants || allApplicants.length === 0) return [];
+    const counts = allApplicants.reduce((acc, app) => {
+      const degree = app.previousEducation?.degree || t('common.unknown', 'Unknown');
+      acc[degree] = (acc[degree] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.entries(counts).map(([degreeType, count]) => ({ degreeType, count })).sort((a,b) => b.count - a.count);
+  }, [allApplicants, t]);
+
+  // Existing funnelChartConfig can be reused if programSpecificFunnelData matches its expected structure.
+  // Let's assume funnelChartConfig is defined and compatible.
+  const funnelChartConfig = { /*data: programSpecificFunnelData,*/ xField: 'stage', yField: 'value', seriesField: 'stage', legend: false as const, conversionTag: { formatter: (data: { prev?: number, next?: number } | undefined) => { if (data && typeof data.prev === 'number' && typeof data.next === 'number' && data.prev > 0) { return `Conv. ${((data.next / data.prev) * 100).toFixed(1)}%`; } return ''; } }, tooltip: { formatter: (datum: any) => ({ name: datum.stage, value: `${datum.value} ${t('module.admissions.funnel.applicantsSuffix', 'Applicants')}` })}, label: { formatter: (datum: any) => String(datum.value), style: { fill: '#fff', fontSize: 12, stroke: '#000', lineWidth: 0.5 }}};
+
 
   const mapData = useMemo(() => allApplicants.filter(app => app.originCoordinates && typeof app.originCoordinates.lng === 'number' && typeof app.originCoordinates.lat === 'number').map(app => ({ id: app.id, lng: app.originCoordinates!.lng, lat: app.originCoordinates!.lat, city: app.originCity || t('common.unknown'), country: app.originCountry || t('common.unknown') })), [allApplicants, t]);
   const mapConfig = {
@@ -235,7 +496,7 @@ const AdmissionsModule: React.FC = () => {
   // filterDescriptionItems is now defined above filteredApplicantsForTable
   const keyDeadlinesSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, keyDeadlines.length > 0 ? React.createElement(Timeline, { mode: "alternate" }, keyDeadlines.map(deadline => React.createElement(Timeline.Item, { key: deadline.id, label: dayjs(deadline.date).format('DD MMM YYYY'), dot: deadline.type === 'Application' ? React.createElement(CalendarOutlined, {style: {fontSize: '16px'}}) : deadline.type === 'Interview' ? React.createElement(UserIconForTimeline, {style: {fontSize: '16px'}}) : undefined }, React.createElement(Text, { strong: true }, deadline.title), deadline.description && React.createElement(Paragraph, { type: "secondary", style: { marginBottom: 0, fontSize: 'small' } }, deadline.description)))) : React.createElement(Text, null, t('common.noDataAvailable', 'No deadline information available.')));
   const reservedCategorySection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, categoryData.length > 0 ? React.createElement(Pie, pieChartConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', 'No category data available.')));
-  const admissionFunnelSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, funnelData.length > 0 ? React.createElement(Funnel, funnelChartConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', 'No funnel data available.')));
+  // const admissionFunnelSection = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, funnelData.length > 0 ? React.createElement(Funnel, funnelChartConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', 'No funnel data available.')));
   let applicantMapContent; if (mapData.length > 0 && mapReady) { applicantMapContent = React.createElement(DotMap, mapConfig as any); } else if (!mapReady && !loading) { applicantMapContent = React.createElement(Paragraph, null, "Initializing map..."); } else { applicantMapContent = React.createElement(Text, null, t('common.noDataAvailable', 'No applicant location data available.')); }
   const applicantOriginsMapSection = React.createElement(Card, { style: { height: '450px', padding: '0px', marginTop: '30px', boxShadow: '0 2px 8px rgba(0,0,0,0.09)' } }, applicantMapContent);
   const programStatsTableSectionPrev = React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)', marginTop: '30px' } }, React.createElement(Table, { dataSource: filteredPrograms, columns: programTableColumnsPrev, rowKey: 'programId', loading: loading, scroll: { x: 'max-content' }, pagination: { pageSize: 10, showSizeChanger: true, pageSizeOptions: ['5', '10', '20'] }, expandable: { expandedRowRender: (record: Program) => { const trendDataForProgram = getProgramTrendData(record.programId, allApplicants, institutionData?.academicYears, t); if (!trendDataForProgram || trendDataForProgram.length === 0) { return React.createElement(Text, null, t('common.noTrendDataAvailable')); } return React.createElement(Line, { ...trendChartConfigBase, data: trendDataForProgram, height: 200 } as any); }, rowExpandable: (record: Program) => true, }} as any));
@@ -314,15 +575,196 @@ const AdmissionsModule: React.FC = () => {
       React.createElement(Title, { level: 3, style: { marginTop: '20px' } }, t('module.admissions.summaryTilesTitle')),
       React.createElement(Row, { gutter: [16, 16] }, summaryKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 12, lg:6, key: kpi.titleKey }, React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, React.createElement(Statistic, { title: t(kpi.titleKey), value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle: { color: '#3f8600' } }))))),
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.keyDeadlinesTitle')), keyDeadlinesSection,
+
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.demographicsTitle', "Applicant Demographics")),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
+        React.createElement(Col, { xs: 24, md: 12, lg: 8 },
+          React.createElement(Card, { title: React.createElement(React.Fragment, null, React.createElement(PieChartOutlined), " ", t('module.admissions.genderDistTitle', "Gender Distribution")) },
+            genderDistributionData.length > 0 ? React.createElement(Pie, {
+              data: genderDistributionData,
+              angleField: "value",
+              colorField: "type",
+              radius: 0.8,
+              legend: { position: 'bottom' },
+              label: { type: 'inner', offset: '-30%', content: '{percentage}', style: { fill: '#fff', fontSize: 14 } },
+              tooltip: { formatter: (datum: any) => ({ name: datum.type, value: `${datum.value} (${(datum.percent * 100).toFixed(1)}%)` }) }
+            } as any) : React.createElement(Empty, { description: t('common.noDataAvailableForChart', "No data for chart") })
+          )
+        ),
+        React.createElement(Col, { xs: 24, md: 12, lg: 8 },
+          React.createElement(Card, { title: React.createElement(React.Fragment, null, React.createElement(BarChartOutlined), " ", t('module.admissions.ageDistTitle', "Age Distribution")) },
+            ageDistributionData.length > 0 ? React.createElement(Column, {
+              data: ageDistributionData,
+              xField: "ageRange",
+              yField: "count",
+              seriesField: "ageRange",
+              legend: false,
+              label: { position: 'middle', style: { fill: '#FFFFFF', opacity: 0.6 } },
+              xAxis: { title: { text: t('common.ageRange', "Age Range") } },
+              yAxis: { title: { text: t('common.count', "Number of Applicants") } },
+              tooltip: { formatter: (datum: any) => ({ name: datum.ageRange, value: `${datum.count} ${t('common.applicants', 'Applicants')}` }) }
+            } as any) : React.createElement(Empty, { description: t('common.noDataAvailableForChart', "No data for chart") })
+          )
+        ),
+        React.createElement(Col, { xs: 24, md: 24, lg: 8 },
+          React.createElement(Card, { title: React.createElement(React.Fragment, null, React.createElement(BarChartOutlined), " ", t('module.admissions.nationalityDistTitle', "Nationality Breakdown (Top "+topN+")")) },
+            nationalityBreakdownData.length > 0 ? React.createElement(Column, {
+              data: nationalityBreakdownData,
+              xField: "nationality",
+              yField: "count",
+              seriesField: "nationality",
+              legend: false,
+              label: { position: 'middle', style: { fill: '#FFFFFF', opacity: 0.6 } },
+              xAxis: { title: { text: t('common.nationality', "Nationality") }, label: { rotate: nationalityBreakdownData.length > 5 ? 45 : 0, autoHide: false, autoEllipsis: nationalityBreakdownData.length > 3 ? true : false } },
+              yAxis: { title: { text: t('common.count', "Number of Applicants") } },
+              tooltip: { formatter: (datum: any) => ({ name: datum.nationality, value: `${datum.count} ${t('common.applicants', 'Applicants')}` }) }
+            } as any) : React.createElement(Empty, { description: t('common.noDataAvailableForChart', "No data for chart") })
+          )
+        )
+      ),
+
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.funnelProcessTitle', "Application Funnel Insights")),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
+        React.createElement(Col, { xs: 24, lg: 12 },
+          React.createElement(Card, { title: t('module.admissions.stageConversionTitle', "Stage-to-Stage Conversion Rates") },
+            funnelStageConversionData.length > 0 ? React.createElement(Table, {
+              dataSource: funnelStageConversionData,
+              columns: [
+                { title: t('common.fromStage', 'From Stage'), dataIndex: 'fromStage', key: 'fromStage' },
+                { title: t('common.toStage', 'To Stage'), dataIndex: 'toStage', key: 'toStage' },
+                { title: t('common.initialCount', 'Initial Count'), dataIndex: 'initialCount', key: 'initialCount', align: 'right'},
+                { title: t('common.finalCount', 'Reached Count'), dataIndex: 'finalCount', key: 'finalCount', align: 'right'},
+                { title: t('common.ratePercent', 'Rate (%)'), dataIndex: 'rate', key: 'rate', render: (val: number) => `${val}%`, align: 'right' },
+              ],
+              pagination: false,
+              size: "small"
+            } as any) : React.createElement(Empty, null)
+          )
+        ),
+        React.createElement(Col, { xs: 24, lg: 12 },
+          React.createElement(Card, { title: t('module.admissions.avgTimeInStageTitle', "Average Time in Funnel Stage (Days)") },
+            avgTimeInFunnelStageData.length > 0 ? React.createElement(Column, {
+              data: avgTimeInFunnelStageData,
+              xField: "stage",
+              yField: "avgDays",
+              seriesField: "stage",
+              legend: false,
+              label: { position: 'top', style: { fill: '#000' } },
+              yAxis: { title: { text: t('common.averageDays', "Average Days") } },
+              tooltip: { formatter: (datum: any) => ({ name: datum.stage, value: `${datum.avgDays} ${t('common.days', 'days')}` }) }
+            } as any) : React.createElement(Empty, null)
+          )
+        )
+      ),
+
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.programSpecificTitle', "Program-Specific Admissions")),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
+        React.createElement(Col, { xs: 24, lg: 12 },
+          React.createElement(Card, { title: t('module.admissions.appsPerProgramTitle', "Applications per Program") },
+            applicationsPerProgramData.length > 0 ? React.createElement(Column, {
+              data: applicationsPerProgramData,
+              xField: "programName",
+              yField: "count",
+              seriesField: "programName",
+              legend: {position:'bottom', itemHeight: 20, label:{formatter: (txt: string) => txt.length > 15 ? txt.substring(0,15)+'...' : txt}},
+              label: { position: 'top', style: { fill: '#000' } },
+              xAxis: { label: { rotate: applicationsPerProgramData.length > 4 ? 45 : 0, autoHide: false, autoEllipsis: true } },
+              yAxis: { title: { text: t('common.count', "Number of Applications") } }
+            } as any) : React.createElement(Empty, null)
+          )
+        ),
+        React.createElement(Col, { xs: 24, lg: 12 },
+          React.createElement(Card, { title: t('module.admissions.genderByProgramTitle', "Gender Distribution by Program") },
+            genderDistByProgramData.length > 0 ? React.createElement(Column, {
+              data: genderDistByProgramData,
+              isGroup: true,
+              xField: "programName",
+              yField: "count",
+              seriesField: "gender",
+              legend: {position:'top'},
+              xAxis: { label: { rotate: genderDistByProgramData.map(d=>d.programName).filter((v,i,a)=>a.indexOf(v)===i).length > 3 ? 45 : 0, autoHide: false, autoEllipsis: true } },
+              yAxis: { title: { text: t('common.count', "Number of Applicants") } }
+            } as any) : React.createElement(Empty, null)
+          )
+        )
+      ),
+
+      React.createElement(Row, { style: { marginTop: '20px' } },
+        React.createElement(Col, { span: 24 },
+            React.createElement(Card, { title: t('module.admissions.funnelChartTitle', "Admission Funnel") },
+                React.createElement(Select, {
+                    style: { width: 300, marginBottom: 20 },
+                    placeholder: t('common.selectProgramOptional', "Select Program (Optional)"),
+                    onChange: (value: any) => setSelectedProgramForFunnel(value as string | null),
+                    allowClear: true,
+                    value: selectedProgramForFunnel,
+                    options: programOptionsForFunnel
+                }),
+                programSpecificFunnelData.length > 0 ?
+                    React.createElement(Funnel, { ...funnelChartConfig, data: programSpecificFunnelData } as any)
+                    : React.createElement(Empty, {description: t('common.noFunnelDataForSelection', "No funnel data for this selection.")})
+            )
+        )
+    ),
+
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.reservedCategoryTitle')), reservedCategorySection,
-      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.funnelChartTitle')), admissionFunnelSection,
+
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.sourceTimelineTitle', "Application Source & Timeline")),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
+        React.createElement(Col, { xs: 24, lg: 8 },
+          React.createElement(Card, { title: t('module.admissions.appsBySourceTitle', "Applications by Source") },
+            appsBySourceData.length > 0 ? React.createElement(Pie, {
+              data: appsBySourceData,
+              angleField: "value",
+              colorField: "type",
+              radius: 0.75,
+              legend: { position: 'right', offsetY:0 },
+              label: { type: 'inner', offset: '-30%', content: '{percentage}', style: { fill: '#fff', fontSize: 12 } },
+              tooltip: { formatter: (datum: any) => ({ name: datum.type, value: `${datum.value} (${(datum.percent * 100).toFixed(1)}%)` }) }
+            } as any) : React.createElement(Empty, null)
+          )
+        ),
+        React.createElement(Col, { xs: 24, lg: 16 },
+          React.createElement(Card, { title: t('module.admissions.appOfferTrendTitle', "Application & Offer Trends (Monthly)") },
+            combinedAppOfferTrendData.length > 0 ? React.createElement(Line, {
+              data: combinedAppOfferTrendData,
+              xField: "time",
+              yField: "value",
+              seriesField: "category",
+              xAxis: { title: { text: t('common.monthYear', "Month-Year") } },
+              yAxis: { title: { text: t('common.count', "Count") } },
+              legend: { position: 'top' },
+              smooth: true,
+              point:{size:3}
+            } as any) : React.createElement(Empty, null)
+          )
+        )
+      ),
+
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.prevEduTitle', "Previous Education Insights")),
+      React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
+        React.createElement(Col, { xs: 24, lg: 12 },
+          React.createElement(Card, { title: t('module.admissions.prevDegreeTypeTitle', "Applicants by Previous Degree Type") },
+            prevDegreeTypeData.length > 0 ? React.createElement(Column, {
+              data: prevDegreeTypeData,
+              xField: "degreeType",
+              yField: "count",
+              seriesField: "degreeType",
+              legend: false,
+              label: { position: 'top' },
+              xAxis: { title: { text: t('common.degreeType', "Previous Degree Type") }, label: { rotate: prevDegreeTypeData.length > 3 ? 45 : 0, autoHide: false, autoEllipsis:true } },
+              yAxis: { title: { text: t('common.count', "Number of Applicants") } }
+            } as any) : React.createElement(Empty, null)
+          )
+        )
+      ),
+
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.mapTitle')), applicantOriginsMapSection,
-      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.programLevelStatsTitle')), programStatsTableSectionPrev, // Assuming this is the program table
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.programLevelStatsTitle')), programStatsTableSectionPrev,
       React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.degreeYearlyComparisonTitle')), degreeComparisonSection,
-      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.applicantListTitle')), applicantListSection, // New Applicant List
-      applicantDetailDrawer, // New Drawer
+      React.createElement(Title, { level: 3, style: { marginTop: '30px' } }, t('module.admissions.applicantListTitle')), applicantListSection,
+      applicantDetailDrawer,
       React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 20, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: "small", items: filterDescriptionItems }))
-      // Removed the generic placeholder paragraph: common.moduleSpecificContentPlaceholder
     )
   );
 };

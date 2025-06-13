@@ -4,53 +4,13 @@ export type ApplicationStatus =
   | 'Applied'
   | 'Screened'
   | 'Interview Scheduled'
-  | 'Interview Complete' // Added as per usage in AdmissionsModule
+  | 'Interview Complete'
   | 'Offer Made'
   | 'Offer Accepted'
   | 'Enrollment Confirmed'
   | 'Rejected'
-  | 'Waitlisted'
-  | 'Application Withdrawn'; // Added as per usage in en.json
-
-export interface ApplicantAddress { // Added based on usage in AdmissionsModule
-  street?: string;
-  city?: string;
-  state?: string;
-  zipCode?: string;
-  country?: string;
-}
-
-export interface ApplicantPreviousEducation { // Added based on usage in AdmissionsModule
-  institution?: string;
-  degree?: string;
-  graduationYear?: number;
-  gpa?: number;
-}
-
-export interface ApplicantDocument { // Added based on usage in AdmissionsModule
-  documentId?: string;
-  fileName?: string;
-  type?: string; // e.g., Transcript, Recommendation, SOP
-  uploadDate?: string; // ISO Date
-  url?: string;
-}
-
-export interface ApplicantInterview { // Added based on usage in AdmissionsModule
-  interviewId?: string;
-  date?: string; // ISO Date
-  time?: string;
-  interviewer?: string;
-  feedback?: string;
-  notes?: string;
-}
-
-export interface ApplicantVisaDetails { // Added based on usage in AdmissionsModule
-  visaType?: string;
-  applicationStatus?: string; // e.g., Submitted, Approved, Denied
-  issueDate?: string; // ISO Date
-  expiryDate?: string; // ISO Date
-}
-
+  | 'Withdrawn' // Retained from original, prompt had it
+  | 'Waitlisted'; // Retained from original
 
 export interface Applicant {
   id: string;
@@ -58,35 +18,72 @@ export interface Applicant {
   lastName: string;
   email: string;
   phoneNumber?: string;
-  dateOfBirth?: string; // ISO Date
-  gender?: string;
+  dateOfBirth?: string;
+  gender?: 'Male' | 'Female' | 'Other' | 'PreferNotToSay';
+  age?: number;
   nationality?: string;
-  address?: ApplicantAddress; // Using the new interface
-  applicationDate: string; // ISO Date
-  programId: string; // Links to Program.programId in hierarchy.ts
-  programName?: string; // Denormalized for convenience
+  address?: {
+    street: string;
+    city: string;
+    state?: string;
+    postalCode: string;
+    country: string;
+  };
+  programId: string;
+  programName: string;
+  applicationDate: string; // ISO date string
   status: ApplicationStatus;
-  funnelStage: number; // e.g., 1 for Applied, 7 for Enrolled (align with stageOrderAndNames in AdmissionsModule)
-  previousEducation?: ApplicantPreviousEducation; // Using the new interface
-  documents?: ApplicantDocument[]; // Using the new interface
-  interview?: ApplicantInterview; // Using the new interface
-  visaDetails?: ApplicantVisaDetails; // Using the new interface
-  reservationCategory?: string; // e.g., General, SC/ST, OBC, EWS
-  source?: string; // e.g., Online, Referral, Agent
+  funnelStage: number;
+
+  applicationSource?: 'Website' | 'Referral' | 'Education Fair' | 'Social Media' | 'Agent' | 'Other';
+  funnelStageDates?: Partial<Record<ApplicationStatus | 'Applied', string>>;
+
+  previousEducation?: {
+    institution: string;
+    degree: string;
+    fieldOfStudy?: string;
+    graduationYear: number;
+    gpa?: number;
+  };
+
+  profilePictureUrl?: string;
+  documents?: Array<{
+    documentId: string;
+    fileName: string;
+    documentType: 'Resume' | 'Transcript' | 'Essay' | 'RecommendationLetter' | 'Other';
+    uploadDate: string; // ISO date string
+    url: string;
+  }>;
+  interview?: {
+    interviewId: string;
+    date: string; // ISO date string
+    time: string; // e.g., "14:00"
+    interviewerIds: string[];
+    interviewerNames?: string[];
+    feedback?: string;
+    score?: number; // 1-5 or 1-10
+  };
   notes?: string;
-  lastUpdated: string; // ISO Date
-  // Fields from mockData/admissions/generateMockApplicants.ts
+  reservationCategory?: string;
   originCity?: string;
   originCountry?: string;
   originCoordinates?: { lat: number; lng: number };
+  visaDetails?: {
+    visaType: string;
+    applicationStatus: 'Not Started' | 'Applied' | 'Approved' | 'Rejected';
+    issueDate?: string;
+    expiryDate?: string;
+  };
+  // Fields from original file that are not in the prompt's new definition but might be useful to keep or were overlooked
   hasScholarship?: boolean;
   applicationFeeStatus?: 'Paid' | 'Waived' | 'Pending';
+  lastUpdated?: string; // Present in original, not in prompt; maybe remove if funnelStageDates covers it
 }
 
 export interface KeyDeadline {
   id: string;
   title: string;
   date: string; // ISO Date string
-  type: 'Application' | 'Interview' | 'Decision' | 'Enrollment' | 'Orientation'; // Expanded based on common usage
+  type: 'Application' | 'Interview' | 'Decision' | 'Enrollment' | 'Orientation';
   description?: string;
 }

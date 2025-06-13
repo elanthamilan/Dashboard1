@@ -1,147 +1,172 @@
-import { Applicant, ApplicationStatus, KeyDeadline } from '../../../../types/admissions'; // Adjust path as needed
-import { faker } from '@faker-js/faker'; // Needs @faker-js/faker to be installed
+// In src/utils/mockData/admissions/generateMockApplicants.ts
+import { faker } from '@faker-js/faker';
+import { Applicant, ApplicationStatus, KeyDeadline } from '../../../types/admissions'; // Ensure path is correct
+import dayjs from 'dayjs';
 
-const programs = [
-  { id: 'CS101', name: 'BSc Computer Science' },
-  { id: 'MBA202', name: 'Master of Business Administration' },
-  { id: 'ENG303', name: 'BEng Mechanical Engineering' },
-  { id: 'ART404', name: 'MA Fine Arts' },
-  { id: 'SCI505', name: 'PhD Quantum Physics' },
-];
-
-// Updated Application Statuses to match the new types
 const applicationStatuses: ApplicationStatus[] = [
-  'Applied',
-  'Screened',
-  'Interview Scheduled',
-  'Interview Complete',
-  'Offer Made',
-  'Offer Accepted',
-  'Offer Declined',
-  'Enrollment Confirmed',
-  'Application Withdrawn',
+  'Applied', 'Screened', 'Interview Scheduled', 'Interview Complete',
+  'Offer Made', 'Offer Accepted', 'Enrollment Confirmed', 'Rejected', 'Withdrawn'
 ];
 
-const reservationCategories: Applicant['reservationCategory'][] = ['General', 'General', 'General', 'OBC', 'SC', 'ST', 'EWS', 'Other', 'General'];
+// Define a clear order for funnel stage dates and funnelStage calculation
+const funnelOrder: ApplicationStatus[] = [
+  'Applied', 'Screened', 'Interview Scheduled', 'Interview Complete',
+  'Offer Made', 'Offer Accepted', 'Enrollment Confirmed'
+];
 
-const documentTypes: Array<'Transcript' | 'Resume/CV' | 'Reference Letter' | 'Essay' | 'Passport Copy' | 'Visa Document'> = ['Transcript', 'Resume/CV', 'Reference Letter', 'Essay', 'Passport Copy'];
+// reservationCategories can be kept if still needed by other parts or for variety in Applicant type
+const reservationCategories: Applicant['reservationCategory'][] = ['General', 'OBC', 'SC', 'ST', 'EWS', 'Other'];
 
-// Helper to get a realistic funnel stage based on the new statuses
-const getFunnelStage = (status: ApplicationStatus): number => {
-  switch (status) {
-    case 'Applied': return 1;
-    case 'Screened': return 2;
-    case 'Interview Scheduled': return 3;
-    case 'Interview Complete': return 4;
-    case 'Offer Made': return 5;
-    case 'Offer Accepted': return 6;
-    case 'Enrollment Confirmed': return 7;
-    // Offer Declined and Application Withdrawn are off-funnel states
-    default: return 0;
-  }
-};
 
-// Helper for coordinates (simple random for demo)
-// Example: Coordinates around a central point (e.g., London)
-const getRandomCoordinates = (): { lat: number; lng: number } => {
-  return {
-    lat: parseFloat(faker.location.latitude({ min: 40, max: 60 }).toFixed(6)), // Europe/North America
-    lng: parseFloat(faker.location.longitude({ min: -10, max: 20 }).toFixed(6)), // Europe
-  };
-};
-
-export const generateMockApplicant = (id: number): Applicant => {
+export const generateMockApplicant = (id: number, programs: Array<{ programId: string; programName: string }>): Applicant => {
   const firstName = faker.person.firstName();
   const lastName = faker.person.lastName();
+  const email = faker.internet.email({ firstName, lastName });
+  const dob = dayjs(faker.date.birthdate({ min: 17, max: 35, mode: 'age' }));
+  const applicationDate = dayjs(faker.date.past({ years: 1 }));
+
+  // Determine status first, as it influences other fields like funnelStageDates and interview
+  const randomStatusIndex = faker.number.int({ min: 0, max: applicationStatuses.length - 1 });
+  const status = applicationStatuses[randomStatusIndex];
+
   const program = faker.helpers.arrayElement(programs);
-  const status = faker.helpers.arrayElement(applicationStatuses);
-  const applicationDate = faker.date.past({ years: 1 });
-  const hasInterview = ['Interview Scheduled', 'Offered', 'Accepted', 'Enrollment Confirmed'].includes(status) && Math.random() > 0.3;
-  const isInternational = Math.random() > 0.7;
+
+  const gender = faker.helpers.arrayElement(['Male', 'Female', 'Other', 'PreferNotToSay'] as const);
+  const age = dayjs().diff(dob, 'year');
+  const nationality = faker.location.country();
+  const applicationSource = faker.helpers.arrayElement(['Website', 'Referral', 'Education Fair', 'Social Media', 'Agent', 'Other'] as const);
+
+  const funnelStageDates: Partial<Record<ApplicationStatus | 'Applied', string>> = {};
+  let lastStageDate = applicationDate;
+  const currentStatusIndexInFunnel = funnelOrder.indexOf(status);
+
+  funnelStageDates['Applied'] = applicationDate.toISOString();
+
+  if (currentStatusIndexInFunnel !== -1) {
+    for (let i = 1; i <= currentStatusIndexInFunnel; i++) {
+      const stage = funnelOrder[i];
+      lastStageDate = dayjs(lastStageDate).add(faker.number.int({ min: 1, max: 10 }), 'day');
+      funnelStageDates[stage] = lastStageDate.toISOString();
+    }
+  } else if (status === 'Rejected' || status === 'Withdrawn') {
+    if (Math.random() > 0.3) {
+        const screenedDate = dayjs(applicationDate).add(faker.number.int({min:1, max:5}), 'day');
+        funnelStageDates['Screened'] = screenedDate.toISOString();
+        lastStageDate = screenedDate; // Update lastStageDate for potential interview scheduling before rejection
+    }
+  }
+
+  const shouldHaveInterview = status === 'Interview Scheduled' ||
+                             status === 'Interview Complete' ||
+                             status === 'Offer Made' ||
+                             status === 'Offer Accepted' ||
+                             status === 'Enrollment Confirmed' ||
+                             // Allow for interviews even if eventually rejected/withdrawn, if they passed 'Screened'
+                             ((status === 'Rejected' || status === 'Withdrawn') && !!funnelStageDates['Screened'] && Math.random() > 0.2);
+
 
   return {
-    id: `APP-${String(id).padStart(5, '0')}`,
+    id: `APP-${String(id).padStart(4, '0')}`,
     firstName,
     lastName,
-    email: faker.internet.email({ firstName, lastName }),
+    email,
     phoneNumber: faker.phone.number(),
-    dateOfBirth: faker.date.birthdate({ min: 17, max: 45, mode: 'age' }).toISOString(),
-    nationality: faker.location.country(),
-    gender: faker.helpers.arrayElement(['Male', 'Female', 'Other', 'Prefer not to say']),
+    dateOfBirth: dob.toISOString(),
+    gender,
+    age,
+    nationality,
     address: {
       street: faker.location.streetAddress(),
       city: faker.location.city(),
       state: faker.location.state({ abbreviated: true }),
       postalCode: faker.location.zipCode(),
-      country: faker.location.country(), // Could be different from nationality for residency
+      country: nationality,
     },
+    programId: program.programId,
+    programName: program.programName,
     applicationDate: applicationDate.toISOString(),
-    programId: program.id,
-    programName: program.name,
     status,
-    originCity: faker.location.city(), // New field
-    originCountry: faker.location.country(), // New field (can be different from address.country or nationality for diversity)
+    funnelStage: currentStatusIndexInFunnel !== -1 ? currentStatusIndexInFunnel + 1 : funnelOrder.length + 1,
+
+    applicationSource,
+    funnelStageDates,
+
     previousEducation: {
-      institution: faker.company.name() + ' University',
-      degree: faker.helpers.arrayElement(['BSc', 'BA', 'MSc', 'MA', 'High School Diploma']),
-      graduationYear: faker.date.past({ years: 5 }).getFullYear(),
-      gpa: parseFloat(faker.number.float({ min: 2.5, max: 4.0, precision: 0.1 }).toFixed(1)),
+      institution: `${faker.location.city()} ${faker.helpers.arrayElement(['University', 'College', 'High School', 'Institute'])}`,
+      degree: faker.helpers.arrayElement(['Bachelor of Science', 'Bachelor of Arts', 'MBA', 'High School Diploma', 'Master of Engineering']),
+      fieldOfStudy: faker.person.jobArea(),
+      graduationYear: applicationDate.year() - faker.number.int({ min: 0, max: 5 }),
+      gpa: parseFloat(faker.number.float({ min: 2.0, max: 4.0, precision: 0.1 }).toFixed(1)),
     },
-    applicationFee: {
-      paid: faker.datatype.boolean(0.9), // 90% paid
-      amount: 50,
-      paymentDate: faker.date.recent({ days: 30 }).toISOString(),
-    },
-    documents: Array.from({ length: faker.number.int({ min: 1, max: 4 }) }, (_, i) => ({
-      id: faker.string.uuid(),
-      type: faker.helpers.arrayElement(documentTypes),
-      fileName: `${faker.lorem.word()}_${faker.system.commonFileName('pdf')}`,
-      uploadDate: faker.date.between({ from: applicationDate, to: new Date() }).toISOString(),
-      url: faker.internet.url(),
-    })),
-    interview: hasInterview ? {
-      date: faker.date.future({ years: 0.1, refDate: applicationDate }).toISOString(),
-      time: `${faker.number.int({ min: 9, max: 17 })}:00`,
-      interviewer: faker.person.fullName(),
-      notes: faker.lorem.sentence(),
-      feedback: faker.helpers.arrayElement(['Positive', 'Neutral', 'Negative']),
-    } : undefined,
-    visaDetails: isInternational ? {
-      visaType: 'Student Visa F-1',
-      applicationStatus: faker.helpers.arrayElement(['Not Started', 'Submitted', 'Approved', 'Rejected']),
-      issueDate: status === 'Offer Accepted' || status === 'Enrollment Confirmed' ? faker.date.recent({ days: 60 }).toISOString() : undefined,
-      expiryDate: status === 'Offer Accepted' || status === 'Enrollment Confirmed' ? faker.date.future({ years: 3 }).toISOString() : undefined,
-    } : undefined,
-    originCoordinates: getRandomCoordinates(),
-    funnelStage: getFunnelStage(status),
+
+    profilePictureUrl: faker.image.avatar(),
+    originCity: faker.location.city(),
+    originCountry: nationality,
+    originCoordinates: { lat: parseFloat(faker.location.latitude()), lng: parseFloat(faker.location.longitude()) },
     reservationCategory: faker.helpers.arrayElement(reservationCategories),
+
+    documents: Math.random() > 0.3 ? Array.from({length: faker.number.int({min:1, max:3})}, () => ({
+        documentId: faker.string.uuid(),
+        fileName: `${lastName}_${faker.lorem.word()}.pdf`,
+        documentType: faker.helpers.arrayElement(['Resume', 'Transcript', 'Essay', 'RecommendationLetter', 'Other'] as const),
+        uploadDate: applicationDate.toISOString(),
+        url: faker.internet.url()
+    })) : [],
+
+    interview: shouldHaveInterview ? {
+        interviewId: faker.string.uuid(),
+        date: dayjs(funnelStageDates['Interview Scheduled'] || funnelStageDates['Screened'] || applicationDate).add(faker.number.int({min: 2, max: 7}), 'day').toISOString(),
+        time: `${faker.number.int({min:9, max:17})}:00`,
+        interviewerIds: [faker.string.alphanumeric(5)],
+        interviewerNames: [faker.person.fullName()],
+        feedback: (status === 'Interview Complete' || status === 'Offer Made' || status === 'Offer Accepted' || status === 'Enrollment Confirmed' || status === 'Rejected' || status === 'Withdrawn') && Math.random() > 0.2 ? faker.lorem.paragraph() : undefined,
+        score: (status === 'Interview Complete' || status === 'Offer Made' || status === 'Offer Accepted' || status === 'Enrollment Confirmed' || status === 'Rejected' || status === 'Withdrawn') && Math.random() > 0.2 ? faker.number.int({min:1, max:5}) : undefined,
+    } : undefined,
+    visaDetails: nationality !== 'India' ? { // Example: Assume 'India' is domestic
+        visaType: 'Student Visa',
+        applicationStatus: faker.helpers.arrayElement(['Not Started' , 'Applied', 'Approved', 'Rejected'] as const),
+        issueDate: (status === 'Offer Accepted' || status === 'Enrollment Confirmed') && Math.random() > 0.5 ? dayjs(lastStageDate).add(1, 'month').toISOString() : undefined,
+        expiryDate: (status === 'Offer Accepted' || status === 'Enrollment Confirmed') && Math.random() > 0.5 ? dayjs(lastStageDate).add(3, 'year').toISOString() : undefined,
+    } : undefined,
+    hasScholarship: faker.datatype.boolean(0.2),
+    applicationFeeStatus: faker.helpers.arrayElement(['Paid', 'Waived', 'Pending'] as const),
+    notes: Math.random() > 0.7 ? faker.lorem.sentence() : undefined,
+    lastUpdated: dayjs().toISOString() // Added from original type, not in prompt, but useful
   };
 };
 
-export const generateMockApplicants = (count: number): Applicant[] => {
-  return Array.from({ length: count }, (_, i) => generateMockApplicant(i + 1));
+export const generateMockApplicants = (
+  count: number,
+  programsData?: Array<{ programId: string; programName: string }>
+): Applicant[] => {
+  const defaultProgs = programsData && programsData.length > 0 ? programsData : [
+    { programId: 'CS_BS_DEFAULT', programName: 'B.S. Computer Science (Default)' },
+    { programId: 'MBA_GEN_DEFAULT', programName: 'Master of Business Administration (Default)' },
+  ];
+  return Array.from({ length: count }, (_, i) => generateMockApplicant(i + 1, defaultProgs));
 };
-
-// New function to generate mock key deadlines
-// import { KeyDeadline } from '../../../components/AdmissionsDashboard/types'; // KeyDeadline already imported above
-import dayjs from 'dayjs'; // For date manipulation
 
 export const generateMockKeyDeadlines = (count: number): KeyDeadline[] => {
   const deadlines: KeyDeadline[] = [];
-  const types: KeyDeadline['type'][] = ['Application', 'Interview', 'Decision', 'Enrollment'];
-  let lastDate = dayjs(); // Start from today or a bit in the past
+  const types: KeyDeadline['type'][] = ['Application', 'Interview', 'Decision', 'Enrollment', 'Orientation'];
+  let lastDate = dayjs();
 
   for (let i = 0; i < count; i++) {
     const type = faker.helpers.arrayElement(types);
-    lastDate = dayjs(faker.date.future({ refDate: lastDate.toDate(), years: 0.2 })); // Ensure dates progress somewhat logically
+    // Ensure dates are somewhat logical and in the future or near past for deadlines
+    if (i === 0) { // First deadline can be soon
+        lastDate = dayjs(faker.date.soon({ days: 30, refDate: dayjs().subtract(10, 'days').toDate()}));
+    } else { // Subsequent deadlines further out
+        lastDate = dayjs(faker.date.future({ refDate: lastDate.toDate(), years: 0.3 }));
+    }
 
     deadlines.push({
       id: `DEADLINE-${String(i + 1).padStart(3, '0')}`,
-      title: `${type} Deadline - ${faker.lorem.words(2)}`,
+      title: `${type} Deadline - ${faker.commerce.productName()}`, // More varied title
       date: lastDate.toISOString(),
       description: faker.lorem.sentence(),
       type: type,
     });
   }
-  return deadlines.sort((a,b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf()); // Sort by date
+  return deadlines.sort((a,b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf());
 };
