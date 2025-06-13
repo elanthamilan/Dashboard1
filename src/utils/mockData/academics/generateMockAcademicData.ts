@@ -201,6 +201,7 @@ export const generateMockStudentSummary = (student: Student, studentAcademicReco
         expectedGraduationDate: studentAcademicRecord.expectedGraduationDate,
         attendanceRate: attendanceRate,
         atRiskStatus: atRiskStatus,
+        totalLmsLogins: faker.number.int({ min: 5, max: 150 }), // New
     };
 };
 

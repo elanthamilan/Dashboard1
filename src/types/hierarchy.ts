@@ -83,6 +83,20 @@ export interface StudentSummary {
   enrollmentStatus?: 'Active' | 'Inactive' | 'Graduated';
   expectedGraduationDate?: string;
   // sectionId?: string; // If a student summary is specific to a section
+  programId?: string; // Added as per prompt
+  departmentId?: string; // Added as per prompt
+
+  totalLmsLogins?: number; // New - For overall engagement
+  avgAttendanceRate?: number; // New - Calculated or from source
+  consecutiveAbsences?: number; // New - Calculated for alerts
+}
+
+// Added SchoolClass as per prompt for attendance mock data
+export interface SchoolClass {
+    id: string;
+    name: string;
+    subject?: string;
+    // ... other fields ...
 }
 
 export interface Semester {
