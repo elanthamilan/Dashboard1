@@ -1,74 +1,124 @@
+// src/types/hierarchy.ts
 import { PlacementRecord } from './placement';
+// Re-evaluate which of these are truly needed if types are defined locally or if they need updating in academics.ts
 import {
+    // StudentAcademicRecord as AcademicRecordFromAcademics, // Alias if using a distinct local version
+    // CourseEnrollment as CourseEnrollmentFromAcademics, // Alias
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,
     FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject,
-    StudentAcademicRecord, CourseEnrollment // Added new imports
 } from './academics';
-import { Department } from './departments'; // Will use the updated Department definition
+import { Department } from './departments';
 import { Alumnus, AlumniActivity } from './alumni';
 
-// Forward declaration for types used by ParentInstitution
-// Removed: export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
 export type { Department } from './departments';
 export type {
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,
     FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject,
-    StudentAcademicRecord, CourseEnrollment // Added new re-exports
+    // StudentAcademicRecord, CourseEnrollment // Avoid re-exporting if defining locally below with changes
 } from './academics';
 
-// New Type: ParentInstitution
+
+// New/Updated Academic Structure Types:
+export interface Grade {
+  letterGrade?: 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'C-' | 'D+' | 'D' | 'F' | 'P' | 'NP' | 'I' | 'W';
+  numericalScore?: number; // 0-100
+  gradePoints?: number;
+  attemptNumber?: number;
+  isBacklogCleared?: boolean;
+}
+
+export interface CourseEnrollment {
+  courseId: string; // Refers to Course.courseId
+  courseName: string; // Denormalized from Course
+  credits: number; // Denormalized from Course
+  grade?: Grade;
+  termId: string; // e.g., "FALL2023", "SPR2024" - New
+  semesterName?: string; // Denormalized, e.g., "Fall 2023 Semester" - New
+  status?: 'Enrolled' | 'Completed' | 'Withdrawn' | 'Failed' | 'In Progress'; // New
+  facultyId?: string;
+  facultyName?: string;
+}
+
+export interface StudentTermRecord {
+  termId: string;
+  semesterName?: string;
+  courses: CourseEnrollment[];
+  semesterGPA?: number;
+  creditsAttemptedInTerm?: number;
+  creditsEarnedInTerm?: number;
+  rankInProgram?: number;
+  rankInClass?: number;
+}
+
+export interface StudentAcademicRecord {
+  studentId: string;
+  programId: string;
+  programName?: string;
+  semesters: StudentTermRecord[]; // Changed from StudentSemesterRecord
+  cumulativeGPA?: number;
+  totalCreditsAttempted?: number; // New
+  totalCreditsEarned?: number; // New
+  academicStanding?: 'Good Standing' | 'Probation' | 'Suspended' | "Dean's List" | 'At Risk'; // New
+  expectedGraduationDate?: string; // ISO Date
+  major?: string;
+  minor?: string;
+}
+
+// This is the course definition/template
+export interface Course {
+  courseId: string;
+  courseName: string;
+  credits: number;
+  description?: string;
+  departmentId?: string; // Department offering the course
+  courseCode?: string; // Existing from file
+  // semesterId: string; // Removed: Course templates are not tied to specific semesters
+  // sections: Section[]; // Removed: Sections are instances of a course in a semester
+  // averageGrade?: number; // Removed: Instance-specific
+  // passRate?: number; // Removed: Instance-specific
+  // totalStudentsEnrolled?: number; // Removed: Instance-specific
+  // facultyCoordinatorId?: string; // This could be relevant for a course template
+}
+
+
+// Existing Hierarchy Types (ensure they are compatible or update as needed)
 export interface ParentInstitution {
   parentInstitutionId: string;
   parentInstitutionName: string;
   institutions: Institution[];
   totalStudents?: number;
   overallAverageGPA?: number;
-  // Add other aggregated KPIs as needed
   totalFaculty?: number;
   totalPrograms?: number;
   overallPlacementRate?: number;
   totalResearchGrantsValue?: number;
 }
 
-// New Type: Faculty
-export interface Faculty {
+export interface Faculty { // This represents a faculty/school, e.g., Faculty of Engineering
   facultyId: string;
   facultyName: string;
   institutionId: string;
-  departments: Department[];
+  departments: Department[]; // Departments are under a Faculty
   totalStudents?: number;
-  averageFacultyGPA?: number;
-  totalFacultyMembers?: number;
+  averageFacultyGPA?: number; // GPA of students in this Faculty
+  totalFacultyMembers?: number; // Count of academic staff
   researchProjectsCount?: number;
 }
 
-// New Type: Course
-export interface Course {
-  courseId: string;
-  courseName: string;
-  semesterId: string; // or termId
-  sections: Section[];
-  courseCode?: string;
-  credits?: number;
-  averageGrade?: number;
-  passRate?: number;
-  totalStudentsEnrolled?: number;
-  facultyCoordinatorId?: string; // Optional: Link to a faculty member
-}
-
-// New Type: Section
+// Section might represent specific offerings of a course in a term/semester.
 export interface Section {
   sectionId: string;
-  sectionName: string; // e.g., "Section A", "Batch 1"
-  courseId: string;
-  instructorName?: string; // Could be instructorId linking to FacultyMember
-  schedule?: string; // e.g., "Mon/Wed/Fri 9-10 AM"
-  students: StudentSummary[]; // List of students in this section
+  sectionName: string;
+  courseId: string; // Links to the Course template
+  termId: string; // Links to StudentTermRecord.termId
+  instructorName?: string;
+  schedule?: string;
+  students: StudentSummary[];
   averageAttendance?: number;
   studentCount?: number;
-  classroom?: string; // Optional: Classroom location
+  classroom?: string;
 }
 
 export interface StudentSummary {
@@ -76,44 +126,39 @@ export interface StudentSummary {
   firstName: string;
   lastName: string;
   programName?: string;
-  // programId: string; // Student might not be directly tied to a single program in this summary view
-  // programName: string; // Student might be in multiple sections of different courses
   cumulativeGPA?: number;
-  totalCreditsEarned?: number;
+  totalCreditsEarned?: number; // Already present from prompt
   enrollmentStatus?: 'Active' | 'Inactive' | 'Graduated';
   expectedGraduationDate?: string;
-  // sectionId?: string; // If a student summary is specific to a section
-  programId?: string; // Added as per prompt
-  departmentId?: string; // Added as per prompt
-
-  totalLmsLogins?: number; // New - For overall engagement
-  avgAttendanceRate?: number; // New - Calculated or from source
-  consecutiveAbsences?: number; // New - Calculated for alerts
+  programId?: string;
+  departmentId?: string;
+  totalLmsLogins?: number;
+  avgAttendanceRate?: number;
+  consecutiveAbsences?: number;
+  graduationYear?: number; // Added for placement trend calculation
 }
 
-// Added SchoolClass as per prompt for attendance mock data
 export interface SchoolClass {
     id: string;
     name: string;
     subject?: string;
-    // ... other fields ...
+    // Potential other fields: instructorId, schedule, room, courseId (if this is a section of a course)
 }
 
-export interface Semester {
-  semesterId: string; // Added semesterId as Term is removed
-  semesterName: string; // Added semesterName as Term is removed
-  startDate: string; // Added startDate as Term is removed
-  endDate: string; // Added endDate as Term is removed
-  students?: StudentSummary[];
-  courses: Course[]; // Semester now has Courses
-  averageGPA?: number;
-  passRate?: number;
-  // New KPIs for Semester
+export interface Semester { // Represents a term within a Program
+  semesterId: string; // Could be same as termId used in StudentTermRecord
+  semesterName: string;
+  startDate: string;
+  endDate: string;
+  students?: StudentSummary[]; // Students active in this program during this semester
+  courses: Course[]; // List of course *templates* offered by the program in this semester context
+  averageGPA?: number; // Avg GPA of students in this program for this semester's courses
+  passRate?: number; // Pass rate for courses taken by program students this semester
   attendancePercentage?: number;
   totalAbsences?: number;
   feesPaidPercentage?: number;
   studentsWithOverdueFees?: number;
-  totalCoursesOffered?: number;
+  totalCoursesOffered?: number; // Count of distinct course templates
 }
 
 export interface Program {
@@ -121,37 +166,32 @@ export interface Program {
   programName: string;
   degreeId: string;
   departmentId?: string;
-  // departmentId?: string; // Removed, Program is under Degree which is under Department
   requiredCredits?: number;
-  semesters: Semester[]; // Program still has Semesters
+  semesters: Semester[]; // Sequence of semesters/terms defining the program structure
   totalStudents?: number;
-  averageProgramGPA?: number;
+  averageProgramGPA?: number; // Overall GPA of all students ever in this program
   graduationRate?: number;
+  // KPIs (can be aggregated or specific snapshots)
   avgAttendancePercentage?: number;
   totalProgramAbsences?: number;
   avgFeesPaidPercentage?: number;
   totalStudentsWithOverdueFees?: number;
-  // KPIs for Program
-  // avgAttendancePercentage?: number; // Attendance is more granular (Course/Section/Student)
-  // totalProgramAbsences?: number; // Attendance is more granular
-  // avgFeesPaidPercentage?: number; // Fees might be tracked differently
-  // totalStudentsWithOverdueFees?: number; // Fees might be tracked differently
   applicants?: number;
   acceptanceRate?: number;
   enrolledCount?: number;
-  gradeDistribution?: { [gradeCategory: string]: number }; // Could be aggregated from courses
-  atRiskStudents?: number; // Could be identified based on course performance
+  gradeDistribution?: { [gradeCategory: string]: number };
+  atRiskStudents?: number;
   placementRate?: number;
   averagePackage?: number;
   totalPlacedStudents?: number;
   totalInternships?: number;
-  programPassRate?: number; // Percentage of students in the program with GPA >= 2.0 (or relevant pass criteria)
+  programPassRate?: number;
 }
 
 export interface Degree {
   degreeId: string;
   degreeName: string;
-  departmentId: string; // Degree is under a Department
+  departmentId: string;
   programs: Program[];
   totalStudents?: number;
   averageDegreeGPA?: number;
@@ -159,11 +199,6 @@ export interface Degree {
   totalDegreeAbsences?: number;
   avgFeesPaidPercentage?: number;
   totalStudentsWithOverdueFeesInDegree?: number;
-  // KPIs for Degree (Aggregated from Programs)
-  // avgAttendancePercentage?: number; // More granular
-  // totalDegreeAbsences?: number; // More granular
-  // avgFeesPaidPercentage?: number; // Potentially
-  // totalStudentsWithOverdueFeesInDegree?: number; // Potentially
   totalApplicants?: number;
   avgAcceptanceRate?: number;
   totalEnrolledCount?: number;
@@ -180,18 +215,13 @@ export interface AcademicYear {
   yearName: string;
   startDate: string;
   endDate: string;
-  degrees: Degree[]; // This remains, assuming AcademicYear is a temporal slice across degrees
+  degrees: Degree[];
   totalStudents?: number;
   overallAverageGPA?: number;
   annualAttendancePercentage?: number;
   totalAnnualAbsences?: number;
   annualFeesPaidPercentage?: number;
   totalStudentsWithOverdueFeesInYear?: number;
-  // KPIs for AcademicYear (Aggregated from Degrees)
-  // annualAttendancePercentage?: number;
-  // totalAnnualAbsences?: number;
-  // annualFeesPaidPercentage?: number;
-  // totalStudentsWithOverdueFeesInYear?: number;
   totalAnnualApplicants?: number;
   avgAnnualAcceptanceRate?: number;
   totalAnnualEnrolledCount?: number;
@@ -206,20 +236,15 @@ export interface AcademicYear {
 export interface Institution {
   institutionId: string;
   institutionName: string;
-  parentInstitutionId?: string; // Optional: Link to parent system
-  academicYears: AcademicYear[]; // This might change if Faculties become the primary container under Institution
-  faculties: Faculty[]; // Changed from departments
+  parentInstitutionId?: string;
+  academicYears: AcademicYear[];
+  faculties: Faculty[];
   totalStudents?: number;
   overallAverageGPA?: number;
   institutionAttendancePercentage?: number;
   totalInstitutionAbsences?: number;
   institutionFeesPaidPercentage?: number;
   totalStudentsWithOverdueFeesInInstitution?: number;
-  // KPIs for Institution (Aggregated)
-  // institutionAttendancePercentage?: number;
-  // totalInstitutionAbsences?: number;
-  // institutionFeesPaidPercentage?: number;
-  // totalStudentsWithOverdueFeesInInstitution?: number;
   totalInstitutionApplicants?: number;
   avgInstitutionAcceptanceRate?: number;
   totalInstitutionEnrolledCount?: number;
@@ -231,41 +256,33 @@ export interface Institution {
   overallTotalInternships?: number;
   pendingReEvaluationsCount?: number;
   totalReEvaluationsLastMonth?: number;
-  // departments?: Department[]; // Replaced by faculties
   openGrievancesCount?: number;
   avgGrievanceResolutionTimeDays?: number;
   overallCompliancePercentage?: number;
   pendingComplianceItemsCount?: number;
   nextAccreditationReviewDate?: string;
-  accreditationBody?: AccreditingBody; // Consider if this should be at ParentInstitution level too
+  accreditationBody?: AccreditingBody;
   complianceItems?: ComplianceItem[];
   accreditationStatuses?: AccreditationStatusSummary[];
-  avgFacultyRating?: number; // This might be better aggregated at Faculty level
-  facultyEvaluationResponseRate?: number; // Or Faculty level
-  facultyMembers?: FacultyMember[]; // Could be linked at Faculty/Department level primarily
-  facultyEvaluations?: FacultyEvaluation[]; // Or Faculty level
-  // LMS Engagement Metrics (Potentially aggregated or specific to institution services)
+  avgFacultyRating?: number;
+  facultyEvaluationResponseRate?: number;
+  facultyMembers?: FacultyMember[];
+  facultyEvaluations?: FacultyEvaluation[];
   lmsLoginsLast30Days?: number;
   lmsResourceDownloadsLast30Days?: number;
   lmsForumPostsLast30Days?: number;
   lmsActivities?: LmsActivity[];
-  // Alumni and Enhanced Placement Metrics
   alumni?: Alumnus[];
   alumniActivities?: AlumniActivity[];
   alumniEngagementScore?: number;
   overallInternshipRate?: number;
   totalCampusCompanies?: number;
   allPlacementRecords?: PlacementRecord[];
-  // Faculty & Research Metrics (some might move to Faculty/Department)
-  allResearchProjects?: ResearchProject[]; // Aggregated
-  // avgTeachingHoursDelivered?: number; // Better at Faculty/Department
-  overallCourseCompletionRate?: number; // Aggregated from courses
-  totalActiveResearchProjects?: number; // Aggregated
-  // Grievance Metrics
+  allResearchProjects?: ResearchProject[];
+  overallCourseCompletionRate?: number;
+  totalActiveResearchProjects?: number;
   allGrievanceTickets?: GrievanceTicket[];
   grievanceCSAT?: number;
   sentimentDistribution?: { positive: number; neutral: number; negative: number; total: number };
+  totalInternshipsMock?: number; // Added for placement module mock data
 }
-
-// Ensure all new types are exported if not already done by defining them with 'export interface'
-// export type { ParentInstitution, Faculty, Course, Section }; // Already exported
