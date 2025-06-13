@@ -4,8 +4,8 @@ import type { ColumnsType } from 'antd/es/table'; // For table columns typing (i
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
-import { HomeOutlined, UsergroupAddOutlined, AuditOutlined, DollarCircleOutlined, RiseOutlined, BarChartOutlined, TeamOutlined, ArrowLeftOutlined, GlobalOutlined, CalendarOutlined } from '@ant-design/icons'; // Added GlobalOutlined, CalendarOutlined
-import { Bar } from '@ant-design/plots'; // DotMap removed
+import { HomeOutlined, UsergroupAddOutlined, AuditOutlined, DollarCircleOutlined, RiseOutlined, BarChartOutlined, TeamOutlined, ArrowLeftOutlined, GlobalOutlined, CalendarOutlined, LineChartOutlined } from '@ant-design/icons'; // Added GlobalOutlined, CalendarOutlined, LineChartOutlined
+import { Bar, Line } from '@ant-design/plots'; // DotMap removed, Added Line
 import { DotMap } from '@ant-design/maps'; // Added DotMap from @ant-design/maps
 import { Institution, Program as ProgramType, StudentSummary } from '../../../types/hierarchy';
 import { PlacementRecord } from '../../../types/placement';
@@ -13,10 +13,19 @@ import { Alumnus, AlumniActivity } from '../../../types/alumni';
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
+import { fetchData } from '../../../utils/apiUtils';
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const MODULE_KEY = 'placements';
+
+// Ensure Institution is imported if not already
+// import { Institution } from '../../../types/hierarchy';
+
+interface PlacementAlumniData {
+  institutionData: Institution | null;
+  message?: string;
+}
 
 interface KpiItem {
   key: string;
@@ -45,7 +54,89 @@ const PlacementAlumniModule: React.FC = () => {
   const [viewingAlumniNetwork, setViewingAlumniNetwork] = useState(false);
 
 
-  useEffect(() => { /* ... same as before ... */ }, [filters.academicYear, t]);
+  useEffect(() => {
+    const loadPlacementAlumniData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const apiData = await fetchData<PlacementAlumniData>('/principal-view/placement-alumni');
+        if (apiData.institutionData) {
+          setInstitutionData(apiData.institutionData);
+        } else {
+          // If API returns null institutionData but no error, treat as empty or trigger fallback
+          throw new Error("API returned null institution data.");
+        }
+        // If apiData.message exists, you might want to log it or display it
+        if (apiData.message) {
+          console.info("PlacementAlumniModule API Message:", apiData.message);
+        }
+
+      } catch (err: any) {
+        console.error("Failed to fetch placement & alumni data:", err);
+        setError(err.message || 'Failed to fetch placement & alumni data');
+
+        // Fallback to detailed mock data generation for institutionData
+        console.warn('Falling back to mock data for PlacementAlumniModule due to API error.');
+        const programsForMock: ProgramType[] = [ // Re-scoped ProgramType
+          { programId: 'CS_BS', programName: 'B.S. Computer Science', departmentId:'DEPT_SCI', semesters: [{semesterId:'S1', semesterName:'Fall 2023', students:[{studentId:'stud1',firstName:'John',lastName:'Doe'},{studentId:'stud2',firstName:'Jane',lastName:'Smith'}], courses:[]}]},
+          { programId: 'MBA', programName: 'Master of Business Admin', departmentId:'DEPT_BUS', semesters: [{semesterId:'S2', semesterName:'Spring 2024', students:[{studentId:'stud3',firstName:'Peter',lastName:'Jones'}], courses:[]}]}
+        ];
+        const degreesForMock = [{degreeId:'UG',degreeName:'Undergraduate',programs:programsForMock.filter(p=>p.programId==='CS_BS')}, {degreeId:'PG',degreeName:'Postgraduate',programs:programsForMock.filter(p=>p.programId==='MBA')}];
+        const academicYearsForMock = [{yearId:'2023-2024',yearName:'2023-2024',startDate:'2023-08-01',endDate:'2024-05-30',degrees:degreesForMock}];
+
+        const mockInstData: Institution = {
+          institutionId: 'INST001',
+          institutionName: t('common.mockInstitutionName', 'Mock University of Excellence'),
+          campusIds: ['CAMPUS_MAIN'],
+          academicYears: academicYearsForMock,
+          // Populate alumni, allPlacementRecords, alumniActivities with mock data
+          alumni: Array.from({ length: 50 }, (_, i) => ({
+            studentId: `alum${i + 1}`,
+            graduationYear: 2018 + (i % 5),
+            currentEmployer: faker.company.name(),
+            currentRole: faker.person.jobTitle(),
+            industry: faker.commerce.department(),
+            geoCoordinates: { lat: parseFloat(faker.location.latitude({min:10, max:30}).toFixed(6)), lng: parseFloat(faker.location.longitude({min:70,max:90}).toFixed(6)) },
+            contactEmail: faker.internet.email(),
+            linkedInProfile: `linkedin.com/in/${faker.internet.userName()}`
+          })),
+          allPlacementRecords: Array.from({ length: 30 }, (_, i) => ({
+            placementId: `P${i + 1}`,
+            studentId: `alum${i + 1}`, // Assuming alumni are the ones placed
+            programId: programsForMock[i % programsForMock.length].programId,
+            companyName: faker.company.name(),
+            jobTitle: faker.person.jobTitle(),
+            packageDetails: parseFloat(faker.finance.amount(5, 20, 1)) * 100000, // LPA
+            placementDate: dayjs(faker.date.past({years:2})).format('YYYY-MM-DD'),
+            sector: faker.commerce.department(),
+          })),
+          alumniActivities: Array.from({length:15}, (_,i)=>({
+              activityId: `ACT${i+1}`,
+              alumnusId: `alum${faker.number.int({min:1, max:50})}`,
+              activityType: faker.helpers.arrayElement(['EventAttended', 'DonationMade', 'MentorshipProvided', 'WebinarHosted']) as any,
+              date: dayjs(faker.date.recent({days:365})).format('YYYY-MM-DD'),
+              description: faker.lorem.sentence(),
+              value: faker.helpers.arrayElement([undefined, faker.number.int({min:50, max:1000})])
+          })),
+          // Add other fields from Institution type as needed, with mock values
+          institutionType: 'University',
+          location: { city: 'Techville', country: 'Innovaland'},
+          overallAverageGPA: 3.5,
+          overallPlacementRate: 85,
+          // ... other optional fields from Institution
+        };
+        setInstitutionData(mockInstData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPlacementAlumniData();
+  // Removed filters.academicYear from dependencies for this top-level fetch,
+  // as specific filtering should apply to derived data or subsequent detail fetches.
+  // Kept 't' if it's used in mock data generation text.
+  }, [t]);
+
   const {allStudentsSummaryList} = useMemo(() => {
     if(!institutionData) return {allStudentsSummaryList: []};
     const studentSummaries: StudentSummary[] = [];
@@ -67,16 +158,62 @@ const PlacementAlumniModule: React.FC = () => {
   }, [institutionData]);
 
   const placementModuleData = useMemo(() => {
-    // Stub with default structure
-    return {
-      overallPlacementRate: 0,
-      averagePackage: 0,
-      totalPlacedStudents: 0,
-      totalInternships: 0,
-      topRecruitersData: [] as { companyName: string; hires: number }[],
-      placementTrendData: [] as { year: string; rate: number }[],
-    };
-  }, [institutionData, filters.academicYear]);
+      if (!institutionData?.allPlacementRecords || !allStudentsSummaryList) { // allStudentsSummaryList for total student counts per year/program
+      return {
+          overallPlacementRate: 0, averagePackage: 0, totalPlacedStudents: 0, totalInternships: 0,
+          topRecruitersData: [], placementTrendData: [],
+      };
+      }
+
+      const records = institutionData.allPlacementRecords;
+      const totalPlaced = records.length; // Simplistic, assumes all records are unique student placements
+
+      // Overall Placement Rate (example: needs total eligible students for the relevant period)
+      // This is a complex calculation usually, requires knowing the total number of graduates for a year.
+      // For mock, let's assume a fixed eligible student count or derive from student summaries if possible.
+      const eligibleStudentsMock = allStudentsSummaryList.length > 0 ? allStudentsSummaryList.length : totalPlaced * 1.2; // Mocking eligible
+      const overallRate = eligibleStudentsMock > 0 ? (totalPlaced / eligibleStudentsMock) * 100 : 0;
+
+      const avgPackage = totalPlaced > 0 ? records.reduce((sum, r) => sum + (r.packageDetails || 0), 0) / totalPlaced : 0;
+
+      const recruiterCounts = records.reduce((acc, r) => {
+      acc[r.companyName] = (acc[r.companyName] || 0) + 1;
+      return acc;
+      }, {} as Record<string, number>);
+
+      const topRecruiters = Object.entries(recruiterCounts)
+      .map(([companyName, hires]) => ({ companyName, hires }))
+      .sort((a, b) => b.hires - a.hires)
+      .slice(0, 5); // Top 5
+
+      // Placement Trend Data (Example: by year of placementDate)
+      const trendDataMap: Record<string, { year: string; placedCount: number; totalEligibleInYear: number; rate?: number }> = {};
+      records.forEach(r => {
+          const year = dayjs(r.placementDate).format('YYYY');
+          if (!trendDataMap[year]) {
+              // Mocking eligible students per year for trend - this is a simplification
+              // In a real scenario, you'd get total graduates for that year for specific programs.
+              const studentsInYear = allStudentsSummaryList.filter(s => s.graduationYear?.toString() === year).length;
+              trendDataMap[year] = { year, placedCount: 0, totalEligibleInYear: Math.max(1, studentsInYear || 20) }; // Avoid division by zero, mock 20 if no students found
+          }
+          trendDataMap[year].placedCount += 1;
+      });
+
+      const placementTrend = Object.values(trendDataMap).map(d => ({
+          year: d.year,
+          rate: parseFloat(((d.placedCount / d.totalEligibleInYear) * 100).toFixed(1)),
+          count: d.placedCount,
+      })).sort((a,b) => a.year.localeCompare(b.year));
+
+      return {
+      overallPlacementRate: parseFloat(overallRate.toFixed(1)),
+      averagePackage: parseFloat((avgPackage / 100000).toFixed(2)), // Assuming LPA
+      totalPlacedStudents: totalPlaced,
+      totalInternships: institutionData.totalInternshipsMock || 0, // Assuming a mock field or another source
+      topRecruitersData: topRecruiters,
+      placementTrendData: placementTrend,
+      };
+  }, [institutionData, allStudentsSummaryList]);
 
   const availableProgramsList = useMemo((): ProgramInfo[] => {
     if (!institutionData) return [];
@@ -281,7 +418,50 @@ const PlacementAlumniModule: React.FC = () => {
   // Program Batch Stats View
   if (selectedProgramForPlacements) { /* ... same as before ... */ }
   // Overview Display
-  return React.createElement('div', { /* ... same as before, ensure programSelectorSection and new At-Risk button are included ... */ });
+  return React.createElement('div', { style: { padding: '20px' } },
+    React.createElement(Breadcrumb, { items: breadcrumbItems, style: { marginBottom: '20px' } }),
+    programSelectorSection,
+    React.createElement(Title, { level: 2, style:{display: selectedProgramForPlacements || selectedEmployer || viewingAlumniNetwork ? 'none': 'block'} }, t(`module.${MODULE_KEY}.title`, "Placement & Alumni Success")),
+    React.createElement(Paragraph, { style:{display: selectedProgramForPlacements || selectedEmployer || viewingAlumniNetwork ? 'none': 'block'} }, t(`module.${MODULE_KEY}.descriptionPlaceholder`, "Insights into placement trends, alumni engagement, and employer relations.")),
+
+    // Main content area for overview
+    React.createElement('div', {style: {display: !selectedProgramForPlacements && !selectedEmployer && !viewingAlumniNetwork ? 'block' : 'none'}},
+      React.createElement(Row, { gutter: [16, 16], style:{marginTop:20} }, overviewKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 12, lg:6, key: kpi.key }, React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, React.createElement(Statistic, { title: t(kpi.title), value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle: { color: kpi.color || '#3f8600' } }))))),
+      React.createElement(Row, { gutter: [16,16], style:{marginTop:20}},
+        React.createElement(Col, { xs:24, lg:12},
+          React.createElement(Card, { title: React.createElement(Text, null, React.createElement(BarChartOutlined, {style:{marginRight:8}}), t('module.placements.topRecruitersChartTitle', "Top Recruiters by Hires"))},
+            placementModuleData.topRecruitersData.length > 0 ? React.createElement(Bar, topRecruitersBarConfig as any) : React.createElement(Text, null, t('common.noDataAvailable', "No recruiter data available."))
+          )
+        ),
+        // Placement Trend Line Chart
+        placementModuleData.placementTrendData && placementModuleData.placementTrendData.length > 0 && (
+          React.createElement(Col, { xs:24, lg:12},
+            <Card title={<><LineChartOutlined /> {t(`module.${MODULE_KEY}.placementTrendChartTitle`, "Placement Rate Trend by Year")}</>}>
+              <Line
+                data={placementModuleData.placementTrendData}
+                xField="year"
+                yField="rate"
+                xAxis={{ title: { text: t('common.year', 'Year') } }}
+                yAxis={{
+                  title: { text: t('module.placements.placementRate', 'Placement Rate (%)') },
+                  label: { formatter: (v) => `${v}%` }
+                }}
+                tooltip={{
+                  formatter: (datum) => ({
+                    name: t('module.placements.placementRate', 'Placement Rate'),
+                    value: `${datum.rate}%` + (datum.count ? ` (${datum.count} ${t('common.students', 'students')})` : '')
+                  }),
+                }}
+                point={{ size: 5, shape: 'diamond' }}
+                smooth={true}
+              />
+            </Card>
+          </Col>
+        )
+      ),
+      React.createElement(Card, { title: t('common.currentGlobalFilters', "Current Global Filters"), style: { marginTop: 30, display: 'none' } }, React.createElement(Descriptions, { bordered: true, column: 1, size: 'small', items: filterDescriptionItems }))
+    )
+  );
 };
 
 export default PlacementAlumniModule;

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Breadcrumb, Card, Descriptions, Spin, List, Table, Tag } from 'antd';
+import { Typography, Breadcrumb, Card, Descriptions, Spin, List, Table, Tag, Row, Col } from 'antd';
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
-import { HomeOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import { Department, FacultyMember, Program } from '../../../types/hierarchy';
+import { Pie, Column } from '@ant-design/plots';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -125,6 +126,69 @@ const DepartmentFacultyModule: React.FC = () => {
                 </Descriptions>
               </Card>
             )}
+
+            {/* Charts Section */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 20, marginTop: 20 }}>
+              {/* Faculty by Designation Pie Chart */}
+              {deptFacultyData.facultyMembers && deptFacultyData.facultyMembers.length > 0 && (
+                <Col xs={24} md={12}>
+                  <Card title={<><PieChartOutlined /> {t(`module.${MODULE_KEY}.facultyByDesignationChartTitle`, "Faculty by Designation")}</>}>
+                    <Pie
+                      data={deptFacultyData.facultyMembers.reduce((acc, member) => {
+                        const status = member.designation || t('common.unknown', 'Unknown');
+                        const existing = acc.find(i => i.type === status);
+                        if (existing) {
+                          existing.value += 1;
+                        } else {
+                          acc.push({ type: status, value: 1 });
+                        }
+                        return acc;
+                      }, [] as Array<{type: string, value: number}>)}
+                      angleField="value"
+                      colorField="type"
+                      radius={0.8}
+                      legend={{ position: 'bottom' }}
+                      label={{
+                        type: 'inner',
+                        offset: '-30%',
+                        content: '{value}',
+                        style: { fill: '#fff', fontSize: 14 },
+                      }}
+                      tooltip={{
+                          formatter: (datum) => ({ name: datum.type, value: datum.value + ' ' + t('common.members', 'members') }),
+                      }}
+                    />
+                  </Card>
+                </Col>
+              )}
+
+              {/* Faculty Count by Department Bar Chart */}
+              {deptFacultyData.departments && deptFacultyData.departments.length > 0 && (
+                <Col xs={24} md={12}>
+                  <Card title={<><BarChartOutlined /> {t(`module.${MODULE_KEY}.facultyByDeptChartTitle`, "Faculty Count by Department")}</>}>
+                    <Column
+                      data={deptFacultyData.departments.map(dept => ({
+                        departmentName: dept.departmentName,
+                        facultyCount: dept.facultyCount || 0,
+                      }))}
+                      xField="departmentName"
+                      yField="facultyCount"
+                      seriesField="departmentName" // Optional: if you want different colors per department
+                      legend={false} // Or configure as needed if seriesField is used meaningfully
+                      label={{
+                        position: 'middle', // Or 'top', 'bottom', 'left', 'right'
+                        style: { fill: '#FFFFFF', opacity: 0.6 },
+                      }}
+                      xAxis={{ title: { text: t('module.academics.departmentName', "Department") } }}
+                      yAxis={{ title: { text: t('module.academics.facultyCount', "Faculty Count") } }}
+                      tooltip={{
+                        formatter: (datum) => ({ name: datum.departmentName, value: datum.facultyCount + ' ' + t('common.facultyMembers', 'faculty members') }),
+                      }}
+                    />
+                  </Card>
+                </Col>
+              )}
+            </Row>
 
             {deptFacultyData.departments && deptFacultyData.departments.length > 0 && (
               <Card title={t(`module.${MODULE_KEY}.departmentsListTitle`, "Departments")} style={{ marginBottom: 20 }}>

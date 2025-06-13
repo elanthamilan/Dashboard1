@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Breadcrumb, Card, Descriptions, Spin } from 'antd';
+import { Typography, Breadcrumb, Card, Descriptions, Spin, Row, Col } from 'antd';
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
-import { HomeOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import dayjs from 'dayjs';
+import { Pie } from '@ant-design/plots';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -38,10 +39,15 @@ const ComplianceAccreditationModule: React.FC = () => {
         setError(err.message || 'Failed to fetch compliance data');
         // Optionally, set some minimal mock data for structure if API fails
         setData({
-          message: "Mock data active due to API failure.",
-          lastAuditDate: "2023-05-15",
-          upcomingAudits: [{date: "2024-09-01", type: "ISO 9001", authority: "QAS International"}],
-          complianceStatus: [{area: "Data Privacy", status: "Compliant", details: "All systems meet GDPR requirements."}]
+            message: "Mock data active due to API failure.",
+            lastAuditDate: "2023-05-15",
+            upcomingAudits: [{date: "2024-09-01", type: "ISO 9001", authority: "QAS International"}],
+            complianceStatus: [
+                {area: "Data Privacy", status: "Compliant", details: "All systems meet GDPR requirements."},
+                {area: "Financial Reporting", status: "Compliant", details: "Audits passed."},
+                {area: "Accessibility Standards", status: "Pending", details: "Review scheduled for Q3."},
+                {area: "Environmental Safety", status: "Non-Compliant", details: "Corrective actions required for waste disposal."}
+            ]
         });
       } finally {
         setLoading(false);
@@ -91,24 +97,66 @@ const ComplianceAccreditationModule: React.FC = () => {
       <div style={{ marginTop: '20px' }}>
         {loading && <Spin tip={t('common.loadingData', "Loading data...")} />}
         {error && <Paragraph type="danger">{t('common.errorLoadingData', "Error loading data:")} {error}</Paragraph>}
-        {!loading && !error && data && (
-          <Descriptions bordered column={1} title={t(`module.${MODULE_KEY}.summaryTitle`, "Compliance Summary")}>
-            <Descriptions.Item label={t(`module.${MODULE_KEY}.lastAuditDate`, "Last Audit Date")}>
-              {data.lastAuditDate ? dayjs(data.lastAuditDate).format('YYYY-MM-DD') : t('common.notAvailable', 'N/A')}
-            </Descriptions.Item>
-            <Descriptions.Item label={t(`module.${MODULE_KEY}.upcomingAudits`, "Upcoming Audits")}>
-              {data.upcomingAudits && data.upcomingAudits.length > 0 ? (
-                <ul>
-                  {data.upcomingAudits.map((audit, index) => (
-                    <li key={index}>{`${audit.type} by ${audit.authority} on ${dayjs(audit.date).format('YYYY-MM-DD')}`}</li>
-                  ))}
-                </ul>
-              ) : t('common.noUpcomingAudits', 'No upcoming audits scheduled.')}
-            </Descriptions.Item>
-            {/* Add more Descriptions.Item for other fields in ComplianceData as needed */}
-          </Descriptions>
+
+        {data?.message && (
+          <Paragraph style={{ marginTop: '10px', fontStyle: 'italic' }}>{data.message}</Paragraph>
         )}
-        {!loading && !error && !data && (
+
+        {!loading && !error && data && (
+          <>
+            <Descriptions bordered column={1} title={t(`module.${MODULE_KEY}.summaryTitle`, "Compliance Summary")}>
+              <Descriptions.Item label={t(`module.${MODULE_KEY}.lastAuditDate`, "Last Audit Date")}>
+                {data.lastAuditDate ? dayjs(data.lastAuditDate).format('YYYY-MM-DD') : t('common.notAvailable', 'N/A')}
+              </Descriptions.Item>
+              <Descriptions.Item label={t(`module.${MODULE_KEY}.upcomingAudits`, "Upcoming Audits")}>
+                {data.upcomingAudits && data.upcomingAudits.length > 0 ? (
+                  <ul>
+                    {data.upcomingAudits.map((audit, index) => (
+                      <li key={index}>{`${audit.type} by ${audit.authority} on ${dayjs(audit.date).format('YYYY-MM-DD')}`}</li>
+                    ))}
+                  </ul>
+                ) : t('common.noUpcomingAudits', 'No upcoming audits scheduled.')}
+              </Descriptions.Item>
+              {/* Add more Descriptions.Item for other fields in ComplianceData as needed */}
+            </Descriptions>
+
+            {data.complianceStatus && data.complianceStatus.length > 0 && (
+              <Row style={{ marginTop: 20 }}>
+                <Col span={24}> {/* Or span={12} if other charts/info are next to it */}
+                  <Card title={<><PieChartOutlined /> {t(`module.${MODULE_KEY}.complianceStatusChartTitle`, "Compliance Status Overview")}</>}>
+                    <Pie
+                      data={data.complianceStatus.reduce((acc, item) => {
+                        const existing = acc.find(i => i.type === item.status);
+                        if (existing) {
+                          existing.value += 1;
+                        } else {
+                          acc.push({ type: item.status, value: 1 });
+                        }
+                        return acc;
+                      }, [] as Array<{type: string, value: number}>)}
+                      angleField="value"
+                      colorField="type"
+                      radius={0.8}
+                      legend={{ position: 'bottom' }}
+                      label={{
+                        type: 'inner',
+                        offset: '-30%',
+                        content: '{value}', // or '{percentage}'
+                        style: { fill: '#fff', fontSize: 14 },
+                      }}
+                      tooltip={{
+                          formatter: (datum) => {
+                            return { name: datum.type, value: datum.value + ' ' + t('common.items', 'items') };
+                          },
+                      }}
+                    />
+                  </Card>
+                </Col>
+              </Row>
+            )}
+          </>
+        )}
+        {!loading && !error && !data?.complianceStatus && !data?.message && (
           <Paragraph>{t('common.noDataAvailable', "No compliance data available.")}</Paragraph>
         )}
       </div>

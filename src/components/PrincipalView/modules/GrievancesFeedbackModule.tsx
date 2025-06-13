@@ -3,9 +3,10 @@ import { Typography, Breadcrumb, Card, Descriptions, Spin, List, Table, Tag, Sta
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
-import { HomeOutlined } from '@ant-design/icons';
+import { HomeOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import dayjs from 'dayjs';
+import { Pie, Column } from '@ant-design/plots';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -68,15 +69,21 @@ const GrievancesFeedbackModule: React.FC = () => {
         setError(err.message || 'Failed to fetch grievances & feedback data');
         // Fallback to minimal mock data
         setGrievancesData({
-          message: "Mock data active for Grievances & Feedback due to API failure.",
-          grievances: [
-            { id: 'G001', submittedBy: 'Student123', dateSubmitted: '2023-10-01', category: 'Library', description: 'Not enough copies of core textbooks.', status: 'Open' },
-            { id: 'G002', submittedBy: 'Faculty456', dateSubmitted: '2023-10-05', category: 'IT Support', description: 'Classroom projector malfunctioning.', status: 'In Progress' },
-          ],
-          feedback: [
-            { id: 'F001', submittedBy: 'Student789', dateSubmitted: '2023-09-20', category: 'Academic', comments: 'The new course on AI is excellent!', rating: 5 },
-          ],
-          stats: { totalOpenGrievances: 1, avgResolutionTimeDays: 5, totalFeedbackReceived: 1, avgFeedbackRating: 5 }
+            message: "Mock data active for Grievances & Feedback due to API failure.",
+            grievances: [
+              { id: 'G001', submittedBy: 'Student123', dateSubmitted: '2023-10-01', category: 'Library', description: 'Not enough copies of core textbooks.', status: 'Open' },
+              { id: 'G002', submittedBy: 'Faculty456', dateSubmitted: '2023-10-05', category: 'IT Support', description: 'Classroom projector malfunctioning.', status: 'In Progress' },
+              { id: 'G003', submittedBy: 'Student234', dateSubmitted: '2023-09-15', category: 'Canteen', description: 'Food quality needs improvement.', status: 'Resolved', dateResolved: '2023-09-20', resolution: 'Vendor contacted and changes made.' },
+              { id: 'G004', submittedBy: 'Staff789', dateSubmitted: '2023-10-10', category: 'HR', description: 'Query about leave policy.', status: 'Open' },
+            ],
+            feedback: [
+              { id: 'F001', submittedBy: 'Student789', dateSubmitted: '2023-09-20', category: 'Academic', comments: 'The new course on AI is excellent!', rating: 5 },
+              { id: 'F002', submittedBy: 'Alumni001', dateSubmitted: '2023-09-22', category: 'Facilities', comments: 'Campus cleanliness has improved.', rating: 4 },
+              { id: 'F003', submittedBy: 'Student567', dateSubmitted: '2023-10-02', category: 'Administrative', comments: 'Enrollment process was smooth.', rating: 5 },
+              { id: 'F004', submittedBy: 'Faculty123', dateSubmitted: '2023-10-05', category: 'Academic', comments: 'Need more resources for research.', rating: 3 },
+              { id: 'F005', submittedBy: 'Student321', dateSubmitted: '2023-10-08', category: 'Other', comments: 'The cultural fest was well organized.', rating: undefined }, // Unrated
+            ],
+            stats: { totalOpenGrievances: 2, avgResolutionTimeDays: 5, totalFeedbackReceived: 5, avgFeedbackRating: 4.3 }
         });
       } finally {
         setLoading(false);
@@ -143,6 +150,75 @@ const GrievancesFeedbackModule: React.FC = () => {
                 </Row>
               </Card>
             )}
+
+            {/* Charts Section */}
+            <Row gutter={[16, 16]} style={{ marginBottom: 20, marginTop: 20 }}>
+              {/* Grievances by Status Pie Chart */}
+              {grievancesData.grievances && grievancesData.grievances.length > 0 && (
+                <Col xs={24} md={12}>
+                  <Card title={<><PieChartOutlined /> {t(`module.${MODULE_KEY}.grievancesByStatusChartTitle`, "Grievances by Status")}</>}>
+                    <Pie
+                      data={grievancesData.grievances.reduce((acc, grievance) => {
+                        const status = grievance.status || t('common.unknown', 'Unknown');
+                        const existing = acc.find(i => i.type === status);
+                        if (existing) {
+                          existing.value += 1;
+                        } else {
+                          acc.push({ type: status, value: 1 });
+                        }
+                        return acc;
+                      }, [] as Array<{type: GrievanceStatus | string, value: number}>)} // Ensure type allows for 'Unknown'
+                      angleField="value"
+                      colorField="type"
+                      radius={0.8}
+                      legend={{ position: 'bottom' }}
+                      label={{
+                        type: 'inner',
+                        offset: '-30%',
+                        content: '{value}',
+                        style: { fill: '#fff', fontSize: 14 },
+                      }}
+                      tooltip={{
+                          formatter: (datum) => ({ name: datum.type, value: datum.value + ' ' + t('common.grievances', 'grievances') }),
+                      }}
+                    />
+                  </Card>
+                </Col>
+              )}
+
+              {/* Feedback Rating Distribution Bar Chart */}
+              {grievancesData.feedback && grievancesData.feedback.length > 0 && (
+                <Col xs={24} md={12}>
+                  <Card title={<><BarChartOutlined /> {t(`module.${MODULE_KEY}.feedbackRatingChartTitle`, "Feedback Rating Distribution")}</>}>
+                    <Column
+                      data={grievancesData.feedback.reduce((acc, item) => {
+                        const rating = item.rating === undefined ? t('common.notRated', 'Not Rated') : item.rating.toString();
+                        const existing = acc.find(r => r.rating === rating);
+                        if (existing) {
+                          existing.count += 1;
+                        } else {
+                          acc.push({ rating: rating, count: 1 });
+                        }
+                        return acc;
+                      }, [] as Array<{rating: string, count: number}>).sort((a,b) => a.rating.localeCompare(b.rating))}
+                      xField="rating"
+                      yField="count"
+                      // seriesField="rating" // Not needed if colors are default or handled by xField
+                      legend={false}
+                      label={{
+                        position: 'middle',
+                        style: { fill: '#FFFFFF', opacity: 0.6 },
+                      }}
+                      xAxis={{ title: { text: t('common.rating', "Rating") } }}
+                      yAxis={{ title: { text: t('common.count', "Count") } }}
+                      tooltip={{
+                        formatter: (datum) => ({ name: `${t('common.rating', "Rating")} ${datum.rating}`, value: datum.count + ' ' + t('common.feedbackItems', 'feedback items') }),
+                      }}
+                    />
+                  </Card>
+                </Col>
+              )}
+            </Row>
 
             {grievancesData.grievances && grievancesData.grievances.length > 0 && (
               <Card title={t(`module.${MODULE_KEY}.grievancesListTitle`, "Recent Grievances")} style={{ marginBottom: 20 }}>
