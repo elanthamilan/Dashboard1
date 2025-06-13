@@ -121,3 +121,42 @@ export interface ResearchProject {
   publications?: Array<{ title: string; journal?: string; year?: number; doi?: string }>;
   teamMembers?: Array<{ facultyId?: string; studentId?: string; name: string; role: string }>;
 }
+
+// Student Academic Performance Types
+export interface CourseEnrollment {
+  courseId: string; // Links to Course.courseId from hierarchy.ts
+  courseCode?: string;
+  courseName: string;
+  credits: number;
+  grade?: {
+    letterGrade: string; // e.g., A, B, C, F, P, NP
+    numericalScore?: number; // e.g., 85
+    points?: number; // e.g., 4.0, 3.0
+  };
+  semesterId: string; // Links to Semester.semesterId from hierarchy.ts
+  instructorName?: string;
+  comments?: string;
+  lastUpdated?: string; // ISO Date
+}
+
+export interface StudentAcademicRecord {
+  studentId: string; // Links to StudentSummary.studentId from hierarchy.ts
+  programId: string; // Links to Program.programId from hierarchy.ts
+  programName?: string;
+  requiredCreditsForDegree?: number; // Added this line
+  semesters: Array<{
+    semesterId: string; // Links to Semester.semesterId
+    semesterName: string; // e.g., "Fall 2023"
+    courses: CourseEnrollment[];
+    semesterGpa?: number;
+    semesterCreditsEarned?: number;
+    deanList?: boolean;
+  }>;
+  cumulativeGpa?: number;
+  totalCreditsEarned?: number;
+  classRank?: number;
+  major?: string; // Denormalized from Program for convenience
+  minor?: string;
+  graduationDate?: string; // ISO Date
+  honorsAndAwards?: string[];
+}

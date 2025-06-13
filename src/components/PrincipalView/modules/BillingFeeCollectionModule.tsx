@@ -10,16 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { HomeOutlined, DollarCircleOutlined, CheckCircleOutlined, IssuesCloseOutlined, ClockCircleOutlined, LineChartOutlined, PieChartOutlined, ArrowLeftOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons'; // Added EyeOutlined, FileTextOutlined
 import { Line, Pie } from '@ant-design/plots';
 import { Institution, StudentSummary, Department, Program, Semester, AcademicYear, Degree } from '../../../types/hierarchy';
-// Billing-specific types (Invoice, Payment, PaymentMethod, FeeItem, InvoiceStatus) need to be imported from their correct location.
-// Assuming they might be in a yet-to-be-created 'src/types/billing.ts' or similar, or need to be found.
-// For now, removing them from this import to fix the module path error.
-// If used, tsc will error on the unknown types, guiding the next fix.
-// Temporary:
-type Invoice = any;
-type Payment = any;
-type PaymentMethod = any;
-type FeeItem = any;
-type InvoiceStatus = any;
+import { Invoice, Payment, PaymentMethod, FeeItem, InvoiceStatus } from '../../../types/billing';
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { generateMockInvoices, generateMockPayments } from '../../../utils/mockData/billing/generateMockBillingData';

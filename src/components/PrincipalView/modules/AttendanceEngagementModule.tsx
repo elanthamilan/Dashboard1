@@ -15,7 +15,7 @@ import {
 } from '@ant-design/icons';
 import { Bar, Line, Heatmap } from '@ant-design/plots';
 import { Institution, StudentSummary, Program as ProgramType, Semester as SemesterType, CourseEnrollment } from '../../../types/hierarchy';
-import { AttendanceRecord } from '../../AttendanceDashboard/types';
+import { AttendanceRecord } from '../../../types/attendance';
 // Note: AbsenceReason was removed as it's not a defined type in the provided files. It was used as string.
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockAttendanceRecords, generateMockClasses } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Changed import
@@ -85,7 +85,7 @@ const AttendanceEngagementModule: React.FC = () => {
     try {
       // IMPORTANT: This component currently uses MOCK DATA.
       // TODO: Replace mock data generation with actual data fetching logic.
-      const instDataArray = generateMockNewInstitutions(1, undefined, 3, 50); // For a single institution
+      const instDataArray = generateMockNewInstitutions(undefined, [], 3, 50); // For a single institution, parentId is undefined, students array to be filled by mock
       if (instDataArray && instDataArray.length > 0) {
         const currentInstitution = instDataArray[0];
         setInstitutionData(currentInstitution);
@@ -106,7 +106,9 @@ const AttendanceEngagementModule: React.FC = () => {
 
         // IMPORTANT: This component currently uses MOCK DATA.
         // TODO: Replace mock data generation with actual data fetching logic.
-        const records = generateMockAttendanceRecords(studentIdsForAttendance.map(s => s.studentId), true); // Pass student IDs
+        const studentIds = studentIdsForAttendance.map(s => s.studentId);
+        const classesForMock = generateMockClasses(5); // Generate some mock classes for context
+        const records = generateMockAttendanceRecords(studentIds, classesForMock, 365); // Pass student IDs, classes, and days
         setAllAttendanceRecords(records);
         if (records.length > 0) {
           const maxDate = new Date(Math.max(...records.map(r => new Date(r.date).getTime())));

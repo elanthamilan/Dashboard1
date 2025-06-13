@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { Student, SchoolClass, AttendanceStatus, AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Adjust path
+import { Student, SchoolClass, AttendanceStatus, AttendanceRecord } from '../../../../types/attendance'; // Adjust path
 import dayjs from 'dayjs';
 
 // Updated list of absence reasons as per the prompt

@@ -1,8 +1,8 @@
 import { faker } from '@faker-js/faker';
 import {
-    StudentAcademicRecord, Term, CourseEnrollment, Grade, SkillProficiency, K12StandardMastery, OnlineLearningProgress
-} from '../../../components/StudentPerformanceDashboard/types';
-import { Student } from '../../../components/AttendanceDashboard/types';
+    StudentAcademicRecord, CourseEnrollment // Term, Grade, SkillProficiency, K12StandardMastery, OnlineLearningProgress might need to be moved or redefined
+} from '../../../../types/academics'; // Updated path
+import { Student, AttendanceRecord as AttendanceRecordType } from '../../../../types/attendance'; // Updated path, added Alias for local AttendanceRecord
 import {
     Institution,
     AcademicYear,
@@ -16,11 +16,11 @@ import {
     ParentInstitution
 } from '../../../types/hierarchy';
 import { generateMockStudents } from '../attendance/generateMockAttendanceData';
-import { AttendanceRecord } from '../../../components/AttendanceDashboard/types';
+// import { AttendanceRecord } from '../../../components/AttendanceDashboard/types'; // Replaced by alias
 import { generateMockAttendanceRecords } from '../attendance/generateMockAttendanceData';
-import { Invoice } from '../../../components/BillingDashboard/types';
+import { Invoice } from '../../../../types/billing'; // Updated path
 import { generateMockInvoices } from '../billing/generateMockBillingData';
-import { Applicant } from '../../../components/AdmissionsDashboard/types';
+import { Applicant } from '../../../../types/admissions'; // Updated path
 import { generateMockApplicants } from '../admissions/generateMockApplicants';
 import { PlacementRecord } from '../../../types/placement';
 import { generateMockPlacementData } from '../placements/generateMockPlacementData';
@@ -80,64 +80,77 @@ const departmentConfigs = [
     { departmentId: 'DEPT_BUSINESS', departmentName: 'School of Business', facultyId: '', degreeConfigs: [mockDegreeConfigs[1]] }
 ];
 
-const gradeToPoints = (letterGrade: Grade['letterGrade']): number => {
-    const mapping: { [key in Grade['letterGrade']]: number } = {
-        'A+': 4.0, 'A': 4.0, 'A-': 3.7,
+// Define a simplified local type for grade letters if not directly importing a complex Grade type
+type SimpleGradeLetter = 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'D' | 'F' | 'P' | 'NP';
+const letterGrades: SimpleGradeLetter[] = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'D', 'F', 'P', 'NP'];
+
+const gradeToPoints = (letterGrade: SimpleGradeLetter): number => {
+    const mapping: { [key in SimpleGradeLetter]: number } = {
+        'A': 4.0, 'A-': 3.7, // Assuming A+ is not used or maps to A
         'B+': 3.3, 'B': 3.0, 'B-': 2.7,
         'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-        'D+': 1.3, 'D': 1.0, 'F': 0.0,
-        'P': 0.0, 'NP': 0.0,
+        'D': 1.0, // Assuming D+ maps to D or is not used
+        'F': 0.0,
+        'P': 0.0, // Pass/No Pass typically don't contribute to GPA points
+        'NP': 0.0,
     };
     return mapping[letterGrade] || 0;
 };
 
-const letterGrades: Grade['letterGrade'][] = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'F'];
-
-const generateMockCourseEnrollment = (termId: string): CourseEnrollment => {
+const generateMockCourseEnrollment = (semesterId: string): CourseEnrollment => {
     const subject = faker.helpers.arrayElement(['CS', 'MA', 'EN', 'PH', 'HI', 'EC']);
     const courseNum = faker.number.int({ min: 100, max: 499 });
     const letterGrade = faker.helpers.arrayElement(letterGrades);
     const numericalScore = letterGrade === 'F' ? faker.number.int({min: 0, max: 59}) : faker.number.int({min: 60, max: 100});
 
     return {
-        courseId: `${subject}${courseNum}-${termId}`,
+        courseId: `${subject}${courseNum}-${semesterId}`,
         courseCode: `${subject} ${courseNum}`,
         courseName: faker.lorem.words(3).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
         credits: faker.helpers.arrayElement([3, 4]),
         instructorName: faker.person.fullName(),
-        instructorId: `INST-${faker.string.uuid()}`,
+        // instructorId is not in CourseEnrollment type from academics.ts
         grade: {
             letterGrade,
             numericalScore,
             points: gradeToPoints(letterGrade),
         },
+        semesterId, // Added this field as it's in the type
         comments: Math.random() > 0.7 ? faker.lorem.sentence() : undefined,
+        lastUpdated: faker.date.recent({days: 90}).toISOString(),
     };
 };
 
-const generateMockTerm = (termNumber: number, year: number): Term => {
-    const isFall = termNumber % 2 === 0;
-    const termId = `${isFall ? 'FA' : 'SP'}${year}`;
-    const termName = `${isFall ? 'Fall' : 'Spring'} ${year}`;
-    const courses = Array.from({ length: faker.number.int({ min: 3, max: 5 }) }, () => generateMockCourseEnrollment(termId));
+// Renamed from generateMockTerm and updated to match StudentAcademicRecord.semesters structure
+const generateMockSemesterForRecord = (semesterNumber: number, year: number, programId: string): StudentAcademicRecord['semesters'][0] => {
+    const isFall = semesterNumber % 2 === 0;
+    // Ensure semesterId is unique and possibly includes program context if needed for global uniqueness
+    const semesterId = `${isFall ? 'FA' : 'SP'}${year}-${programId.substring(0,3)}-${faker.string.alphanumeric(3)}`;
+    const semesterName = `${isFall ? 'Fall' : 'Spring'} ${year}`;
+    const courses = Array.from({ length: faker.number.int({ min: 3, max: 5 }) }, () => generateMockCourseEnrollment(semesterId));
 
     let totalPoints = 0;
     let totalCreditsForGpa = 0;
-    courses.forEach(c => {
+    let semesterCreditsEarned = 0;
+
+    courses.forEach((c: CourseEnrollment) => { // Explicit type
         if (c.grade && c.grade.points !== undefined && c.grade.letterGrade !== 'P' && c.grade.letterGrade !== 'NP') {
             totalPoints += c.grade.points * c.credits;
             totalCreditsForGpa += c.credits;
         }
+        if (c.grade && c.grade.letterGrade !== 'F' && c.grade.letterGrade !== 'NP') { // Assuming F and NP are failing grades
+            semesterCreditsEarned += c.credits;
+        }
     });
-    const termGPA = totalCreditsForGpa > 0 ? parseFloat((totalPoints / totalCreditsForGpa).toFixed(2)) : undefined;
+    const semesterGpa = totalCreditsForGpa > 0 ? parseFloat((totalPoints / totalCreditsForGpa).toFixed(2)) : undefined;
 
     return {
-        termId,
-        termName,
-        startDate: dayjs(`${year}-${isFall ? '08' : '01'}-15`).toISOString(),
-        endDate: dayjs(`${year}-${isFall ? '12' : '05'}-15`).toISOString(),
+        semesterId,
+        semesterName,
         courses,
-        termGPA,
+        semesterGpa,
+        semesterCreditsEarned,
+        deanList: semesterGpa !== undefined && semesterGpa >= 3.5 && semesterCreditsEarned >=12, // Example Dean's List logic
     };
 };
 
@@ -192,12 +205,15 @@ export const generateMockStudentSummary = (student: Student, studentAcademicReco
 };
 
 export const generateMockStudentAcademicRecord = (student: Student, studentIndex: number): StudentAcademicRecord => {
-    const terms: Term[] = [];
+    const selectedProgram = faker.helpers.arrayElement(programs);
+    const semesters: StudentAcademicRecord['semesters'] = [];
     const currentYear = dayjs().year();
     const yearsOfStudy = faker.number.int({ min: 1, max: 4 });
+
     for (let y = 0; y < yearsOfStudy; y++) {
-        terms.push(generateMockTerm(0, currentYear - yearsOfStudy + y + 1));
-        terms.push(generateMockTerm(1, currentYear - yearsOfStudy + y + 1));
+        // Pass programId to generateMockSemesterForRecord for unique semesterId generation
+        semesters.push(generateMockSemesterForRecord(0, currentYear - yearsOfStudy + y + 1, selectedProgram.id));
+        semesters.push(generateMockSemesterForRecord(1, currentYear - yearsOfStudy + y + 1, selectedProgram.id));
     }
 
     let cumulativeGpa = 0;
@@ -205,10 +221,13 @@ export const generateMockStudentAcademicRecord = (student: Student, studentIndex
     let totalWeightedPoints = 0;
     let totalCreditsAttemptedForGpa = 0;
 
-    terms.forEach(term => {
-        term.courses.forEach(course => {
+    semesters.forEach((semester: StudentAcademicRecord['semesters'][0]) => { // Explicit type
+        semester.courses.forEach((course: CourseEnrollment) => { // Explicit type
             if (course.grade && course.grade.points !== undefined && course.grade.letterGrade !== 'F' && course.grade.letterGrade !== 'NP') {
-                totalCreditsEarned += course.credits;
+                 // Only add to earned credits if passed
+                 if (course.grade.letterGrade !== 'F' && course.grade.letterGrade !== 'NP') { // Assuming F and NP are failing
+                    totalCreditsEarned += course.credits;
+                 }
             }
             if (course.grade && course.grade.points !== undefined && course.grade.letterGrade !== 'P' && course.grade.letterGrade !== 'NP') {
                 totalWeightedPoints += course.grade.points * course.credits;
@@ -218,36 +237,23 @@ export const generateMockStudentAcademicRecord = (student: Student, studentIndex
     });
     cumulativeGpa = totalCreditsAttemptedForGpa > 0 ? parseFloat((totalWeightedPoints / totalCreditsAttemptedForGpa).toFixed(2)) : 0;
 
-    const selectedProgram = faker.helpers.arrayElement(programs);
 
     return {
         studentId: student.id,
         programId: selectedProgram.id,
         programName: selectedProgram.name,
-        requiredCreditsForDegree: selectedProgram.requiredCredits,
-        enrollmentDate: dayjs(terms[0]?.startDate).subtract(1, 'month').toISOString(),
-        expectedGraduationDate: dayjs(terms[terms.length -1]?.endDate).add(1, 'year').toISOString(),
-        terms,
-        cumulativeGPA: cumulativeGpa,
+        requiredCreditsForDegree: selectedProgram.requiredCredits, // Added in previous step
+        semesters,
+        cumulativeGpa: cumulativeGpa, // Corrected property name from cumulativeGPA
         totalCreditsEarned,
-        skillProficiencies: Array.from({ length: faker.number.int({ min: 3, max: 6 }) }, () => ({
-            skillName: faker.lorem.words(faker.number.int({min: 1, max: 3})).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-            proficiencyLevel: faker.number.int({ min: 40, max: 100 }),
-            lastAssessed: faker.date.recent({ days: 180 }).toISOString(),
-        })),
-        k12StandardsMastery: student.gradeLevel && student.gradeLevel <=12 ? Array.from({length: faker.number.int({min:2, max:5})}, () => ({
-            standardId: `K12.MA.${student.gradeLevel}.${faker.string.alphanumeric(3).toUpperCase()}`,
-            standardName: faker.lorem.sentence(5),
-            masteryStatus: faker.helpers.arrayElement(['Not Assessed', 'Beginning', 'Approaching', 'Met', 'Exceeded']),
-            lastAssessedDate: faker.date.recent({days: 90}).toISOString()
-        })) : [],
-        onlineLearningProgress: Math.random() > 0.5 ? Array.from({length: faker.number.int({min:1, max:2})}, () => ({
-            courseName: `Online ${faker.lorem.word()}`,
-            moduleId: faker.string.uuid(),
-            moduleName: `Module ${faker.number.int({min:1, max:5})}: ${faker.lorem.words(2)}`,
-            progressPercent: faker.number.int({min:10, max:100}),
-            lastActivityDate: faker.date.recent({days: 30}).toISOString()
-        })) : [],
+        // The following fields are not in the new StudentAcademicRecord from academics.ts, so they are removed:
+        // enrollmentDate, expectedGraduationDate, skillProficiencies, k12StandardsMastery, onlineLearningProgress
+        // Adding optional fields from the new type:
+        major: selectedProgram.name, // Example, can be more specific
+        minor: Math.random() > 0.8 ? faker.lorem.words(2) : undefined,
+        graduationDate: enrollmentStatuses[studentIndex % enrollmentStatuses.length] === 'Graduated' ? faker.date.past({years: 1}).toISOString() : undefined,
+        honorsAndAwards: Math.random() > 0.7 ? [faker.lorem.sentence(4), faker.lorem.sentence(5)] : undefined,
+        classRank: Math.random() > 0.6 ? faker.number.int({min: 1, max: 100}) : undefined,
     };
 };
 
@@ -255,13 +261,14 @@ export const generateMockAcademicRecords = (students: Student[]): StudentAcademi
   return students.map((student, index) => generateMockStudentAcademicRecord(student, index));
 };
 
-const calculateAttendanceKPIs = ( studentIdsInContext: string[], attendanceRecords: AttendanceRecord[], contextStartDate?: string, contextEndDate?: string): { percentage?: number; totalAbsences?: number } => { if (studentIdsInContext.length === 0) return { percentage: 100, totalAbsences: 0 }; const relevantRecords = attendanceRecords.filter(r => { const studentMatch = studentIdsInContext.includes(r.studentId); if (!studentMatch) return false; if (contextStartDate && contextEndDate) { return dayjs(r.date).isBetween(dayjs(contextStartDate), dayjs(contextEndDate), null, '[]'); } return true; }); const absences = relevantRecords.filter(r => r.status === 'Absent' || r.status === 'Excused').length; const estimatedTotalSessions = studentIdsInContext.length * 20; const attendancePercentage = estimatedTotalSessions > 0 ? parseFloat(( ( (estimatedTotalSessions - absences) / estimatedTotalSessions) * 100).toFixed(2)) : 100; return { percentage: Math.max(0, Math.min(100, attendancePercentage)), totalAbsences: absences }; };
+const calculateAttendanceKPIs = ( studentIdsInContext: string[], attendanceRecords: AttendanceRecordType[], contextStartDate?: string, contextEndDate?: string): { percentage?: number; totalAbsences?: number } => { if (studentIdsInContext.length === 0) return { percentage: 100, totalAbsences: 0 }; const relevantRecords = attendanceRecords.filter(r => { const studentMatch = studentIdsInContext.includes(r.studentId); if (!studentMatch) return false; if (contextStartDate && contextEndDate) { return dayjs(r.date).isBetween(dayjs(contextStartDate), dayjs(contextEndDate), null, '[]'); } return true; }); const absences = relevantRecords.filter(r => r.status === 'Absent' || r.status === 'Excused').length; const estimatedTotalSessions = studentIdsInContext.length * 20; const attendancePercentage = estimatedTotalSessions > 0 ? parseFloat(( ( (estimatedTotalSessions - absences) / estimatedTotalSessions) * 100).toFixed(2)) : 100; return { percentage: Math.max(0, Math.min(100, attendancePercentage)), totalAbsences: absences }; };
 const calculateBillingKPIs = ( studentIdsInContext: string[], invoices: Invoice[] ): { feesPaidPercentage?: number; overdueCount?: number } => { if (studentIdsInContext.length === 0) return { feesPaidPercentage: 100, overdueCount: 0 }; const relevantInvoices = invoices.filter(inv => studentIdsInContext.includes(inv.studentId) && inv.status !== 'Cancelled' && inv.status !== 'Draft'); if (relevantInvoices.length === 0) return { feesPaidPercentage: 100, overdueCount: 0 }; const totalAmountDue = relevantInvoices.reduce((sum, inv) => sum + inv.totalAmount, 0); const totalAmountPaid = relevantInvoices .filter(inv => inv.status === 'Paid') .reduce((sum, inv) => sum + inv.totalAmount, 0); const feesPaidPercentage = totalAmountDue > 0 ? parseFloat(((totalAmountPaid / totalAmountDue) * 100).toFixed(2)) : 100; const overdueCount = relevantInvoices.filter(inv => inv.status === 'Overdue').length; return { feesPaidPercentage: Math.min(100, feesPaidPercentage), overdueCount }; };
 const calculateAdmissionKPIs = ( programApplicants: Applicant[] ): { applicants: number; acceptanceRate?: number; enrolledCount?: number } => { if (!programApplicants || programApplicants.length === 0) { return { applicants: 0, acceptanceRate: 0, enrolledCount: 0 }; } const totalApplicants = programApplicants.length; const offersMade = programApplicants.filter(a => ['Offer Made', 'Offer Accepted', 'Enrollment Confirmed'].includes(a.status)).length; const enrolled = programApplicants.filter(a => a.status === 'Enrollment Confirmed').length; const acceptanceRate = totalApplicants > 0 ? parseFloat(((offersMade / totalApplicants) * 100).toFixed(2)) : 0; return { applicants: totalApplicants, acceptanceRate, enrolledCount: enrolled }; };
-const calculateGradeDistribution = (studentRecords: StudentAcademicRecord[]): { [gradeCategory: string]: number } => { const distribution: { [gradeCategory: string]: number } = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0, 'Other': 0 }; studentRecords.forEach(record => { record.terms.forEach(term => { term.courses.forEach(course => { if (course.grade) { const letter = course.grade.letterGrade[0]; if (distribution[letter] !== undefined) { distribution[letter]++; } else if (course.grade.letterGrade === 'P' || course.grade.letterGrade === 'NP') { distribution['Other']++; } } }); }); }); return distribution; };
-const countAtRiskStudents = ( studentRecords: StudentAcademicRecord[], studentIdsInContext: string[], attendanceRecords?: AttendanceRecord[], minGpaThreshold: number = 2.0, maxAbsencesThreshold: number = 10 ): number => { let atRiskCount = 0; const relevantStudentRecords = studentRecords.filter(sr => studentIdsInContext.includes(sr.studentId)); relevantStudentRecords.forEach(record => { if (record.cumulativeGPA !== undefined && record.cumulativeGPA < minGpaThreshold) { atRiskCount++; return; } }); return atRiskCount; };
+const calculateGradeDistribution = (studentRecords: StudentAcademicRecord[]): { [gradeCategory: string]: number } => { const distribution: { [gradeCategory: string]: number } = { 'A': 0, 'B': 0, 'C': 0, 'D': 0, 'F': 0, 'Other': 0 }; studentRecords.forEach(record => { record.semesters.forEach(semester => { semester.courses.forEach(course => { if (course.grade) { const letter = course.grade.letterGrade[0]; if (distribution[letter] !== undefined) { distribution[letter]++; } else if (course.grade.letterGrade === 'P' || course.grade.letterGrade === 'NP') { distribution['Other']++; } } }); }); }); return distribution; };
+const countAtRiskStudents = ( studentRecords: StudentAcademicRecord[], studentIdsInContext: string[], attendanceRecords?: AttendanceRecordType[], minGpaThreshold: number = 2.0, maxAbsencesThreshold: number = 10 ): number => { let atRiskCount = 0; const relevantStudentRecords = studentRecords.filter(sr => studentIdsInContext.includes(sr.studentId)); relevantStudentRecords.forEach(record => { if (record.cumulativeGpa !== undefined && record.cumulativeGpa < minGpaThreshold) { atRiskCount++; return; } }); return atRiskCount; };
 const calculatePlacementKPIs = ( studentIdsInScope: string[], allStudentsInScopeSummaries: StudentSummary[], allPlacementRecords: PlacementRecord[] ): { rate?: number; avgPackage?: number; placedCount?: number; internshipCount?: number } => { const eligibleForPlacementSummaries = allStudentsInScopeSummaries.filter( s => studentIdsInScope.includes(s.studentId) && s.enrollmentStatus === 'Graduated' && s.expectedGraduationDate && dayjs(s.expectedGraduationDate).isBefore(dayjs().add(3,'month')) ); const eligibleStudentIdsForRateCalc = new Set(eligibleForPlacementSummaries.map(s => s.studentId)); const relevantFullTimePlacements = allPlacementRecords.filter( p => eligibleStudentIdsForRateCalc.has(p.studentId) && p.placementType === 'FullTime' ); const internedStudentIdsInScope = new Set( allPlacementRecords .filter(p => studentIdsInScope.includes(p.studentId) && p.placementType === 'Internship') .map(p => p.studentId) ); const internshipCount = internedStudentIdsInScope.size; const placedStudentIdsForFullTime = new Set(relevantFullTimePlacements.map(p => p.studentId)); const placedCount = placedStudentIdsForFullTime.size; const rate = eligibleForPlacementSummaries.length > 0 ? parseFloat(((placedCount / eligibleForPlacementSummaries.length) * 100).toFixed(2)) : 0; let totalPackage = 0; relevantFullTimePlacements.forEach(p => totalPackage += p.packageAmount); const avgPackage = placedCount > 0 ? parseFloat((totalPackage / placedCount).toFixed(0)) : undefined; return { rate, avgPackage, placedCount, internshipCount }; };
-const generateTermDetails = (termNumber: number, year: number, programId: string): { termId: string, termName: string, startDate: string, endDate: string } => { const isFall = termNumber % 2 === 0; const termId = `${isFall ? 'FA' : 'SP'}${year}`; const termName = `${isFall ? 'Fall' : 'Spring'} ${year}`; return { termId, termName, startDate: dayjs(`${year}-${isFall ? '08' : '01'}-15`).toISOString(), endDate: dayjs(`${year}-${isFall ? '12' : '05'}-15`).toISOString() }; };
+// Assuming Term is replaced by Semester concept from hierarchy.ts or redefined in academics.ts
+const generateTermDetails = (termNumber: number, year: number, programId: string): { semesterId: string, semesterName: string, startDate: string, endDate: string } => { const isFall = termNumber % 2 === 0; const semesterId = `${isFall ? 'FA' : 'SP'}${year}-${programId.slice(0,2)}`; const semesterName = `${isFall ? 'Fall' : 'Spring'} ${year}`; return { semesterId, semesterName, startDate: dayjs(`${year}-${isFall ? '08' : '01'}-15`).toISOString(), endDate: dayjs(`${year}-${isFall ? '12' : '05'}-15`).toISOString() }; };
 const pickRandomSubset = <T>(items: T[], maxCount: number): T[] => { if (!items || items.length === 0) return []; const count = faker.number.int({ min: Math.min(1, items.length), max: Math.min(maxCount, items.length) }); return faker.helpers.arrayElements(items, count); };
 
 const generateMockSections = ( courseId: string, availableStudents: StudentSummary[], numSections: number = faker.number.int({ min: 1, max: 3 }) ): Section[] => { const sections: Section[] = []; const courseStudents = pickRandomSubset(availableStudents, availableStudents.length); const remainingStudents = [...courseStudents]; for (let i = 0; i < numSections; i++) { const sectionId = `${courseId}-S${i + 1}`; const sectionName = `Section ${String.fromCharCode(65 + i)}`; const sectionStudentCount = Math.ceil(courseStudents.length / numSections); const studentsForSection = remainingStudents.splice(0, Math.min(sectionStudentCount, remainingStudents.length)); sections.push({ sectionId, sectionName, courseId, instructorName: faker.person.fullName(), schedule: `${faker.helpers.arrayElement(['Mon/Wed/Fri', 'Tue/Thu'])} ${faker.number.int({ min: 8, max: 15 })}-${faker.number.int({ min: 9, max: 17 })} AM/PM`, students: studentsForSection, studentCount: studentsForSection.length, averageAttendance: faker.number.float({ min: 70, max: 95, multipleOf: 0.5 }), classroom: `Room ${faker.number.int({min: 101, max: 305})}` }); } return sections; };

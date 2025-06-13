@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
-import { Student } from '../../../components/AttendanceDashboard/types'; // Adjust path if needed
-import { FeeItem, Invoice, InvoiceStatus, Payment, PaymentMethod } from '../../../components/BillingDashboard/types'; // Adjust path if needed
+import { Student } from '../../../../types/attendance'; // Adjust path if needed
+import { FeeItem, Invoice, InvoiceStatus, Payment, PaymentMethod } from '../../../../types/billing'; // Adjust path if needed
 
 const commonFeeDescriptions = [
   "Tuition Fee", "Registration Fee", "Library Fee", "Lab Usage Fee",

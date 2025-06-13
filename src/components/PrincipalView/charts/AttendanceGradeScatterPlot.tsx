@@ -3,7 +3,7 @@ import { Scatter } from '@ant-design/plots';
 import { Card, Spin, Typography, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { StudentAcademicRecord } from '../../../types/hierarchy';
-import { AttendanceRecord, Student } from '../../AttendanceDashboard/types';
+import { AttendanceRecord, Student } from '../../../types/attendance';
 
 interface AttendanceGradeScatterPlotProps {
   academicRecords: StudentAcademicRecord[];

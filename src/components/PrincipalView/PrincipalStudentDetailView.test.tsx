@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import PrincipalStudentDetailView from './PrincipalStudentDetailView'; // Adjust path if necessary
-import { StudentAcademicRecord } from '../../components/StudentPerformanceDashboard/types'; // Adjusted path
+import { StudentAcademicRecord } from '../../../types/academics'; // Adjusted path
 import '@testing-library/jest-dom';
 
 // Mock child components

@@ -14,7 +14,7 @@ import {
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
 import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType, Degree, Department as DepartmentType } from '../../../types/hierarchy'; // Added Degree, DepartmentType
-import { KeyDeadline, Applicant, ApplicationStatus } from '../../../components/AdmissionsDashboard/types';
+import { KeyDeadline, Applicant, ApplicationStatus } from '../../../types/admissions';
 import { generateMockKeyDeadlines, generateMockApplicants } from '../../../utils/mockData/admissions/generateMockApplicants';
 import dayjs from 'dayjs';
 import { Pie, Funnel, Line, Column } from '@ant-design/plots';

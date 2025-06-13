@@ -1,4 +1,4 @@
-import { Applicant, ApplicationStatus } from '../../../components/AdmissionsDashboard/types'; // Adjust path as needed
+import { Applicant, ApplicationStatus, KeyDeadline } from '../../../../types/admissions'; // Adjust path as needed
 import { faker } from '@faker-js/faker'; // Needs @faker-js/faker to be installed
 
 const programs = [
@@ -123,7 +123,7 @@ export const generateMockApplicants = (count: number): Applicant[] => {
 };
 
 // New function to generate mock key deadlines
-import { KeyDeadline } from '../../../components/AdmissionsDashboard/types'; // Import KeyDeadline
+// import { KeyDeadline } from '../../../components/AdmissionsDashboard/types'; // KeyDeadline already imported above
 import dayjs from 'dayjs'; // For date manipulation
 
 export const generateMockKeyDeadlines = (count: number): KeyDeadline[] => {

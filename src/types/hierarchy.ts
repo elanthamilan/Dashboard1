@@ -1,20 +1,21 @@
-import { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types'; // StudentAcademicRecord might be used by StudentSummary or similar
 import { PlacementRecord } from './placement';
 import {
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,
-    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject
+    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject,
+    StudentAcademicRecord, CourseEnrollment // Added new imports
 } from './academics';
 import { Department } from './departments'; // Will use the updated Department definition
 import { Alumnus, AlumniActivity } from './alumni';
 
 // Forward declaration for types used by ParentInstitution
-export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
+// Removed: export type { Term, CourseEnrollment, StudentAcademicRecord } from '../components/StudentPerformanceDashboard/types';
 export type { Department } from './departments';
 export type {
     ReEvaluationRequest, GrievanceTicket,
     ComplianceItem, AccreditationStatusSummary, AccreditingBody,
-    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject
+    FacultyMember, FacultyEvaluation, LmsActivity, ResearchProject,
+    StudentAcademicRecord, CourseEnrollment // Added new re-exports
 } from './academics';
 
 // New Type: ParentInstitution

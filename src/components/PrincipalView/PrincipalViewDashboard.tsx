@@ -2,11 +2,10 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react'; // Added useCallback
 import { Typography, Spin, Empty, Button, Breadcrumb, Row, Col } from 'antd';
 import { HomeOutlined } from '@ant-design/icons';
-import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary } from '../../types/hierarchy';
-import { StudentAcademicRecord } from '../../components/StudentPerformanceDashboard/types'; // Added import
+import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary, StudentAcademicRecord } from '../../types/hierarchy'; // StudentAcademicRecord moved here
 import { generateMockNewInstitutions, generateMockAcademicRecords } from '../../utils/mockData/academics/generateMockAcademicData'; // generateMockStudentSummary removed if not used directly
 import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData';
-import { Student } from '../../components/AttendanceDashboard/types';
+import { Student } from '../../../types/attendance'; // Updated path for Student
 import InstitutionDisplay from './InstitutionDisplay';
 import AcademicYearList from './AcademicYearList';
 import DegreeList from './DegreeList';

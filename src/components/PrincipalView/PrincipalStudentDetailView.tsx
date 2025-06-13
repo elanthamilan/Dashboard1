@@ -1,11 +1,11 @@
 import React from 'react';
-import { StudentAcademicRecord } from '../../components/StudentPerformanceDashboard/types'; // Adjusted path
+import { StudentAcademicRecord } from '../../../types/academics'; // Adjusted path
 import { Row, Col, Card, Typography, Spin, Statistic } from 'antd';
-import GpaTrendChart from '../../components/StudentPerformanceDashboard/GpaTrendChart';
-import SkillProficiencyChart from '../../components/StudentPerformanceDashboard/SkillProficiencyChart';
-import StudentGradeDistributionChart from '../../components/StudentPerformanceDashboard/StudentGradeDistributionChart';
-import DegreeCompletionProgress from '../../components/StudentPerformanceDashboard/DegreeCompletionProgress';
-import StudentGradeGrid from '../../components/StudentPerformanceDashboard/StudentGradeGrid';
+// import GpaTrendChart from '../../components/StudentPerformanceDashboard/GpaTrendChart';
+// import SkillProficiencyChart from '../../components/StudentPerformanceDashboard/SkillProficiencyChart';
+// import StudentGradeDistributionChart from '../../components/StudentPerformanceDashboard/StudentGradeDistributionChart';
+// import DegreeCompletionProgress from '../../components/StudentPerformanceDashboard/DegreeCompletionProgress';
+// import StudentGradeGrid from '../../components/StudentPerformanceDashboard/StudentGradeGrid';
 
 const { Title } = Typography;
 
@@ -47,6 +47,10 @@ const PrincipalStudentDetailView: React.FC<PrincipalStudentDetailViewProps> = ({
       </Row>
 
       {/* Charts Row 1 */}
+      {/*
+      TODO: Restore GPA Trend Chart and Skill Proficiency Chart.
+            Original components GpaTrendChart and SkillProficiencyChart were part of the deleted StudentPerformanceDashboard.
+            New equivalent components need to be created or sourced.
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
           <Card title="GPA Trend" loading={loading}>
@@ -59,8 +63,13 @@ const PrincipalStudentDetailView: React.FC<PrincipalStudentDetailViewProps> = ({
           </Card>
         </Col>
       </Row>
+      */}
 
       {/* Charts Row 2 */}
+      {/*
+      TODO: Restore Grade Distribution Chart and Degree Completion Progress.
+            Original components StudentGradeDistributionChart and DegreeCompletionProgress were part of the deleted StudentPerformanceDashboard.
+            New equivalent components need to be created or sourced.
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
           <Card title="Grade Distribution" loading={loading}>
@@ -73,16 +82,21 @@ const PrincipalStudentDetailView: React.FC<PrincipalStudentDetailViewProps> = ({
           </Card>
         </Col>
       </Row>
+      */}
 
       {/* Student Grade Grid */}
+      {/*
+      TODO: Restore Student Grade Grid.
+            Original component StudentGradeGrid was part of the deleted StudentPerformanceDashboard.
+            A new equivalent component needs to be created or sourced.
       <Row gutter={[16, 16]}>
         <Col span={24}>
           <Card title="Course Grades" loading={loading}>
-            {/* Assuming onGradeUpdate is not critical for read-only principal view */}
             <StudentGradeGrid studentAcademicRecord={studentAcademicRecord} loading={loading} onGradeUpdate={() => { console.log("Grade update N/A in Principal View"); }} />
           </Card>
         </Col>
       </Row>
+      */}
     </div>
   );
 };
