@@ -38,6 +38,7 @@ interface StudentInOfferingData { studentId: string; studentName: string; gradeD
 
 
 const AcademicPerformanceModule: React.FC = () => {
+  // All hooks must be called at the top level, before any conditional returns.
   const { t } = useTranslation();
   const filters = useGlobalFilters();
   const [institutionData, setInstitutionData] = useState<Institution | null>(null);
@@ -230,6 +231,7 @@ const AcademicPerformanceModule: React.FC = () => {
   const facultyPerformanceData = useMemo((): FacultyPerformanceData[] => { /* ... existing ... */ return []; }, [institutionData?.facultyMembers, institutionData?.facultyEvaluations, filters.department, t]);
   const facultyPerformanceTableColumns = [ /* ... existing ... */ ];
 
+  // Early return for loading state, AFTER all hooks have been called.
   if (loading && !institutionData) { return React.createElement("div", { style: { padding: '20px', textAlign: 'center' } }, React.createElement(Spin, { size: "large" })); }
 
   const summaryTilesSection = React.createElement(Row, { gutter: [16, 16] }, summaryKpis.map(kpi => React.createElement(Col, { xs: 24, sm: 12, md: 12, lg:6, key: kpi.titleKey }, React.createElement(Card, { bordered: false, style: { boxShadow: '0 2px 8px rgba(0,0,0,0.09)'} }, React.createElement(Statistic, { title: t(kpi.titleKey), value: kpi.value, precision: kpi.precision, prefix: kpi.icon, suffix: kpi.suffix, valueStyle: kpi.titleKey === 'module.academics.kpi.overallFailRate' || kpi.titleKey === 'module.academics.kpi.backlogRate' ? { color: '#cf1322' } : { color: '#3f8600' } })))));

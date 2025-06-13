@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import App from './App';
 // Ensure i18n is initialized, App.tsx also imports it, but good to have here for clarity
 import './i18n';

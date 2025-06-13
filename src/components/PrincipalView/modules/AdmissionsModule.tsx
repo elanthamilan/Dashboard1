@@ -119,7 +119,23 @@ const AdmissionsModule: React.FC = () => {
   const funnelChartConfig = { data: funnelData, xField: 'stage', yField: 'value', seriesField: 'stage', legend: false as const, conversionTag: { formatter: (data: { prev?: number, next?: number } | undefined) => { if (data && typeof data.prev === 'number' && typeof data.next === 'number' && data.prev > 0) { return `Conv. ${((data.next / data.prev) * 100).toFixed(1)}%`; } return ''; } }, tooltip: { formatter: (datum: any) => ({ name: datum.stage, value: `${datum.value} ${t('module.admissions.funnel.applicantsSuffix', 'Applicants')}` })}, label: { formatter: (datum: any) => String(datum.value), style: { fill: '#fff', fontSize: 12, stroke: '#000', lineWidth: 0.5 }}};
 
   const mapData = useMemo(() => allApplicants.filter(app => app.originCoordinates && typeof app.originCoordinates.lng === 'number' && typeof app.originCoordinates.lat === 'number').map(app => ({ id: app.id, lng: app.originCoordinates!.lng, lat: app.originCoordinates!.lat, city: app.originCity || t('common.unknown'), country: app.originCountry || t('common.unknown') })), [allApplicants, t]);
-  const mapConfig = { map: { type: 'mapbox', style: 'light', center: [0, 20], zoom: 1 }, source: { data: mapData, parser: { type: 'json', coordinates: 'lnglat' } }, shape: 'circle' as const, size: 5, color: '#1890ff', style: { opacity: 0.7 }, tooltip: { items: [{ field: 'city', alias: t('module.admissions.map.city') }, { field: 'country', alias: t('module.admissions.map.country') }] }, autoFit: false };
+  const mapConfig = {
+    map: {
+      type: 'mapbox',
+      style: 'mapbox://styles/mapbox/streets-v11', // Standard Mapbox style
+      center: [0, 20],
+      zoom: 1,
+      // IMPORTANT: Replace with your actual Mapbox access token
+      token: 'YOUR_MAPBOX_ACCESS_TOKEN_HERE',
+    },
+    source: { data: mapData, parser: { type: 'json', coordinates: 'lnglat' } },
+    shape: 'circle' as const,
+    size: 5,
+    color: '#1890ff',
+    style: { opacity: 0.7 },
+    tooltip: { items: [{ field: 'city', alias: t('module.admissions.map.city') }, { field: 'country', alias: t('module.admissions.map.country') }] },
+    autoFit: false
+  };
 
   const getProgramTrendData = (programId: string, applicants: Applicant[], academicYears: AcademicYearType[] | undefined, translate: typeof t): { year: string; type: string; count: number }[] => { /* ... existing ... */ return []; };
   const trendChartConfigBase = { /* ... existing ... */ };
