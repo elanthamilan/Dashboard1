@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Breadcrumb, Card, Descriptions, Spin, Row, Col } from 'antd';
+import { Typography, Breadcrumb, Card, Descriptions, Spin, Row, Col, Table, Tag } from 'antd';
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
@@ -41,12 +41,17 @@ const ComplianceAccreditationModule: React.FC = () => {
         setData({
             message: "Mock data active due to API failure.",
             lastAuditDate: "2023-05-15",
-            upcomingAudits: [{date: "2024-09-01", type: "ISO 9001", authority: "QAS International"}],
+            upcomingAudits: [
+                {date: "2024-09-01", type: "ISO 9001 Audit", authority: "QAS International"},
+                {date: "2024-10-15", type: "Financial Compliance Review", authority: "Internal Audit Team"},
+                {date: "2024-11-20", type: "Data Security Assessment", authority: "CyberSec Corp"}
+            ],
             complianceStatus: [
-                {area: "Data Privacy", status: "Compliant", details: "All systems meet GDPR requirements."},
-                {area: "Financial Reporting", status: "Compliant", details: "Audits passed."},
-                {area: "Accessibility Standards", status: "Pending", details: "Review scheduled for Q3."},
-                {area: "Environmental Safety", status: "Non-Compliant", details: "Corrective actions required for waste disposal."}
+                {area: "Data Privacy (GDPR)", status: "Compliant", details: "All systems meet GDPR requirements. Last review: 2023-12-01."},
+                {area: "Financial Reporting Standards", status: "Compliant", details: "Quarterly audits passed without issues."},
+                {area: "Website Accessibility (WCAG 2.1 AA)", status: "Pending", details: "Accessibility review scheduled for Q3 2024. Current report shows partial compliance."},
+                {area: "Environmental Safety Regulations", status: "Non-Compliant", details: "Corrective actions required for chemical waste disposal. Deadline: 2024-08-15."},
+                {area: "IT Infrastructure Security", status: "Compliant", details: "Regular penetration tests conducted. No major vulnerabilities found."}
             ]
         });
       } finally {
@@ -104,25 +109,18 @@ const ComplianceAccreditationModule: React.FC = () => {
 
         {!loading && !error && data && (
           <>
-            <Descriptions bordered column={1} title={t(`module.${MODULE_KEY}.summaryTitle`, "Compliance Summary")}>
-              <Descriptions.Item label={t(`module.${MODULE_KEY}.lastAuditDate`, "Last Audit Date")}>
-                {data.lastAuditDate ? dayjs(data.lastAuditDate).format('YYYY-MM-DD') : t('common.notAvailable', 'N/A')}
-              </Descriptions.Item>
-              <Descriptions.Item label={t(`module.${MODULE_KEY}.upcomingAudits`, "Upcoming Audits")}>
-                {data.upcomingAudits && data.upcomingAudits.length > 0 ? (
-                  <ul>
-                    {data.upcomingAudits.map((audit, index) => (
-                      <li key={index}>{`${audit.type} by ${audit.authority} on ${dayjs(audit.date).format('YYYY-MM-DD')}`}</li>
-                    ))}
-                  </ul>
-                ) : t('common.noUpcomingAudits', 'No upcoming audits scheduled.')}
-              </Descriptions.Item>
-              {/* Add more Descriptions.Item for other fields in ComplianceData as needed */}
-            </Descriptions>
+            <Card title={t(`module.${MODULE_KEY}.summaryTitle`, "Compliance Summary")} style={{ marginBottom: 20 }}>
+                <Descriptions bordered column={1} size="small">
+                    <Descriptions.Item label={t(`module.${MODULE_KEY}.lastAuditDate`, "Last Audit Date")}>
+                        {data.lastAuditDate ? dayjs(data.lastAuditDate).format('YYYY-MM-DD') : t('common.notAvailable', 'N/A')}
+                    </Descriptions.Item>
+                    {/* Other singular summary items can be added here */}
+                </Descriptions>
+            </Card>
 
             {data.complianceStatus && data.complianceStatus.length > 0 && (
               <Row style={{ marginTop: 20 }}>
-                <Col span={24}> {/* Or span={12} if other charts/info are next to it */}
+                <Col span={24}>
                   <Card title={<><PieChartOutlined /> {t(`module.${MODULE_KEY}.complianceStatusChartTitle`, "Compliance Status Overview")}</>}>
                     <Pie
                       data={data.complianceStatus.reduce((acc, item) => {
@@ -141,7 +139,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                       label={{
                         type: 'inner',
                         offset: '-30%',
-                        content: '{value}', // or '{percentage}'
+                        content: '{value}',
                         style: { fill: '#fff', fontSize: 14 },
                       }}
                       tooltip={{
@@ -153,6 +151,55 @@ const ComplianceAccreditationModule: React.FC = () => {
                   </Card>
                 </Col>
               </Row>
+            )}
+
+            {data.complianceStatus && data.complianceStatus.length > 0 && (
+              <Card title={t(`module.${MODULE_KEY}.complianceStatusTableTitle`, "Detailed Compliance Status")} style={{ marginTop: 20 }}>
+                <Table
+                  dataSource={data.complianceStatus}
+                  columns={[
+                    { title: t('common.area', 'Area'), dataIndex: 'area', key: 'area', sorter: (a,b) => a.area.localeCompare(b.area) },
+                    {
+                      title: t('common.status', 'Status'),
+                      dataIndex: 'status',
+                      key: 'status',
+                      render: (status: 'Compliant' | 'Non-Compliant' | 'Pending') => {
+                        let color;
+                        if (status === 'Compliant') color = 'success';
+                        else if (status === 'Non-Compliant') color = 'error';
+                        else if (status === 'Pending') color = 'warning';
+                        return <Tag color={color}>{status}</Tag>;
+                      },
+                      filters: [
+                        { text: 'Compliant', value: 'Compliant' },
+                        { text: 'Non-Compliant', value: 'Non-Compliant' },
+                        { text: 'Pending', value: 'Pending' },
+                      ],
+                      onFilter: (value, record) => record.status === value,
+                    },
+                    { title: t('common.details', 'Details'), dataIndex: 'details', key: 'details', ellipsis: true },
+                  ]}
+                  rowKey="area"
+                  pagination={{ pageSize: 5 }}
+                  scroll={{ x: 'max-content' }}
+                />
+              </Card>
+            )}
+
+            {data.upcomingAudits && data.upcomingAudits.length > 0 && (
+                <Card title={t(`module.${MODULE_KEY}.upcomingAuditsTableTitle`, "Upcoming Audits Schedule")} style={{ marginTop: 20 }}>
+                    <Table
+                        dataSource={data.upcomingAudits}
+                        columns={[
+                            { title: t('common.date', 'Date'), dataIndex: 'date', key: 'date', render: (text: string) => dayjs(text).format('YYYY-MM-DD'), sorter: (a,b) => dayjs(a.date).unix() - dayjs(b.date).unix() },
+                            { title: t('common.type', 'Type'), dataIndex: 'type', key: 'type', sorter: (a,b) => a.type.localeCompare(b.type) },
+                            { title: t('common.authority', 'Authority'), dataIndex: 'authority', key: 'authority', sorter: (a,b) => a.authority.localeCompare(b.authority) },
+                        ]}
+                        rowKey={(record, index) => record.date + (record.type || index)}
+                        pagination={{ pageSize: 3 }}
+                        scroll={{ x: 'max-content' }}
+                    />
+                </Card>
             )}
           </>
         )}
