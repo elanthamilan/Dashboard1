@@ -375,12 +375,17 @@ const BillingFeeCollectionModule: React.FC = () => {
 
       React.createElement(Title, { level: 4, style: { marginTop: '30px' } }, t('module.billing.paymentAnalysisTitle', "Payment Method Analysis")),
       React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
-        React.createElement(Col, { xs: 24, lg: 8 },
+        React.createElement(Col, { xs: 24, lg: 12, xl: 8 }, // Adjusted Col span
           React.createElement(Card, { title: t('module.billing.paymentMethodValueTitle', "Value Collected by Payment Method") },
             paymentMethodValueDataImpl.length > 0 ? React.createElement(Bar, { data: paymentMethodValueDataImpl, xField: "totalValue", yField: "method", seriesField: "method", legend: false, xAxis:{title:{text:t('common.totalValueCollected', "Total Value Collected ($)")}, label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, yAxis:{label:{autoEllipsis:true}}, tooltip:{formatter:(d:any)=>({name:d.method, value:`$${Number(d.totalValue).toLocaleString()}`})}} as any) : React.createElement(Empty, null)
           )
         ),
-        React.createElement(Col, { xs: 24, lg: 16 },
+        React.createElement(Col, { xs: 24, lg: 12, xl: 8 }, // NEW Col for Avg Txn Value
+          React.createElement(Card, { title: t('module.billing.avgTxValuePerMethodTitle', "Avg. Transaction Value by Method") },
+            avgTxValuePerMethodDataImpl.length > 0 ? React.createElement(Column, { data: avgTxValuePerMethodDataImpl, xField: "method", yField: "avgValue", seriesField: "method", legend: false, label:{position:'top', formatter:(d:any)=>`$${d.avgValue.toLocaleString()}`}, yAxis:{title:{text:t('common.averageAmountUSD', "Avg. Amount ($)")}, label:{formatter:(v:any)=>`$${Number(v).toLocaleString()}`}}, xAxis:{label:{rotate:avgTxValuePerMethodDataImpl.length > 3 ? 30:0, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
+          )
+        ),
+        React.createElement(Col, { xs: 24, lg: 24, xl: 8 }, // Adjusted Col span for trend
           React.createElement(Card, { title: t('module.billing.collectionsByMethodTrendTitle', "Monthly Collections by Payment Method") },
             collectionsByMethodTrendDataImpl.length > 0 ? React.createElement(Area, { data: collectionsByMethodTrendDataImpl, xField: "monthYear", yField: "amount", seriesField: "method", isStack: true, legend:{position:'top'}, xAxis:{title:{text: t('common.monthYear', "Month-Year")}}, yAxis:{title:{text: t('common.amountCollected', "Amount Collected ($)")}, label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, tooltip:{shared:true, showCrosshairs:true}} as any) : React.createElement(Empty, null)
           )
