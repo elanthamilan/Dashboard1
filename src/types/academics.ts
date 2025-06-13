@@ -1,3 +1,5 @@
+// src/types/academics.ts
+
 // Grievance System Types
 export type GrievanceStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed';
 export type GrievancePriority = 'High' | 'Medium' | 'Low';
@@ -68,18 +70,37 @@ export interface AccreditationStatusSummary {
 
 // Faculty and Evaluation Types
 export interface FacultyMember {
-  facultyId: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  departmentId: string;
-  departmentName?: string; // Added for convenience
-  // other fields like designation, office, etc. can be added later
+  memberId: string; // Changed from facultyId to memberId for clarity
+  name: string; // Combined firstName and lastName for simplicity, or can be split if needed by UI
+  departmentId: string; // Department they belong to
+  departmentName?: string; // Denormalized
+  designation: 'Professor' | 'Associate Professor' | 'Assistant Professor' | 'Lecturer' | 'Instructor' | 'Visiting Faculty';
+  email?: string;
+  phoneNumber?: string;
+  officeLocation?: string;
+  expertiseAreas: string[]; // Array of strings like "Machine Learning", "Quantum Physics"
+  profileUrl?: string; // Link to their profile page
+
+  // New fields for enhanced visualizations:
+  dateOfBirth?: string; // YYYY-MM-DD
+  age?: number; // Calculated from DOB
+  gender?: 'Male' | 'Female' | 'Other' | 'PreferNotToSay';
+  highestQualification?: 'PhD' | 'Masters' | 'Bachelors' | 'Postdoc' | 'Other Diploma';
+  dateOfJoining?: string; // YYYY-MM-DD
+  yearsOfService?: number; // Calculated from dateOfJoining
+  publicationsCount?: number; // Total peer-reviewed publications
+  isAdvisor?: boolean;
+  adviseeCount?: number; // Number of students they are advising
+  coursesTaughtLastAcademicYear?: Array<{ courseId: string; courseName: string; credits: number; termId: string }>; // More detailed
+  teachingLoadCredits?: number; // Sum of credits from coursesTaught
+  studentFeedbackAvgRating?: number; // e.g., on a scale of 1-5
+  totalGrantAmount?: number; // Total research grant money secured
+  awardsAndRecognitions?: Array<{awardName: string, year: number, awardedBy: string}>;
 }
 
 export interface FacultyEvaluation {
   evaluationId: string;
-  facultyId: string;
+  facultyId: string; // Should be memberId if FacultyMember.memberId is used
   studentId: string; // Assuming evaluations are by students
   courseId?: string; // Evaluation could be general or course-specific
   termId?: string;
@@ -109,7 +130,7 @@ export interface LmsActivity {
 export interface ResearchProject {
   projectId: string;
   title: string;
-  principalInvestigatorId: string;
+  principalInvestigatorId: string; // Should be memberId if FacultyMember.memberId is used
   principalInvestigatorName: string;
   departmentId?: string; // PI's department
   status: 'Ongoing' | 'Completed' | 'Submitted' | 'Published' | 'OnHold';
@@ -119,34 +140,34 @@ export interface ResearchProject {
   fundingAmount?: number;
   fundingAgency?: string;
   publications?: Array<{ title: string; journal?: string; year?: number; doi?: string }>;
-  teamMembers?: Array<{ facultyId?: string; studentId?: string; name: string; role: string }>;
+  teamMembers?: Array<{ facultyId?: string; studentId?: string; name: string; role: string }>; // facultyId here also should be memberId
 }
 
-// Student Academic Performance Types
-export interface CourseEnrollment {
-  courseId: string; // Links to Course.courseId from hierarchy.ts
+// Student Academic Performance Types (These might need to align with hierarchy.ts versions)
+export interface CourseEnrollment { // This is likely student-specific enrollment
+  courseId: string;
   courseCode?: string;
   courseName: string;
   credits: number;
   grade?: {
-    letterGrade: string; // e.g., A, B, C, F, P, NP
-    numericalScore?: number; // e.g., 85
-    points?: number; // e.g., 4.0, 3.0
+    letterGrade: string;
+    numericalScore?: number;
+    points?: number;
   };
-  semesterId: string; // Links to Semester.semesterId from hierarchy.ts
-  instructorName?: string;
+  semesterId: string;
+  instructorName?: string; // Could use instructorId (memberId)
   comments?: string;
   lastUpdated?: string; // ISO Date
 }
 
-export interface StudentAcademicRecord {
-  studentId: string; // Links to StudentSummary.studentId from hierarchy.ts
-  programId: string; // Links to Program.programId from hierarchy.ts
+export interface StudentAcademicRecord { // This is student-specific record
+  studentId: string;
+  programId: string;
   programName?: string;
-  requiredCreditsForDegree?: number; // Added this line
+  requiredCreditsForDegree?: number;
   semesters: Array<{
-    semesterId: string; // Links to Semester.semesterId
-    semesterName: string; // e.g., "Fall 2023"
+    semesterId: string;
+    semesterName: string;
     courses: CourseEnrollment[];
     semesterGpa?: number;
     semesterCreditsEarned?: number;
@@ -155,7 +176,7 @@ export interface StudentAcademicRecord {
   cumulativeGpa?: number;
   totalCreditsEarned?: number;
   classRank?: number;
-  major?: string; // Denormalized from Program for convenience
+  major?: string;
   minor?: string;
   graduationDate?: string; // ISO Date
   honorsAndAwards?: string[];

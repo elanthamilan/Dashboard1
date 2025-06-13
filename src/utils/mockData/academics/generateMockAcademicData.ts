@@ -1,8 +1,11 @@
 import { faker } from '@faker-js/faker';
 import {
-    StudentAcademicRecord, CourseEnrollment, Grade, StudentTermRecord, Course, FacultyMember, StudentSummary, // Using updated types from hierarchy.ts
+    StudentAcademicRecord, CourseEnrollment, Grade, StudentTermRecord, StudentSummary, // Using updated types from hierarchy.ts
     ReEvaluationRequest, GrievanceTicket, ComplianceItem, AccreditationStatusSummary, AccreditingBody, FacultyEvaluation, LmsActivity, ResearchProject
 } from '../../../types/hierarchy';
+// Make sure Course, Program, FacultyMember are imported from their primary definition locations if not hierarchy.ts
+import { Course, Program } from '../../../types/hierarchy';
+import { FacultyMember } from '../../../types/academics'; // FacultyMember is in academics.ts
 import { Student } from '../../../types/attendance';
 import {
     Institution, AcademicYear, Degree, Program, Semester, Faculty, ParentInstitution,
@@ -35,6 +38,7 @@ const numericalScoreMap: Record<string, {min: number, max: number}> = { /* ... *
 
 // Module-level lists for courses and faculty (from previous step - keep)
 let moduleMockCourseList: Course[] = [];
+// moduleMockFacultyList will now use the more detailed FacultyMember type from academics.ts
 let moduleMockFacultyList: FacultyMember[] = [];
 
 // generateMockGrade, generateMockCourseEnrollment, generateMockStudentTermRecord, generateMockAcademicRecords
@@ -47,7 +51,7 @@ function generateMockGrade(isRetake: boolean = false): Grade { /* ... implementa
 }
 function generateMockCourseEnrollment(course: Course, termId: string, semesterName: string, isRetake: boolean = false, previousGrade?: Grade): CourseEnrollment { /* ... implementation from previous step ... */
   const grade = generateMockGrade(isRetake); let status: CourseEnrollment['status'] = 'Completed'; if (grade.letterGrade === 'F') status = 'Failed'; else if (grade.letterGrade === 'W') status = 'Withdrawn'; else if (grade.letterGrade === 'I') status = 'In Progress';
-  const faculty = moduleMockFacultyList.length > 0 ? faker.helpers.arrayElement(moduleMockFacultyList) : undefined;
+  const faculty = moduleMockFacultyList.length > 0 ? faker.helpers.arrayElement(moduleMockFacultyList.filter(f => f.departmentId === course.departmentId)) : undefined; // Assign faculty from same dept
   return { courseId: course.courseId, courseName: course.courseName, credits: course.credits, grade, termId, semesterName, status, facultyId: faculty?.memberId, facultyName: faculty?.name };
 }
 const termNames = ["Fall", "Spring", "Summer"];
@@ -63,11 +67,47 @@ function generateMockStudentTermRecord(studentId: string, termIndex: number, ava
   return { termId, semesterName, courses: coursesInTerm, semesterGPA: creditsAttemptedInTerm > 0 ? parseFloat((totalPoints / creditsAttemptedInTerm).toFixed(2)) : undefined, creditsAttemptedInTerm, creditsEarnedInTerm, };
 }
 export function generateMockAcademicRecords( students: Array<{ studentId: string, programId: string, programName?: string }>, institutionCourses?: Course[], institutionFaculty?: FacultyMember[] ): StudentAcademicRecord[] { /* ... implementation from previous step ... */
-  moduleMockCourseList = institutionCourses && institutionCourses.length > 0 ? institutionCourses : Array.from({length: 20}, (_, i) => ({courseId: `DEF_CRS_${i}`, courseName: faker.lorem.words(faker.number.int({min:2, max:4})), credits: faker.helpers.arrayElement([3,4])}));
-  moduleMockFacultyList = institutionFaculty && institutionFaculty.length > 0 ? institutionFaculty : Array.from({length: 10}, (_,i) => ({memberId: `DEF_FAC_${i}`, name: faker.person.fullName(), departmentId:'DEPT_GEN', designation:'Professor', email:faker.internet.email()}));
+  moduleMockCourseList = institutionCourses && institutionCourses.length > 0 ? institutionCourses : Array.from({length: 20}, (_, i) => ({courseId: `DEF_CRS_${i}`, courseName: faker.lorem.words(faker.number.int({min:2, max:4})), credits: faker.helpers.arrayElement([3,4]), departmentId: `DEPT_${i%3}`})); // Added departmentId to default courses
+  // Default faculty generation needs to be more detailed now.
+  if (institutionFaculty && institutionFaculty.length > 0) {
+    moduleMockFacultyList = institutionFaculty;
+  } else {
+    moduleMockFacultyList = Array.from({length: 10}, (_,i) => {
+      const dob = dayjs(faker.date.birthdate({ min: 30, max: 65, mode: 'age' }));
+      const doj = dayjs(faker.date.past({ years: 20, refDate: dayjs().subtract(1, 'year').toDate() }));
+      const isAdvisor = Math.random() < 0.7;
+      const coursesTaught = faker.helpers.arrayElements(moduleMockCourseList.filter(c => c.departmentId === `DEPT_${i%3}`), faker.number.int({min:1, max:3}))
+        .map(c => ({ courseId: c.courseId, courseName: c.courseName, credits: c.credits, termId: "FALL" + (dayjs().year()-1) }));
+
+      return {
+        memberId: `DEF_FAC_${i}`, name: faker.person.fullName(), departmentId:`DEPT_${i%3}`,
+        designation: faker.helpers.arrayElement(['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer']),
+        email:faker.internet.email(),
+        expertiseAreas: [faker.lorem.words(2), faker.lorem.words(2)],
+        dateOfBirth: dob.format('YYYY-MM-DD'),
+        age: dayjs().diff(dob, 'year'),
+        gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
+        highestQualification: faker.helpers.arrayElement(['PhD', 'Masters', 'Postdoc']),
+        dateOfJoining: doj.format('YYYY-MM-DD'),
+        yearsOfService: dayjs().diff(doj, 'year'),
+        publicationsCount: faker.number.int({ min: 0, max: 100 }),
+        isAdvisor,
+        adviseeCount: isAdvisor ? faker.number.int({ min: 5, max: 15 }) : 0,
+        coursesTaughtLastAcademicYear: coursesTaught,
+        teachingLoadCredits: coursesTaught.reduce((sum,c)=>sum+c.credits,0),
+        studentFeedbackAvgRating: parseFloat(faker.number.float({min:3.5, max:4.9, precision:1}).toFixed(1)),
+        totalGrantAmount: Math.random() < 0.3 ? faker.number.int({min:10000, max:200000}) : 0,
+        awardsAndRecognitions: Math.random() < 0.2 ? [{awardName: faker.lorem.words(3) + " Award", year: dayjs().year()-faker.number.int({min:1,max:5}), awardedBy: faker.company.name()}] : [],
+      };
+    });
+  }
   return students.map(student => {
     const terms: StudentTermRecord[] = []; const studentFailedCourses = new Map<string, Grade>(); const numTerms = faker.number.int({ min: 2, max: 8 });
-    for (let i = 0; i < numTerms; i++) { terms.push(generateMockStudentTermRecord(student.studentId, i, moduleMockCourseList, studentFailedCourses)); }
+    // Ensure courses for the student's program are prioritized if program has specific course list
+    const programCourses = moduleMockCourseList.filter(c => student.programId && c.departmentId === studentAcademicData.find(s => s.studentId === student.studentId)?.programId?.substring(0,7)); // simplified linking
+    const coursesForStudent = programCourses.length > 0 ? programCourses : moduleMockCourseList;
+
+    for (let i = 0; i < numTerms; i++) { terms.push(generateMockStudentTermRecord(student.studentId, i, coursesForStudent, studentFailedCourses)); }
     let totalCreditsAttemptedOverall = 0; let totalCreditsEarnedOverall = 0; let totalWeightedPointsOverall = 0; let gpaRelevantCreditsAttemptedOverall = 0;
     terms.forEach(term => { totalCreditsAttemptedOverall += (term.creditsAttemptedInTerm || 0); totalCreditsEarnedOverall += (term.creditsEarnedInTerm || 0); term.courses.forEach(c => { if (c.grade?.gradePoints !== undefined && c.grade?.letterGrade !== 'P' && c.grade?.letterGrade !== 'NP' && c.grade?.letterGrade !== 'I' && c.grade?.letterGrade !== 'W' && c.credits > 0) { totalWeightedPointsOverall += (c.grade.gradePoints * c.credits); gpaRelevantCreditsAttemptedOverall += c.credits; } }); });
     const cumulativeGPA = gpaRelevantCreditsAttemptedOverall > 0 ? parseFloat((totalWeightedPointsOverall / gpaRelevantCreditsAttemptedOverall).toFixed(2)) : undefined;
@@ -114,14 +154,72 @@ export const generateMockNewInstitutions = (
 
     const allStudentsForInstitution = allStudentsForInstitutionInput.length > 0 ? allStudentsForInstitutionInput : generateMockStudents(150);
 
+    // Ensure instCourses have departmentId
     const instCourses: Course[] = moduleMockCourseList.length > 0 ? moduleMockCourseList :
-        Array.from({length: 30}, (_, i) => ({courseId: `CRS_INST_${i}`, courseName: faker.lorem.words(3), credits: faker.helpers.arrayElement([3,4]), departmentId: `DEPT_${i%5}`}));
-    const instFaculty: FacultyMember[] = moduleMockFacultyList.length > 0 ? moduleMockFacultyList :
-        Array.from({length: 15}, (_,i) => ({memberId: `FAC_INST_${i}`, name: faker.person.fullName(), departmentId:`DEPT_${i%3}`, designation:'Professor', email:faker.internet.email()}));
+        Array.from({length: 30}, (_, i) => ({
+            courseId: `CRS_INST_${i}`,
+            courseName: faker.lorem.words(3),
+            credits: faker.helpers.arrayElement([3,4]),
+            departmentId: `DEPT_${i%5}`, // Assign a department ID
+            facultyIds: [] // Initialize facultyIds
+        }));
+
+    // Ensure instFaculty are generated with new fields (using the default generation in generateMockAcademicRecords if not provided)
+    const instFaculty: FacultyMember[] = moduleMockFacultyList.length > 0 && moduleMockFacultyList[0].expertiseAreas ? moduleMockFacultyList : // Check if already detailed
+      Array.from({length: 15}, (_,i) => {
+        const deptId = `DEPT_${i%3}`; // Example department assignment
+        const dob = dayjs(faker.date.birthdate({ min: 30, max: 65, mode: 'age' }));
+        const doj = dayjs(faker.date.past({ years: 20, refDate: dayjs().subtract(1, 'year').toDate() }));
+        const isAdvisor = Math.random() < 0.7;
+        const departmentCourses = instCourses.filter(c => c.departmentId === deptId);
+        const coursesTaught = faker.helpers.arrayElements(departmentCourses, faker.number.int({min:1, max:Math.min(3, departmentCourses.length)}))
+          .map(c => ({ courseId: c.courseId, courseName: c.courseName, credits: c.credits, termId: "FALL" + (dayjs().year()-1) }));
+
+        const newFacultyMember: FacultyMember = {
+          memberId: `FAC_INST_${i}`, name: faker.person.fullName(), departmentId: deptId,
+          departmentName: departmentConfigs.find(dc => dc.departmentId === deptId)?.departmentName || `Department ${deptId.slice(-1)}`,
+          designation: faker.helpers.arrayElement(['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer']),
+          email:faker.internet.email(),
+          expertiseAreas: [faker.lorem.words(2), faker.lorem.words(2)],
+          dateOfBirth: dob.format('YYYY-MM-DD'),
+          age: dayjs().diff(dob, 'year'),
+          gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
+          highestQualification: faker.helpers.arrayElement(['PhD', 'Masters', 'Postdoc']),
+          dateOfJoining: doj.format('YYYY-MM-DD'),
+          yearsOfService: dayjs().diff(doj, 'year'),
+          publicationsCount: faker.number.int({ min: 0, max: 100 }),
+          isAdvisor,
+          adviseeCount: isAdvisor ? faker.number.int({ min: 5, max: 15 }) : 0,
+          coursesTaughtLastAcademicYear: coursesTaught,
+          teachingLoadCredits: coursesTaught.reduce((sum,c)=>sum+c.credits,0),
+          studentFeedbackAvgRating: parseFloat(faker.number.float({min:3.5, max:4.9, precision:1}).toFixed(1)),
+          totalGrantAmount: Math.random() < 0.3 ? faker.number.int({min:10000, max:200000}) : 0,
+          awardsAndRecognitions: Math.random() < 0.2 ? [{awardName: faker.lorem.words(3) + " Award", year: dayjs().year()-faker.number.int({min:1,max:5}), awardedBy: faker.company.name()}] : [],
+        };
+        coursesTaught.forEach(ct => {
+            const course = instCourses.find(c => c.courseId === ct.courseId);
+            if (course && course.facultyIds && !course.facultyIds.includes(newFacultyMember.memberId)) {
+                course.facultyIds.push(newFacultyMember.memberId);
+            } else if (course && !course.facultyIds) {
+                course.facultyIds = [newFacultyMember.memberId];
+            }
+        });
+        return newFacultyMember;
+    });
+    moduleMockFacultyList = instFaculty; // Update global list with detailed faculty
 
     const studentsForAcademicRecords = allStudentsForInstitution.map((s, idx) => {
-        const programsForDegree = Object.values(degreeProgramMappings).flat();
-        const randomProgram = faker.helpers.arrayElement(programsForDegree) || {programId: 'PROG_GEN', programName: 'General Program'};
+        // Assign programs more consistently for department linking
+        const deptIndex = idx % departmentConfigs.length;
+        const dept = departmentConfigs[deptIndex];
+        const programsForDept = Object.values(degreeProgramMappings).flat().filter(p => {
+            // Simplified linking: program ID might imply department (e.g., CS_BS for DEPT_STEM)
+            if (dept.departmentId === 'DEPT_STEM' && (p.programId.startsWith('CS_') || p.programId.startsWith('PHY_'))) return true;
+            if (dept.departmentId === 'DEPT_ARTS' && (p.programId.startsWith('ENG_') || p.programId.startsWith('ART_'))) return true;
+            if (dept.departmentId === 'DEPT_BUSINESS' && p.programId.startsWith('MBA_')) return true;
+            return false;
+        });
+        const randomProgram = faker.helpers.arrayElement(programsForDept) || faker.helpers.arrayElement(Object.values(degreeProgramMappings).flat()) || {programId: 'PROG_GEN', programName: 'General Program', requiredCredits: 120};
         return {
             studentId: s.id,
             firstName: s.firstName, // For generateMockStudentSummary if needed
@@ -216,14 +314,80 @@ export const generateMockNewInstitutions = (
       ));
 
     // ... (rest of the existing generateMockNewInstitutions logic for creating faculties, departments, degrees, programs, semesters)
+
+    // --- Create Programs with departmentId and totalStudentsEnrolled (mocked for now) ---
+    const allProgramsForInstitution: Program[] = [];
+    Object.values(degreeProgramMappings).flat().forEach(progConfig => {
+        // Simplified department assignment for programs
+        let assignedDeptId = departmentConfigs[0].departmentId; // Default
+        if (progConfig.programId.startsWith("CS_") || progConfig.programId.startsWith("PHY_")) assignedDeptId = 'DEPT_STEM';
+        else if (progConfig.programId.startsWith("ENG_") || progConfig.programId.startsWith("ART_")) assignedDeptId = 'DEPT_ARTS';
+        else if (progConfig.programId.startsWith("MBA_")) assignedDeptId = 'DEPT_BUSINESS';
+
+        const programCourses = faker.helpers.arrayElements(instCourses.filter(c => c.departmentId === assignedDeptId), faker.number.int({min:10, max:15}));
+        const numEnrolled = faker.number.int({ min: 30, max: 150 }); // Mock total enrolled for now
+
+        allProgramsForInstitution.push({
+            programId: progConfig.programId,
+            programName: progConfig.programName,
+            departmentId: assignedDeptId,
+            degreeId: Object.keys(degreeProgramMappings).find(key => degreeProgramMappings[key].some(p => p.programId === progConfig.programId))!,
+            creditsRequired: progConfig.requiredCredits,
+            courses: programCourses,
+            totalStudentsEnrolled: numEnrolled, // This needs to be accurately calculated if possible from student data
+            // averageProgramGPA, graduationRate etc. can be added later or use stubs
+        });
+    });
+
+
+    // --- Create Departments with new fields ---
+    const institutionDepartments: Department[] = departmentConfigs.map(deptConfig => {
+        const departmentPrograms = allProgramsForInstitution.filter(p => p.departmentId === deptConfig.departmentId);
+        const departmentCourseIds = new Set<string>();
+        departmentPrograms.forEach(p => p.courses.forEach(c => departmentCourseIds.add(c.courseId)));
+
+        const facultyInDept = instFaculty.filter(fm => fm.departmentId === deptConfig.departmentId);
+        const headOfDept = faker.helpers.arrayElement(facultyInDept.filter(f => f.designation === 'Professor')) || faker.helpers.arrayElement(facultyInDept);
+
+        return {
+            departmentId: deptConfig.departmentId,
+            departmentName: deptConfig.departmentName,
+            facultyId: deptConfig.facultyId, // Assuming this means School/Faculty ID, needs to be set if used
+            headOfDepartment: headOfDept ? { memberId: headOfDept.memberId, name: headOfDept.name, email: headOfDept.email } : undefined,
+            facultyCount: facultyInDept.length,
+            totalStudentsEnrolled: departmentPrograms.reduce((sum, p) => sum + (p.totalStudentsEnrolled || 0), 0),
+            numberOfPrograms: departmentPrograms.length,
+            numberOfCoursesOffered: departmentCourseIds.size,
+            budgetAllocated: faker.number.int({ min: 500000, max: 5000000 }),
+            budgetSpent: faker.number.int({ min: 400000, max: deptConfig.budgetAllocated || 5000000 }), // ensure budgetSpent <= budgetAllocated
+            researchOutputScore: faker.number.int({ min: 50, max: 95 }),
+            industryCollaborationScore: faker.number.int({ min: 40, max: 90 }),
+            averageGPA: parseFloat(faker.number.float({ min: 2.7, max: 3.8, precision: 0.01 }).toFixed(2)), // Mocked for now
+            averagePassRate: parseFloat(faker.number.float({ min: 70, max: 95, precision: 1 }).toFixed(1)), // Mocked
+        };
+    });
+
     // This part needs to be carefully preserved and merged from the user's existing file.
     // For this overwrite, I'll use a simplified placeholder for this structure.
     // The crucial part is that `institutionWideStudentSummaries`, `allPlacementRecords`, `alumniList`, `alumniActivitiesList` are now generated.
 
-    const exampleFaculties: Faculty[] = []; // Placeholder - user's full logic should be here
-    const exampleAcademicYears: AcademicYear[] = []; // Placeholder
+    // Create Faculties (Schools) and assign departments to them
+    const exampleFaculties: Faculty[] = departmentConfigs.map(dc => ({ // Simplified: one faculty per departmentConfig for this example
+        facultyId: `FACULTY_${dc.departmentId}`,
+        facultyName: dc.departmentName, // Using departmentName as facultyName
+        institutionId: faker.string.uuid(), // This should be the main institution ID
+        departments: institutionDepartments.filter(d => d.departmentId === dc.departmentId), // Link relevant department
+        // Other Faculty fields can be aggregated here
+    }));
+
+    const exampleAcademicYears: AcademicYear[] = []; // Placeholder - user's full logic for degrees, programs etc. should be here
 
     const institutionId = faker.string.uuid();
+    // Update instFaculty departmentName based on final institutionDepartments
+    instFaculty.forEach(mf => {
+        const dept = institutionDepartments.find(d => d.departmentId === mf.departmentId);
+        if(dept) mf.departmentName = dept.departmentName;
+    });
     const institution: Institution = {
         institutionId,
         institutionName: `${faker.company.name()} University (Enhanced Mock)`,

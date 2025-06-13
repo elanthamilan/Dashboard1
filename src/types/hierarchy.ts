@@ -72,14 +72,9 @@ export interface Course {
   courseName: string;
   credits: number;
   description?: string;
-  departmentId?: string; // Department offering the course
+  departmentId?: string; // Crucial for linking to department
+  facultyIds?: string[]; // Optional: faculty capable of teaching it
   courseCode?: string; // Existing from file
-  // semesterId: string; // Removed: Course templates are not tied to specific semesters
-  // sections: Section[]; // Removed: Sections are instances of a course in a semester
-  // averageGrade?: number; // Removed: Instance-specific
-  // passRate?: number; // Removed: Instance-specific
-  // totalStudentsEnrolled?: number; // Removed: Instance-specific
-  // facultyCoordinatorId?: string; // This could be relevant for a course template
 }
 
 
@@ -164,12 +159,22 @@ export interface Semester { // Represents a term within a Program
 export interface Program {
   programId: string;
   programName: string;
-  degreeId: string;
-  departmentId?: string;
-  requiredCredits?: number;
-  semesters: Semester[]; // Sequence of semesters/terms defining the program structure
-  totalStudents?: number;
-  averageProgramGPA?: number; // Overall GPA of all students ever in this program
+  degreeId: string; // Links to Degree.degreeId
+  departmentId: string; // Crucial for linking to department
+  description?: string;
+  durationYears?: number;
+  creditsRequired?: number; // Was requiredCredits
+  courses: Course[]; // List of course templates for this program
+  // semesters: Semester[]; // This was for program structure, but usually holds student enrollment data.
+                         // Program structure is better defined by its typical courses.
+                         // If Semester[] here was meant for student term records, it's better associated with StudentAcademicRecord.
+
+  // New / ensure present for Department calculations:
+  totalStudentsEnrolled?: number; // Total current students in this program. This needs to be calculated from student enrollment data.
+
+  // Existing fields, ensure still relevant or map to new structure
+  totalStudents?: number; // Potentially redundant with totalStudentsEnrolled, prefer totalStudentsEnrolled for active count
+  averageProgramGPA?: number; // Overall GPA of all students ever in this program - this is fine
   graduationRate?: number;
   // KPIs (can be aggregated or specific snapshots)
   avgAttendancePercentage?: number;
@@ -186,6 +191,8 @@ export interface Program {
   totalPlacedStudents?: number;
   totalInternships?: number;
   programPassRate?: number;
+  // semesters field from original file is removed in favor of a more direct Course[] list for program structure.
+  // Student enrollment data is typically handled via StudentAcademicRecord which has StudentTermRecord[].
 }
 
 export interface Degree {
