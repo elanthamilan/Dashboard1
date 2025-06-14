@@ -1,331 +1,205 @@
 // src/components/PrincipalView/PrincipalViewDashboard.tsx
-import React, { useEffect, useState, useMemo, useCallback } from 'react'; // Added useCallback
-import { Typography, Spin, Empty, Button, Breadcrumb, Row, Col } from 'antd';
-import { HomeOutlined } from '@ant-design/icons';
-import { Institution, AcademicYear, Degree, Program, Semester, StudentSummary, StudentAcademicRecord } from '../../types/hierarchy'; // StudentAcademicRecord moved here
-import { generateMockNewInstitutions, generateMockAcademicRecords } from '../../utils/mockData/academics/generateMockAcademicData'; // generateMockStudentSummary removed if not used directly
-import { generateMockStudents } from '../../utils/mockData/attendance/generateMockAttendanceData';
-import { Student } from '../../../types/attendance'; // Updated path for Student
-import InstitutionDisplay from './InstitutionDisplay';
-import AcademicYearList from './AcademicYearList';
-import DegreeList from './DegreeList';
-import ProgramList from './ProgramList';
-import SemesterList from './SemesterList';
-import StudentSummaryList from './StudentSummaryList';
-import PrincipalStudentDetailView from './PrincipalStudentDetailView'; // Added import
-import InstitutionOverviewDisplay from './InstitutionOverviewDisplay'; // Import the new component
-import ComparisonModal, { ComparisonItem } from './ComparisonModal';
-import { downloadCSV } from '../../utils/exportUtils';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Row, Col, Card, DatePicker, Spin, Empty, Typography, Breadcrumb, Alert } from 'antd';
+import { Link, useNavigate } from 'react-router-dom'; // Assuming react-router-dom for navigation
+import { useTranslation } from 'react-i18next';
+import {
+  UserOutlined, SolutionOutlined, TeamOutlined, DollarCircleOutlined, ScheduleOutlined,
+  BarChartOutlined, PieChartOutlined, LineChartOutlined, HomeOutlined, WarningOutlined, CheckCircleOutlined, IssuesCloseOutlined, PercentageOutlined, FileProtectOutlined, FieldTimeOutlined
+} from '@ant-design/icons';
+import Scorecard from '../../common/Scorecard'; // Adjust path as needed
+import type { Institution, DashboardSummary, DashboardKpiData, EnrollmentTrendItem, FeeSummaryChartItem, AttendanceGPAOverviewItem, OpenGrievancesByCategoryItem } from '../../../types/hierarchy'; // Adjust path
+import dayjs from 'dayjs';
 
-const { Title } = Typography;
+// Import chart components from Ant Design Plots
+import { Line, Pie, Column, Scatter } from '@ant-design/plots'; // Added Scatter
 
-type ViewLevel = 'institution' | 'institution_overview' | 'academic_year' | 'degree' | 'program' | 'semester' | 'student' | 'student_detail';
 
-interface ComparisonModalProps {
-  items: ComparisonItem[];
-  onClose: () => void;
-  open: boolean;
+const { Title, Paragraph, Text } = Typography;
+const { RangePicker } = DatePicker;
+
+interface PrincipalViewDashboardProps {
+  institutionData: Institution | null;
+  loading?: boolean;
+  error?: string | null;
 }
 
-const PrincipalViewDashboard: React.FC = () => {
-  const [institutions, setInstitutions] = useState<Institution[]>([]);
-  const [selectedInstitution, setSelectedInstitution] = useState<Institution | null>(null);
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<AcademicYear | null>(null);
-  const [selectedDegree, setSelectedDegree] = useState<Degree | null>(null);
-  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null);
-  const [selectedSemester, setSelectedSemester] = useState<Semester | null>(null);
-  const [selectedStudentIdForDetail, setSelectedStudentIdForDetail] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [viewLevel, setViewLevel] = useState<ViewLevel>('institution');
+const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
+  institutionData,
+  loading: institutionDataLoading,
+  error: institutionDataError
+}) => {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
 
-  const [comparisonModalVisible, setComparisonModalVisible] = useState<boolean>(false);
-  const [itemsToCompare, setItemsToCompare] = useState<ComparisonItem[]>([]);
-
-  const [currentStudentAcademicRecord, setCurrentStudentAcademicRecord] = useState<StudentAcademicRecord | null>(null); // New state
-  const [studentDetailLoading, setStudentDetailLoading] = useState<boolean>(false); // New state
-
-  // Memoize all students and their academic records to avoid re-generating on every render
-  // This is still mock data generation, but more efficient than doing it in the useEffect.
-  const allMockStudents = useMemo(() => generateMockStudents(300), []); // Increased student count slightly
-  const allMockAcademicRecords = useMemo(() => generateMockAcademicRecords(allMockStudents), [allMockStudents]);
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
+  const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
   useEffect(() => {
-    setLoading(true);
-    // Use the memoized records for initializing institutions to ensure consistency
-    const mockInstitutions = generateMockNewInstitutions(undefined, allMockStudents, 3, 50);
-    setInstitutions(mockInstitutions);
-    setLoading(false);
-  }, [allMockStudents, allMockAcademicRecords]);
-
-
-  useEffect(() => {
-    if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-      setStudentDetailLoading(true);
-      // Simulate fetching data
-      setTimeout(() => {
-        const record = allMockAcademicRecords.find(r => r.studentId === selectedStudentIdForDetail);
-        setCurrentStudentAcademicRecord(record || null);
-        setStudentDetailLoading(false);
-      }, 300); // Reduced timeout for faster mock load
+    setIsLoading(true);
+    setErrorMessage(null);
+    if (institutionDataLoading) {
+      setIsLoading(true);
+    } else if (institutionDataError) {
+      setErrorMessage(institutionDataError);
+      setIsLoading(false);
+    } else if (institutionData && institutionData.dashboardSummary) {
+      setDashboardSummary(institutionData.dashboardSummary);
+      setIsLoading(false);
+    } else if (institutionData && !institutionData.dashboardSummary) {
+      setErrorMessage(t('dashboard.error.noSummary', "Dashboard summary data is not available."));
+      setIsLoading(false);
     } else {
-      setCurrentStudentAcademicRecord(null);
+      // No institution data at all but not explicitly loading or error from prop means it might not have been passed
+      setErrorMessage(t('dashboard.error.noInstitutionData', "Institution data not provided."));
+      setIsLoading(false);
     }
-  }, [selectedStudentIdForDetail, viewLevel, allMockAcademicRecords]);
+  }, [institutionData, institutionDataLoading, institutionDataError, t]);
 
-  const resetSelections = (upToLevel: ViewLevel) => {
-    if (upToLevel === 'institution') setSelectedInstitution(null);
-    if (upToLevel <= 'academic_year') setSelectedAcademicYear(null);
-    if (upToLevel <= 'degree') setSelectedDegree(null);
-    if (upToLevel <= 'program') setSelectedProgram(null);
-    if (upToLevel <= 'semester') {
-        setSelectedSemester(null);
-        setSelectedStudentIdForDetail(null);
-        setCurrentStudentAcademicRecord(null); // Clear student record
-    }
-    if (upToLevel <= 'student') {
-        setSelectedStudentIdForDetail(null);
-        setCurrentStudentAcademicRecord(null); // Clear student record
-    }
-  };
+  const kpis = dashboardSummary?.kpis;
 
-  // Memoize callback functions to prevent unnecessary re-renders of child components
-  const handleSelectInstitution = useCallback((institutionId: string) => {
-    const institution = institutions.find(inst => inst.institutionId === institutionId);
-    if (institution) {
-      setSelectedInstitution(institution);
-      resetSelections('institution_overview'); // Clear selections beyond institution itself for the overview
-      setViewLevel('institution_overview');
-    }
-  }, [institutions]);
+   const enrollmentTrendChartData = useMemo((): EnrollmentTrendItem[] => {
+     if (!dashboardSummary?.enrollmentTrend) return [];
 
-  const handleNavigateToAcademicYearsFromOverview = useCallback(() => {
-    if (selectedInstitution) { // Should always be true if we are in overview
-      resetSelections('academic_year'); // Clear selections beyond academic_year for a clean start
-      setViewLevel('academic_year');
-    }
-  }, [selectedInstitution]);
+     if (dateRange && dateRange[0] && dateRange[1]) {
+       const startDate = dateRange[0].startOf('month'); // Normalize to start of month
+       const endDate = dateRange[1].endOf('month');   // Normalize to end of month
 
-  const handleSelectAcademicYear = useCallback((academicYearId: string) => {
-    if (selectedInstitution) {
-      const academicYear = selectedInstitution.academicYears.find(ay => ay.yearId === academicYearId);
-      if (academicYear) {
-        setSelectedAcademicYear(academicYear);
-        resetSelections('degree');
-        setViewLevel('degree');
-      }
-    }
-  }, [selectedInstitution]);
+       return dashboardSummary.enrollmentTrend.filter(item => {
+         const itemDate = dayjs(item.monthYear + "-01"); // Convert "YYYY-MM" to a dayjs object
+         // Check if itemDate is between startDate and endDate (inclusive)
+         return (itemDate.isSame(startDate) || itemDate.isAfter(startDate)) &&
+                (itemDate.isSame(endDate) || itemDate.isBefore(endDate));
+       });
+     }
+     return dashboardSummary.enrollmentTrend; // Return all if no date range selected
+   }, [dashboardSummary, dateRange]);
 
-  const handleSelectDegree = useCallback((degreeId: string) => {
-    if (selectedAcademicYear) {
-      const degree = selectedAcademicYear.degrees.find(d => d.degreeId === degreeId);
-      if (degree) {
-        setSelectedDegree(degree);
-        resetSelections('program');
-        setViewLevel('program');
-      }
-    }
-  }, [selectedAcademicYear]);
-
-  const handleSelectProgram = useCallback((programId: string) => {
-    if (selectedDegree) {
-      const program = selectedDegree.programs.find(p => p.programId === programId);
-      if (program) {
-        setSelectedProgram(program);
-        resetSelections('semester');
-        setViewLevel('semester');
-      }
-    }
-  }, [selectedDegree]);
-
-  const handleSelectSemester = useCallback((semesterId: string) => {
-    if (selectedProgram) {
-      const semester = selectedProgram.semesters.find(s => s.semesterId === semesterId);
-      if (semester) {
-        setSelectedSemester(semester);
-        resetSelections('student');
-        setViewLevel('student');
-      }
-    }
-  }, [selectedProgram]);
-
-  const handleSelectStudentForDetail = useCallback((studentId: string) => {
-    setSelectedStudentIdForDetail(studentId);
-    setViewLevel('student_detail');
-  }, []); // setSelectedStudentIdForDetail and setViewLevel are stable
-
-  const handleOpenProgramComparisonModal = useCallback((programIds: string[]) => {
-    if (selectedDegree) {
-      const selectedPrograms = selectedDegree.programs.filter(p => programIds.includes(p.programId));
-      const comparisonItems: ComparisonItem[] = selectedPrograms.map(p => ({
-        id: p.programId, name: p.programName, type: 'Program',
-        totalStudents: p.totalStudents, averageGPA: p.averageProgramGPA,
-        attendancePercentage: p.avgAttendancePercentage, totalAbsences: p.totalProgramAbsences,
-        feesPaidPercentage: p.avgFeesPaidPercentage, studentsWithOverdueFees: p.totalStudentsWithOverdueFees,
-        applicants: p.applicants, acceptanceRate: p.acceptanceRate, enrolledCount: p.enrolledCount,
-        atRiskStudents: p.atRiskStudents, requiredCredits: p.requiredCredits, graduationRate: p.graduationRate,
-      }));
-      setItemsToCompare(comparisonItems);
-      setComparisonModalVisible(true);
-    }
-  }, [selectedDegree]);
-
-  const handleOpenAcademicYearComparisonModal = useCallback((academicYearIds: string[]) => {
-    if (selectedInstitution) {
-      const selectedAcademicYears = selectedInstitution.academicYears.filter(ay => academicYearIds.includes(ay.yearId));
-      const comparisonItems: ComparisonItem[] = selectedAcademicYears.map(ay => ({
-        id: ay.yearId, name: ay.yearName, type: 'AcademicYear',
-        totalStudents: ay.totalStudents, averageGPA: ay.overallAverageGPA,
-        attendancePercentage: ay.annualAttendancePercentage, totalAbsences: ay.totalAnnualAbsences,
-        feesPaidPercentage: ay.annualFeesPaidPercentage, studentsWithOverdueFees: ay.totalStudentsWithOverdueFeesInYear,
-        applicants: ay.totalAnnualApplicants, acceptanceRate: ay.avgAnnualAcceptanceRate, enrolledCount: ay.totalAnnualEnrolledCount,
-        atRiskStudents: ay.totalAnnualAtRiskStudents,
-      }));
-      setItemsToCompare(comparisonItems);
-      setComparisonModalVisible(true);
-    }
-  }, [selectedInstitution]);
-
-  const handleOpenDegreeComparisonModal = useCallback((degreeIds: string[]) => {
-    if (selectedAcademicYear) {
-      const selectedDegrees = selectedAcademicYear.degrees.filter(d => degreeIds.includes(d.degreeId));
-      const comparisonItems: ComparisonItem[] = selectedDegrees.map(d => ({
-        id: d.degreeId, name: d.degreeName, type: 'Degree',
-        totalStudents: d.totalStudents, averageGPA: d.averageDegreeGPA,
-        attendancePercentage: d.avgAttendancePercentage, totalAbsences: d.totalDegreeAbsences,
-        feesPaidPercentage: d.avgFeesPaidPercentage, studentsWithOverdueFees: d.totalStudentsWithOverdueFeesInDegree,
-        applicants: d.totalApplicants, acceptanceRate: d.avgAcceptanceRate, enrolledCount: d.totalEnrolledCount,
-        atRiskStudents: d.totalAtRiskStudents,
-      }));
-      setItemsToCompare(comparisonItems);
-      setComparisonModalVisible(true);
-    }
-  }, [selectedAcademicYear]);
-
-  const handleCloseComparisonModal = useCallback(() => {
-    setComparisonModalVisible(false);
-    setItemsToCompare([]);
-  }, []); // setComparisonModalVisible and setItemsToCompare are stable
-
-  const handleGenerateInstitutionsReport = useCallback(() => {
-    if (!institutions || institutions.length === 0) {
-      console.warn("No institutions to export."); return;
-    }
-    const columns = [
-      { key: 'institutionId', title: 'Institution ID' }, { key: 'institutionName', title: 'Institution Name' },
-      { key: 'totalStudents', title: 'Total Students' }, { key: 'overallAverageGPA', title: 'Overall Avg. GPA' },
-      { key: 'institutionAttendancePercentage', title: 'Avg. Attendance (%)' }, { key: 'totalInstitutionAbsences', title: 'Total Absences' },
-      { key: 'institutionFeesPaidPercentage', title: 'Avg. Fees Paid (%)' }, { key: 'totalStudentsWithOverdueFeesInInstitution', title: 'Students w/ Overdue Fees' },
-      { key: 'totalInstitutionApplicants', title: 'Total Applicants' }, { key: 'avgInstitutionAcceptanceRate', title: 'Avg. Acceptance Rate (%)' },
-      { key: 'totalInstitutionEnrolledCount', title: 'Total Enrolled' }, { key: 'totalInstitutionAtRiskStudents', title: 'At-Risk Students' },
-    ];
-    const reportData = institutions.map(inst => ({
-      institutionId: inst.institutionId, institutionName: inst.institutionName,
-      totalStudents: inst.totalStudents ?? 'N/A', overallAverageGPA: inst.overallAverageGPA?.toFixed(2) || 'N/A',
-      institutionAttendancePercentage: inst.institutionAttendancePercentage?.toFixed(1) || 'N/A', totalInstitutionAbsences: inst.totalInstitutionAbsences ?? 'N/A',
-      institutionFeesPaidPercentage: inst.institutionFeesPaidPercentage?.toFixed(1) || 'N/A', totalStudentsWithOverdueFeesInInstitution: inst.totalStudentsWithOverdueFeesInInstitution ?? 'N/A',
-      totalInstitutionApplicants: inst.totalInstitutionApplicants ?? 'N/A', avgInstitutionAcceptanceRate: inst.avgInstitutionAcceptanceRate?.toFixed(1) || 'N/A',
-      totalInstitutionEnrolledCount: inst.totalInstitutionEnrolledCount ?? 'N/A', totalInstitutionAtRiskStudents: inst.totalInstitutionAtRiskStudents ?? 'N/A',
-    }));
-    downloadCSV(reportData, columns, "institutions_report");
-  }, [institutions]);
-
-  const breadcrumbItems = useMemo(() => {
-    const items: { key: string; title: React.ReactNode; onClick?: () => void }[] = [{
-        key: 'home', title: <HomeOutlined />,
-        onClick: () => { resetSelections('institution'); setViewLevel('institution');}
-    }];
-    if (selectedInstitution) {
-      items.push({
-        key: 'institution',
-        title: selectedInstitution.institutionName,
-        onClick: () => { resetSelections('institution_overview'); setViewLevel('institution_overview'); }
-      });
-    }
-    // Subsequent breadcrumbs only if not on institution_overview
-    if (viewLevel !== 'institution_overview' && selectedAcademicYear) {
-      items.push({ key: 'academic_year', title: selectedAcademicYear.yearName,
-        onClick: viewLevel !== 'degree' ? () => { resetSelections('degree'); setViewLevel('degree'); } : undefined });
-    }
-    if (viewLevel !== 'institution_overview' && selectedDegree) {
-      items.push({ key: 'degree', title: selectedDegree.degreeName,
-        onClick: viewLevel !== 'program' ? () => { resetSelections('program'); setViewLevel('program'); } : undefined });
-    }
-    if (viewLevel !== 'institution_overview' && selectedProgram) {
-      items.push({ key: 'program', title: selectedProgram.programName,
-        onClick: viewLevel !== 'semester' ? () => { resetSelections('semester'); setViewLevel('semester'); } : undefined });
-    }
-    if (viewLevel !== 'institution_overview' && selectedSemester) {
-        if (viewLevel === 'student' || viewLevel === 'student_detail') {
-            items.push({ key: 'semester', title: selectedSemester.semesterName,
-                onClick: viewLevel === 'student_detail' ? () => { setViewLevel('student'); setSelectedStudentIdForDetail(null); setCurrentStudentAcademicRecord(null); } : undefined });
-        }
-    }
-    if (viewLevel === 'student_detail' && selectedStudentIdForDetail) {
-        const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
-        const studentNameString = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
-        items.push({ key: 'student_detail', title: `Student: ${studentNameString || 'N/A'}` });
-    }
-    return items.map((item) => ({ title: item.onClick ? <a onClick={item.onClick}>{item.title}</a> : item.title, key: item.key }));
-  }, [selectedInstitution, selectedAcademicYear, selectedDegree, selectedProgram, selectedSemester, selectedStudentIdForDetail, viewLevel, currentStudentAcademicRecord, allMockStudents]);
+   const feeSummaryChartData = useMemo((): FeeSummaryChartItem[] => dashboardSummary?.feeSummaryCurrentPeriod || [], [dashboardSummary]);
+   const attendanceGPAChartData = useMemo((): AttendanceGPAOverviewItem[] => dashboardSummary?.attendanceGPAOverview || [], [dashboardSummary]);
+   const openGrievancesChartData = useMemo((): OpenGrievancesByCategoryItem[] => dashboardSummary?.openGrievancesByCategory || [], [dashboardSummary]);
 
 
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}><Spin size="large" tip="Loading Data..." /></div>;
+  if (isLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}><Spin size="large" tip={t('common.loadingData', "Loading dashboard...")}/></div>;
   }
 
-  let content;
-  let currentDisplayTitle = "";
+  if (errorMessage) {
+    return <Alert message={t('common.errorOccurred', "An Error Occurred")} description={errorMessage} type="error" showIcon style={{margin: 20}}/>;
+  }
 
-  if (viewLevel === 'institution') {
-    currentDisplayTitle = "Institutions";
-    content = institutions.map((inst: Institution) => ( <InstitutionDisplay key={inst.institutionId} institution={inst} onSelectInstitution={handleSelectInstitution} /> ));
-    if (institutions.length === 0 && !loading) { content = <Empty description="No institutions found." />; }
-  } else if (selectedInstitution && viewLevel === 'institution_overview') {
-    currentDisplayTitle = ""; // Title is handled within InstitutionOverviewDisplay
-    content = ( <InstitutionOverviewDisplay institution={selectedInstitution} onNavigateToAcademicYears={handleNavigateToAcademicYearsFromOverview} /> );
-  } else if (selectedInstitution && viewLevel === 'academic_year') {
-    currentDisplayTitle = selectedInstitution.institutionName;
-    content = ( <AcademicYearList academicYears={selectedInstitution.academicYears} onSelectAcademicYear={handleSelectAcademicYear} onCompareAcademicYears={handleOpenAcademicYearComparisonModal} /> );
-  } else if (selectedAcademicYear && viewLevel === 'degree') {
-    currentDisplayTitle = selectedAcademicYear.yearName;
-    content = ( <DegreeList degrees={selectedAcademicYear.degrees} onSelectDegree={handleSelectDegree} onCompareDegrees={handleOpenDegreeComparisonModal} /> );
-  } else if (selectedDegree && viewLevel === 'program') {
-    currentDisplayTitle = selectedDegree.degreeName;
-    content = ( <ProgramList programs={selectedDegree.programs} onSelectProgram={handleSelectProgram} onComparePrograms={handleOpenProgramComparisonModal} degreeName={selectedDegree.degreeName} academicYearName={selectedAcademicYear?.yearName} /> );
-  } else if (selectedProgram && viewLevel === 'semester') {
-    currentDisplayTitle = selectedProgram.programName;
-    content = <SemesterList semesters={selectedProgram.semesters} onSelectSemester={handleSelectSemester} />;
-  } else if (selectedSemester && viewLevel === 'student') {
-    currentDisplayTitle = selectedSemester.semesterName;
-    content = <StudentSummaryList students={selectedSemester.students || []} onSelectStudent={handleSelectStudentForDetail} />;
-  } else if (selectedStudentIdForDetail && viewLevel === 'student_detail') {
-    const studentDetails = currentStudentAcademicRecord ? allMockStudents.find((s: Student) => s.id === currentStudentAcademicRecord.studentId) : null;
-    const studentDisplayName = studentDetails ? `${studentDetails.firstName || ''} ${studentDetails.lastName || ''}`.trim() : selectedStudentIdForDetail;
-    currentDisplayTitle = `Details for ${studentDisplayName || 'N/A'}`;
-    content = ( <PrincipalStudentDetailView studentAcademicRecord={currentStudentAcademicRecord} loading={studentDetailLoading} /> );
+  if (!dashboardSummary || !kpis) {
+    return (
+        <div style={{ padding: 20, textAlign:'center' }}>
+            <Empty description={t('dashboard.error.noData', "No dashboard data available to display. Please check data sources or configuration.")} />
+        </div>
+    );
   }
-  else {
-     content = <Empty description="Data not available for current selection or path." />;
-  }
+
+  const scorecardKpis = [
+    { titleKey: 'totalActiveStudents', value: kpis.totalActiveStudents, icon: <TeamOutlined />, onClick: () => navigate('/principal-view/students') }, // General student list/overview
+    { titleKey: 'avgAttendancePercentLast30Days', value: kpis.avgAttendancePercentLast30Days, suffix: '%', icon: <ScheduleOutlined />, onClick: () => navigate('/principal-view/attendance'), statusColor: (kpis.avgAttendancePercentLast30Days || 0) < 80 ? '#faad14' : undefined },
+    { titleKey: 'avgAcademicPassPercentLastSemester', value: kpis.avgAcademicPassPercentLastSemester, suffix: '%', icon: <CheckCircleOutlined />, onClick: () => navigate('/principal-view/academics'), statusColor: (kpis.avgAcademicPassPercentLastSemester || 0) < 70 ? '#faad14' : undefined },
+    { titleKey: 'totalOutstandingFees', value: kpis.totalOutstandingFees, prefix: t('common.currencySymbol','$'), icon: <DollarCircleOutlined />, onClick: () => navigate('/principal-view/billing'), statusColor: (kpis.totalOutstandingFees || 0) > 100000 ? '#cf1322' : undefined }, // Example threshold
+    { titleKey: 'activeHighPriorityGrievances', value: kpis.activeHighPriorityGrievances, icon: <WarningOutlined />, onClick: () => navigate('/principal-view/grievances'), statusColor: (kpis.activeHighPriorityGrievances || 0) > 0 ? '#cf1322' : undefined },
+    { titleKey: 'overallComplianceItemsCompliantPercent', value: kpis.overallComplianceItemsCompliantPercent, suffix: '%', icon: <FileProtectOutlined />, onClick: () => navigate('/principal-view/compliance'), statusColor: (kpis.overallComplianceItemsCompliantPercent || 0) < 90 ? '#faad14' : undefined },
+  ];
+
 
   return (
-    <div>
-      <Title level={2} style={{ marginBottom: '0px' }}>Principal's Hierarchical View</Title>
-      <div style={{ margin: "10px 0px"}}> <Breadcrumb items={breadcrumbItems} /> </div>
-      {viewLevel === 'institution' && institutions.length > 0 && (
-        <Row justify="end" style={{ marginTop: '10px', marginBottom: '20px' }}>
-          <Col> <Button onClick={handleGenerateInstitutionsReport} type="default"> Generate Institutions Report (CSV) </Button> </Col>
-        </Row>
-      )}
-      {viewLevel !== 'institution' && currentDisplayTitle && (
-         <Title level={3} type="secondary" style={{marginTop: 0, marginBottom: "16px"}}>{currentDisplayTitle}</Title>
-      )}
-      {content}
-      {itemsToCompare.length > 0 && (
-        <ComparisonModal open={comparisonModalVisible} items={itemsToCompare} onClose={handleCloseComparisonModal} />
-      )}
+    <div style={{ padding: '20px' }}>
+      <Breadcrumb style={{ marginBottom: '16px' }}>
+        <Breadcrumb.Item><Link to="/principal-view"><HomeOutlined /></Link></Breadcrumb.Item>
+        <Breadcrumb.Item>{t('principalView.dashboardTitle', "Principal's Dashboard")}</Breadcrumb.Item>
+      </Breadcrumb>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+        <Title level={2} style={{ margin: 0 }}>{t('dashboard.mainTitle', "Institution Overview")}</Title>
+        <RangePicker onChange={(dates) => setDateRange(dates)} />
+      </div>
+
+      {/* KPI Scorecards Row */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        {scorecardKpis.map(kpiItem => (
+          <Col xs={24} sm={12} md={8} lg={6} xl={4} key={kpiItem.titleKey} style={{ flexGrow: 1}}> {/* Added flexGrow */}
+            <Scorecard
+              title={t(`dashboard.kpi.${kpiItem.titleKey}`, kpiItem.titleKey.replace(/([A-Z]+)/g, ' $1').replace(/^ /, ''))} // Improved fallback title generation
+              value={kpiItem.value ?? t('common.notAvailableShort', 'N/A')}
+              icon={kpiItem.icon}
+              prefix={kpiItem.prefix}
+              suffix={kpiItem.suffix}
+              loading={isLoading} // This should ideally be institutionDataLoading
+              onClick={kpiItem.onClick}
+              statusColor={kpiItem.statusColor}
+            />
+          </Col>
+        ))}
+      </Row>
+
+      {/* Main Charts Row 1 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Col xs={24} lg={16}>
+          <Card title={t('dashboard.charts.enrollmentTrend', "Student Enrollment Trend (Monthly)")}>
+            {enrollmentTrendChartData.length > 0 ?
+                <Line data={enrollmentTrendChartData} xField="monthYear" yField="studentCount" height={300} xAxis={{title:{text:t('common.monthYear','Month-Year')}}} yAxis={{title:{text:t('common.numberOfStudents','No. of Students')}}} /> : <Empty />}
+          </Card>
+        </Col>
+        <Col xs={24} lg={8}>
+          <Card title={t('dashboard.charts.feeSummary', "Fee Collection Summary")}>
+            {feeSummaryChartData.length > 0 ?
+                <Column data={feeSummaryChartData} xField="category" yField="amount" seriesField="category" isGroup={false} legend={{position:'bottom'}} height={300} label={{position:'top', formatter:(d)=>`${t('common.currencySymbol','$')}${(d.amount/1000).toFixed(0)}k`}} yAxis={{label:{formatter:(v)=>`${t('common.currencySymbol','$')}${(Number(v)/1000).toFixed(0)}k`}}}/> : <Empty />}
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Charts Row 2 */}
+      <Row gutter={[16, 16]}>
+        <Col xs={24} lg={12}>
+          <Card title={t('dashboard.charts.attendanceGPA', "Attendance vs. GPA Overview (by Dept/Program)")}>
+            {attendanceGPAChartData.length > 0 ?
+                <Scatter
+                    data={attendanceGPAChartData}
+                    xField="avgAttendance"
+                    yField="avgGPA"
+                    colorField="entityName"
+                    sizeField={attendanceGPAChartData[0]?.studentCount !== undefined ? "studentCount" : undefined}
+                    size={attendanceGPAChartData[0]?.studentCount !== undefined ? [4, 25] : 6}
+                    shape="circle"
+                    legend={attendanceGPAChartData.length < 8 ? {position:'right', offsetY:0} : false}
+                    xAxis={{
+                        title: { text: t('dashboard.charts.avgAttendancePercent', "Avg. Attendance (%)") },
+                        min: 0, max: 100, label: {formatter: (v) => `${v}%`}
+                    }}
+                    yAxis={{
+                        title: { text: t('dashboard.charts.avgGPA', "Avg. GPA") },
+                        min: 0, max: 4.0, // Assuming a 4.0 GPA scale, adjust if different
+                        tickInterval: 0.5
+                    }}
+                    tooltip={{
+                        fields: ['entityName', 'avgAttendance', 'avgGPA', 'studentCount'],
+                        formatter: (datum) => ({
+                            name: datum.entityName,
+                            value: `${t('dashboard.charts.attendanceShort', "Att")}: ${datum.avgAttendance}%, ${t('dashboard.charts.gpaShort', "GPA")}: ${datum.avgGPA}` +
+                                   (datum.studentCount ? ` (${datum.studentCount} ${t('common.students','students')})` : '')
+                        })
+                    }}
+                    height={300}
+                />
+                : <Empty />}
+          </Card>
+        </Col>
+        <Col xs={24} lg={12}>
+          <Card title={t('dashboard.charts.openGrievances', "Open Grievances by Category")}>
+            {openGrievancesChartData.length > 0 ?
+                <Pie data={openGrievancesChartData} angleField="count" colorField="category" radius={0.8} legend={{position:'right', offsetY:0}} height={300} label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}} tooltip={{formatter:(d)=>({name:d.category, value:`${d.count} ${t('common.grievances','grievances')}`})}} /> : <Empty />}
+          </Card>
+        </Col>
+      </Row>
+       <Paragraph style={{ marginTop: 20, color: '#888', textAlign: 'center' }}>
+         {t('common.lastRefreshed', "Last refreshed:")} {dashboardSummary.lastRefreshed ? dayjs(dashboardSummary.lastRefreshed).format('YYYY-MM-DD HH:mm:ss') : t('common.notAvailableShort', 'N/A')}
+      </Paragraph>
     </div>
   );
 };

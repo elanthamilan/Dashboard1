@@ -406,6 +406,125 @@ export const generateMockNewInstitutions = (
         totalInternshipsMock: faker.number.int({min:50,max:200}),
         // ... (many other fields from the Institution type)
     };
+
+    // --- Add this new section to calculate and assign dashboardSummary ---
+    const { DashboardKpiData, EnrollmentTrendItem, AttendanceGPAOverviewItem, FeeSummaryChartItem, OpenGrievancesByCategoryItem, DashboardSummary } = {} as any; // Dummy for type-only imports if not directly used
+
+    const kpis: DashboardKpiData = {
+        totalActiveStudents: institutionWideStudentSummaries.filter(s => s.enrollmentStatus === 'Active').length,
+        avgAttendancePercentLast30Days: 0,
+        avgAcademicPassPercentLastSemester: 0,
+        totalOutstandingFees: 0,
+        activeHighPriorityGrievances: 0,
+        overallComplianceItemsCompliantPercent: 0,
+    };
+
+    if (institution.allAttendanceRecords) { // Assuming allAttendanceRecords is added to Institution
+        const recentRecords = institution.allAttendanceRecords.filter(r =>
+            dayjs(r.date).isAfter(dayjs().subtract(30, 'days')) && r.status !== 'Holiday' && r.status !== 'Excused'
+        );
+        const presentOrLate = recentRecords.filter(r => r.status === 'Present' || r.status === 'Late').length;
+        if (recentRecords.length > 0) {
+            kpis.avgAttendancePercentLast30Days = parseFloat(((presentOrLate / recentRecords.length) * 100).toFixed(1));
+        }
+    }
+
+    if (studentAcademicData && studentAcademicData.length > 0) {
+        let totalAttemptedCreditsLastSem = 0;
+        let totalEarnedCreditsLastSem = 0;
+        // Determine the most recent common termId. This is a simplified approach.
+        // A more robust method would look at the academic calendar or dominant term in recent student records.
+        const termIds = Array.from(new Set(studentAcademicData.flatMap(ar => ar.semesters.map(s => s.termId)))).sort().reverse();
+        const lastFullTermId = termIds[0];
+
+        if (lastFullTermId) {
+            studentAcademicData.forEach(ar => {
+                ar.semesters.forEach(term => {
+                    if (term.termId === lastFullTermId) {
+                        totalAttemptedCreditsLastSem += (term.creditsAttemptedInTerm || 0);
+                        totalEarnedCreditsLastSem += (term.creditsEarnedInTerm || 0);
+                    }
+                });
+            });
+            if (totalAttemptedCreditsLastSem > 0) {
+                kpis.avgAcademicPassPercentLastSemester = parseFloat(((totalEarnedCreditsLastSem / totalAttemptedCreditsLastSem) * 100).toFixed(1));
+            }
+        }
+    }
+
+    if (institution.allInvoices) {
+        kpis.totalOutstandingFees = institution.allInvoices.reduce((sum, inv) => sum + inv.outstandingAmount, 0);
+    }
+
+    if (institution.allGrievanceTickets) { // Changed from currentInstitution.grievances
+        kpis.activeHighPriorityGrievances = institution.allGrievanceTickets.filter(g =>
+            (g.status === 'Open' || g.status === 'In Progress' /* || g.status === 'Re-opened' */) && // Re-opened not in GrievanceStatus from academics.ts
+            g.priority === 'High'
+        ).length;
+    }
+
+    if (institution.complianceItems) {
+        const compliant = institution.complianceItems.filter(ci => ci.status === 'Compliant').length;
+        if (institution.complianceItems.length > 0) {
+            kpis.overallComplianceItemsCompliantPercent = parseFloat(((compliant / institution.complianceItems.length) * 100).toFixed(1));
+        }
+    }
+
+    const enrollmentTrend: EnrollmentTrendItem[] = [];
+    const trendCounts: Record<string, number> = {};
+    // Simplified enrollment trend: count students whose expected grad date implies they were active in these months
+    // Or use a mock enrollment date if available on StudentSummary
+    institutionWideStudentSummaries.forEach(s => {
+        const enrollmentMonthYear = dayjs(faker.date.past({years:2, refDate: dayjs().subtract(6,'months').toDate()})).format('YYYY-MM'); // Mock enrollment date
+        trendCounts[enrollmentMonthYear] = (trendCounts[enrollmentMonthYear] || 0) + 1;
+    });
+     for (let i = 11; i >= 0; i--) {
+         const monthYear = dayjs().subtract(i, 'month').format('YYYY-MM');
+         enrollmentTrend.push({ monthYear, studentCount: trendCounts[monthYear] || faker.number.int({min: institutionWideStudentSummaries.length/24, max:institutionWideStudentSummaries.length/6}) }); // Distribute somewhat
+     }
+
+
+    const attendanceGPAOverview: AttendanceGPAOverviewItem[] = [];
+    const deptsForOverview = (institution.faculties?.flatMap(f => f.departments) || []).slice(0, 3);
+    deptsForOverview.forEach(dept => {
+        // Actual calculation would involve filtering students by dept, then their attendance and GPA
+        attendanceGPAOverview.push({
+            entityId: dept.departmentId,
+            entityName: dept.departmentName,
+            avgAttendance: faker.number.int({min:70, max:95}),
+            avgGPA: parseFloat(faker.number.float({min:2.5, max:3.8, precision:1}).toFixed(1)),
+            studentCount: dept.totalStudentsEnrolled || faker.number.int({min:50, max:200})
+        });
+    });
+
+    const feeSummaryCurrentPeriod: FeeSummaryChartItem[] = [];
+    if (institution.allInvoices) {
+        const totalCollected = institution.allInvoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
+        const totalInvoiced = kpis.totalOutstandingFees + totalCollected;
+        feeSummaryCurrentPeriod.push({ category: 'Total Invoiced', amount: totalInvoiced });
+        feeSummaryCurrentPeriod.push({ category: 'Total Collected', amount: totalCollected });
+        feeSummaryCurrentPeriod.push({ category: 'Total Outstanding', amount: kpis.totalOutstandingFees });
+    }
+
+    const openGrievancesByCategory: OpenGrievancesByCategoryItem[] = [];
+    if (institution.allGrievanceTickets) {
+        const catCounts: Record<string, number> = {};
+        institution.allGrievanceTickets.filter(g => g.status === 'Open' || g.status === 'In Progress' /*|| g.status === 'Re-opened'*/)
+            .forEach(g => {
+                catCounts[g.category] = (catCounts[g.category] || 0) + 1;
+            });
+        Object.entries(catCounts).forEach(([category, count]) => openGrievancesByCategory.push({ category, count }));
+    }
+
+    institution.dashboardSummary = {
+        kpis,
+        enrollmentTrend,
+        attendanceGPAOverview,
+        feeSummaryCurrentPeriod,
+        openGrievancesByCategory,
+        lastRefreshed: dayjs().toISOString(),
+    };
+    // --- End of new section ---
     return [institution];
 };
 

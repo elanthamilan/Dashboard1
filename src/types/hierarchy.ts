@@ -292,4 +292,49 @@ export interface Institution {
   grievanceCSAT?: number;
   sentimentDistribution?: { positive: number; neutral: number; negative: number; total: number };
   totalInternshipsMock?: number; // Added for placement module mock data
+
+  dashboardSummary?: DashboardSummary; // NEW FIELD
+}
+
+// --- New Interfaces for DashboardSummary ---
+
+export interface DashboardKpiData {
+  totalActiveStudents: number;
+  avgAttendancePercentLast30Days: number;
+  avgAcademicPassPercentLastSemester: number;
+  totalOutstandingFees: number;
+  activeHighPriorityGrievances: number;
+  overallComplianceItemsCompliantPercent: number;
+}
+
+export interface EnrollmentTrendItem {
+  monthYear: string; // "YYYY-MM"
+  studentCount: number;
+}
+
+export interface AttendanceGPAOverviewItem {
+  entityName: string; // Department Name or Program Name
+  entityId: string;
+  avgAttendance: number; // Percentage
+  avgGPA: number;
+  studentCount?: number; // For bubble size
+}
+
+export interface FeeSummaryChartItem {
+  category: 'Total Invoiced' | 'Total Collected' | 'Total Outstanding';
+  amount: number;
+}
+
+export interface OpenGrievancesByCategoryItem {
+  category: string;
+  count: number;
+}
+
+export interface DashboardSummary {
+  kpis: DashboardKpiData;
+  enrollmentTrend: EnrollmentTrendItem[];
+  attendanceGPAOverview: AttendanceGPAOverviewItem[];
+  feeSummaryCurrentPeriod: FeeSummaryChartItem[];
+  openGrievancesByCategory: OpenGrievancesByCategoryItem[];
+  lastRefreshed: string; // ISO datetime
 }
