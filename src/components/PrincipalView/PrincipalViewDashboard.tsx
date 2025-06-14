@@ -1,14 +1,14 @@
 // src/components/PrincipalView/PrincipalViewDashboard.tsx
 import React, { useState, useEffect, useMemo } from 'react';
-import { Row, Col, Card, DatePicker, Spin, Empty, Typography, Breadcrumb, Alert } from 'antd';
-import { Link, useNavigate } from 'react-router-dom'; // Assuming react-router-dom for navigation
+import { Row, Col, Card, DatePicker, Spin, Empty, Typography, Breadcrumb, Alert, Checkbox, Space } from 'antd'; // Added Checkbox, Space
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   UserOutlined, SolutionOutlined, TeamOutlined, DollarCircleOutlined, ScheduleOutlined,
-  BarChartOutlined, PieChartOutlined, LineChartOutlined, HomeOutlined, WarningOutlined, CheckCircleOutlined, IssuesCloseOutlined, PercentageOutlined, FileProtectOutlined, FieldTimeOutlined
-} from '@ant-design/icons';
-import Scorecard from '../../common/Scorecard'; // Adjust path as needed
-import type { Institution, DashboardSummary, DashboardKpiData, EnrollmentTrendItem, FeeSummaryChartItem, AttendanceGPAOverviewItem, OpenGrievancesByCategoryItem } from '../../../types/hierarchy'; // Adjust path
+  BarChartOutlined, PieChartOutlined, LineChartOutlined, HomeOutlined, WarningOutlined, CheckCircleOutlined, IssuesCloseOutlined, PercentageOutlined, FileProtectOutlined, FieldTimeOutlined, GiftOutlined
+} from '@ant-design/icons'; // Added GiftOutlined
+import Scorecard from '../../common/Scorecard';
+import type { Institution, DashboardSummary, DashboardKpiData, DashboardKpiDataItem, EnrollmentTrendItem, FeeSummaryChartItem, AttendanceGPAOverviewItem, OpenGrievancesByCategoryItem } from '../../../types/hierarchy'; // Added DashboardKpiDataItem
 import dayjs from 'dayjs';
 
 // Import chart components from Ant Design Plots
@@ -34,6 +34,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
 
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs | null, dayjs.Dayjs | null] | null>(null);
+  const [comparePeriod, setComparePeriod] = useState<boolean>(false); // New state for comparison mode
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -61,22 +62,43 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
 
   const kpis = dashboardSummary?.kpis;
 
-   const enrollmentTrendChartData = useMemo((): EnrollmentTrendItem[] => {
-     if (!dashboardSummary?.enrollmentTrend) return [];
+   const enrollmentTrendChartData = useMemo(() => {
+    if (!dashboardSummary?.enrollmentTrend) return [];
+    const baseTrend = dashboardSummary.enrollmentTrend;
 
-     if (dateRange && dateRange[0] && dateRange[1]) {
-       const startDate = dateRange[0].startOf('month'); // Normalize to start of month
-       const endDate = dateRange[1].endOf('month');   // Normalize to end of month
+    let currentPeriodData: Array<EnrollmentTrendItem & { category?: string }> = [];
+    let previousPeriodData: Array<EnrollmentTrendItem & { category?: string }> = [];
 
-       return dashboardSummary.enrollmentTrend.filter(item => {
-         const itemDate = dayjs(item.monthYear + "-01"); // Convert "YYYY-MM" to a dayjs object
-         // Check if itemDate is between startDate and endDate (inclusive)
-         return (itemDate.isSame(startDate) || itemDate.isAfter(startDate)) &&
-                (itemDate.isSame(endDate) || itemDate.isBefore(endDate));
-       });
-     }
-     return dashboardSummary.enrollmentTrend; // Return all if no date range selected
-   }, [dashboardSummary, dateRange]);
+    if (dateRange && dateRange[0] && dateRange[1]) {
+        const currentStartDate = dateRange[0].startOf('month');
+        const currentEndDate = dateRange[1].endOf('month');
+
+        currentPeriodData = baseTrend.filter(item => {
+            const itemDate = dayjs(item.monthYear + "-01");
+            return itemDate.isSameOrAfter(currentStartDate) && itemDate.isSameOrBefore(currentEndDate);
+        }).map(item => ({ ...item, category: t('dashboard.trends.currentPeriod', "Current Period") }));
+
+        if (comparePeriod) {
+            const periodDurationDays = currentEndDate.diff(currentStartDate, 'day') + 1;
+            // Ensure previousEndDate is calculated correctly even if currentStartDate is the beginning of a month
+            const previousEndDate = currentStartDate.subtract(1, 'day').endOf('month');
+            const previousStartDate = previousEndDate.clone().subtract(periodDurationDays -1, 'day').startOf('month');
+
+            previousPeriodData = baseTrend.filter(item => {
+                const itemDate = dayjs(item.monthYear + "-01");
+                return itemDate.isSameOrAfter(previousStartDate) && itemDate.isSameOrBefore(previousEndDate);
+            }).map(item => ({
+                ...item,
+                // For simpler X-axis display, keep original monthYear. Tooltip/legend will differentiate.
+                category: t('dashboard.trends.previousPeriod', "Previous Period")
+            }));
+            return [...currentPeriodData, ...previousPeriodData].sort((a,b) => a.monthYear.localeCompare(b.monthYear) || (a.category || "").localeCompare(b.category || ""));
+        }
+        return currentPeriodData;
+    }
+    // If no dateRange, return all base data, categorized. Comparison makes less sense without a primary range.
+    return baseTrend.map(item => ({ ...item, category: t('dashboard.trends.currentPeriod', "Current Period") }));
+}, [dashboardSummary, dateRange, comparePeriod, t]);
 
    const feeSummaryChartData = useMemo((): FeeSummaryChartItem[] => dashboardSummary?.feeSummaryCurrentPeriod || [], [dashboardSummary]);
    const attendanceGPAChartData = useMemo((): AttendanceGPAOverviewItem[] => dashboardSummary?.attendanceGPAOverview || [], [dashboardSummary]);
@@ -99,14 +121,16 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
     );
   }
 
-  const scorecardKpis = [
-    { titleKey: 'totalActiveStudents', value: kpis.totalActiveStudents, icon: <TeamOutlined />, onClick: () => navigate('/principal-view/students') }, // General student list/overview
-    { titleKey: 'avgAttendancePercentLast30Days', value: kpis.avgAttendancePercentLast30Days, suffix: '%', icon: <ScheduleOutlined />, onClick: () => navigate('/principal-view/attendance'), statusColor: (kpis.avgAttendancePercentLast30Days || 0) < 80 ? '#faad14' : undefined },
-    { titleKey: 'avgAcademicPassPercentLastSemester', value: kpis.avgAcademicPassPercentLastSemester, suffix: '%', icon: <CheckCircleOutlined />, onClick: () => navigate('/principal-view/academics'), statusColor: (kpis.avgAcademicPassPercentLastSemester || 0) < 70 ? '#faad14' : undefined },
-    { titleKey: 'totalOutstandingFees', value: kpis.totalOutstandingFees, prefix: t('common.currencySymbol','$'), icon: <DollarCircleOutlined />, onClick: () => navigate('/principal-view/billing'), statusColor: (kpis.totalOutstandingFees || 0) > 100000 ? '#cf1322' : undefined }, // Example threshold
-    { titleKey: 'activeHighPriorityGrievances', value: kpis.activeHighPriorityGrievances, icon: <WarningOutlined />, onClick: () => navigate('/principal-view/grievances'), statusColor: (kpis.activeHighPriorityGrievances || 0) > 0 ? '#cf1322' : undefined },
-    { titleKey: 'overallComplianceItemsCompliantPercent', value: kpis.overallComplianceItemsCompliantPercent, suffix: '%', icon: <FileProtectOutlined />, onClick: () => navigate('/principal-view/compliance'), statusColor: (kpis.overallComplianceItemsCompliantPercent || 0) < 90 ? '#faad14' : undefined },
-  ];
+  const kpiMetaMap: Record<keyof DashboardKpiData, { icon: React.ReactNode; path?: string; titleKeySuffix: string; defaultTitle: string }> = {
+    totalActiveStudents: { icon: <TeamOutlined />, path: '/principal-view/students', titleKeySuffix: 'totalActiveStudents', defaultTitle: "Total Active Students" },
+    avgAttendancePercentLast30Days: { icon: <ScheduleOutlined />, path: '/principal-view/attendance', titleKeySuffix: 'avgAttendancePercentLast30Days', defaultTitle: "Avg Attendance (Last 30d)" },
+    avgAcademicPassPercentLastSemester: { icon: <CheckCircleOutlined />, path: '/principal-view/academics', titleKeySuffix: 'avgAcademicPassPercentLastSemester', defaultTitle: "Avg Acad. Pass Rate (Last Sem)" },
+    totalOutstandingFees: { icon: <DollarCircleOutlined />, path: '/principal-view/billing', titleKeySuffix: 'totalOutstandingFees', defaultTitle: "Total Outstanding Fees" },
+    activeHighPriorityGrievances: { icon: <WarningOutlined />, path: '/principal-view/grievances', titleKeySuffix: 'activeHighPriorityGrievances', defaultTitle: "Active High Prio Grievances" },
+    overallComplianceItemsCompliantPercent: { icon: <FileProtectOutlined />, path: '/principal-view/compliance', titleKeySuffix: 'overallComplianceItemsCompliantPercent', defaultTitle: "Overall Compliance %" },
+    avgTimeToPlacement: { icon: <FieldTimeOutlined />, path: '/principal-view/placements', titleKeySuffix: 'avgTimeToPlacement', defaultTitle: "Avg. Time to Placement" },
+    totalAlumniDonations: { icon: <GiftOutlined />, path: '/principal-view/alumni', titleKeySuffix: 'totalAlumniDonations', defaultTitle: "Total Alumni Donations" },
+  };
 
 
   return (
@@ -117,25 +141,40 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
       </Breadcrumb>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
         <Title level={2} style={{ margin: 0 }}>{t('dashboard.mainTitle', "Institution Overview")}</Title>
-        <RangePicker onChange={(dates) => setDateRange(dates)} />
+        <Space wrap>
+          <RangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates && dates[0] && dates[1] ? [dates[0], dates[1]] : null)}
+          />
+          <Checkbox checked={comparePeriod} onChange={(e) => setComparePeriod(e.target.checked)}>
+            {t('dashboard.comparePeriod', "Compare to previous period")}
+          </Checkbox>
+        </Space>
       </div>
 
       {/* KPI Scorecards Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        {scorecardKpis.map(kpiItem => (
-          <Col xs={24} sm={12} md={8} lg={6} xl={4} key={kpiItem.titleKey} style={{ flexGrow: 1}}> {/* Added flexGrow */}
-            <Scorecard
-              title={t(`dashboard.kpi.${kpiItem.titleKey}`, kpiItem.titleKey.replace(/([A-Z]+)/g, ' $1').replace(/^ /, ''))} // Improved fallback title generation
-              value={kpiItem.value ?? t('common.notAvailableShort', 'N/A')}
-              icon={kpiItem.icon}
-              prefix={kpiItem.prefix}
-              suffix={kpiItem.suffix}
-              loading={isLoading} // This should ideally be institutionDataLoading
-              onClick={kpiItem.onClick}
-              statusColor={kpiItem.statusColor}
-            />
-          </Col>
-        ))}
+        {Object.entries(kpis).map(([key, kpiDataItem]) => {
+            const meta = kpiMetaMap[key as keyof DashboardKpiData];
+            if (!meta) {
+                console.warn(`Metadata not found for KPI key: ${key}`);
+                return null;
+            }
+            // Type assertion as kpiDataItem is known to be DashboardKpiDataItem here
+            const typedKpiDataItem = kpiDataItem as DashboardKpiDataItem;
+
+            return (
+                <Col xs={12} sm={12} md={8} lg={6} xl={4} key={key} style={{ flexGrow: 1 }}> {/* Adjusted xs to 12 to fit more on small screens */}
+                <Scorecard
+                    title={t(`dashboard.kpi.${meta.titleKeySuffix}`, meta.defaultTitle)}
+                    kpiData={typedKpiDataItem}
+                    icon={meta.icon}
+                    loading={isLoading} // This correctly uses the dashboard's overall loading state for KPIs
+                    onClick={meta.path ? () => navigate(meta.path!) : undefined}
+                />
+                </Col>
+            );
+        })}
       </Row>
 
       {/* Main Charts Row 1 */}
@@ -143,7 +182,34 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
         <Col xs={24} lg={16}>
           <Card title={t('dashboard.charts.enrollmentTrend', "Student Enrollment Trend (Monthly)")}>
             {enrollmentTrendChartData.length > 0 ?
-                <Line data={enrollmentTrendChartData} xField="monthYear" yField="studentCount" height={300} xAxis={{title:{text:t('common.monthYear','Month-Year')}}} yAxis={{title:{text:t('common.numberOfStudents','No. of Students')}}} /> : <Empty />}
+                <Line
+                  data={enrollmentTrendChartData}
+                  xField="monthYear"
+                  yField="studentCount"
+                  seriesField={comparePeriod && dateRange && dateRange[0] && dateRange[1] ? "category" : undefined}
+                  color={comparePeriod && dateRange && dateRange[0] && dateRange[1] ? ['#3674E7', '#FFAA00'] : '#3674E7'}
+                  height={300}
+                  xAxis={{title:{text:t('common.monthYear','Month-Year')}}}
+                  yAxis={{title:{text:t('common.numberOfStudents','No. of Students')}}}
+                  lineStyle={{ lineWidth: 2 }}
+                  point={{
+                    size: 4,
+                    shape: 'circle',
+                    style: {
+                      fill: 'white',
+                      stroke: '#3674E7',
+                      lineWidth: 2,
+                    },
+                  }}
+                  area={comparePeriod && dateRange && dateRange[0] && dateRange[1] ? undefined : { // Area fill only for single series mode
+                    style: {
+                      fill: 'l(270) 0:#ffffff 1:#3674E7',
+                      fillOpacity: 0.3,
+                    },
+                  }}
+                  smooth={true}
+                  legend={comparePeriod && dateRange && dateRange[0] && dateRange[1] ? { position: 'top-right' } : false}
+                /> : <Empty />}
           </Card>
         </Col>
         <Col xs={24} lg={8}>

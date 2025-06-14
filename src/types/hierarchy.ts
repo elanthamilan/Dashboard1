@@ -298,13 +298,23 @@ export interface Institution {
 
 // --- New Interfaces for DashboardSummary ---
 
+export interface DashboardKpiDataItem {
+  value: number;
+  previousValue?: number;
+  changePercent?: number;
+  unit?: '%' | '$' | '' | 'days';
+  lowerIsBetter?: boolean;
+}
+
 export interface DashboardKpiData {
-  totalActiveStudents: number;
-  avgAttendancePercentLast30Days: number;
-  avgAcademicPassPercentLastSemester: number;
-  totalOutstandingFees: number;
-  activeHighPriorityGrievances: number;
-  overallComplianceItemsCompliantPercent: number;
+  totalActiveStudents: DashboardKpiDataItem;
+  avgAttendancePercentLast30Days: DashboardKpiDataItem;
+  avgAcademicPassPercentLastSemester: DashboardKpiDataItem;
+  totalOutstandingFees: DashboardKpiDataItem;
+  activeHighPriorityGrievances: DashboardKpiDataItem;
+  overallComplianceItemsCompliantPercent: DashboardKpiDataItem;
+  avgTimeToPlacement?: DashboardKpiDataItem;
+  totalAlumniDonations?: DashboardKpiDataItem;
 }
 
 export interface EnrollmentTrendItem {
