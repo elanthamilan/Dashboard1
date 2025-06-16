@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { HomeOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import dayjs from 'dayjs';
-import { Pie, Column, Bar, Line, Donut } from '@ant-design/plots'; // Added Donut
+import { Pie, Column, Bar, Line } from '@ant-design/plots'; // Removed Donut
 import { Empty } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
@@ -647,7 +647,7 @@ const GrievancesFeedbackModule: React.FC = () => {
                          <Col><Statistic title={t('common.sla.totalResolvedWithSLA', "Total Resolved (with SLA)")} value={grievanceSlaPerformance.totalResolvedWithSLA} /></Col>
                      </Row>
                      {grievanceSlaPerformance.dataForChart.reduce((sum,item)=>sum+item.count,0) > 0 ? (
-                         <Donut data={grievanceSlaPerformance.dataForChart} angleField="count" colorField="type"
+                         <Pie data={grievanceSlaPerformance.dataForChart} angleField="count" colorField="type"
                              innerRadius={0.6} legend={{position:'bottom'}}
                              tooltip={{formatter:(d)=>({name:d.type, value:d.count})}}
                              label={{type:'inner', offset:'-50%', content:'{value}', style:{fill:'#fff'}}} />

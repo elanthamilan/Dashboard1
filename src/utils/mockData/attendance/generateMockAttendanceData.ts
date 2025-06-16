@@ -1,8 +1,7 @@
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
-import { AttendanceRecord, AttendanceStatus } from '../../../types/attendance'; // Ensure path
-import { SchoolClass, StudentSummary } // Assuming StudentSummary might be used to get student names for denormalization if needed later
-    from '../../../types/hierarchy'; // Ensure path
+import { AttendanceRecord, AttendanceStatus } from '../../../types/attendance'; // Updated path
+import { SchoolClass, StudentSummary } from '../../../types/hierarchy'; // Updated path
 
 // For generateMockStudents, if it's still needed elsewhere, otherwise it can be removed if student objects are sourced from academic mock data.
 export interface StudentForMock { // Renamed to avoid conflict if types/hierarchy.ts also has Student

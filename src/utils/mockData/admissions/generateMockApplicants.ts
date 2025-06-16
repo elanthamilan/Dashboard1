@@ -1,6 +1,6 @@
 // In src/utils/mockData/admissions/generateMockApplicants.ts
 import { faker } from '@faker-js/faker';
-import { Applicant, ApplicationStatus, KeyDeadline } from '../../../types/admissions'; // Ensure path is correct
+import { Applicant, ApplicationStatus, KeyDeadline } from '../../../types/admissions'; // Updated path
 import dayjs from 'dayjs';
 
 const applicationStatuses: ApplicationStatus[] = [

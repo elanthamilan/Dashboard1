@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import dayjs from 'dayjs';
-import { Invoice, Payment, FeeItem, InvoiceStatus, PaymentMethod, DiscountApplication, ScholarshipApplication } from '../../../types/billing'; // Ensure path
-import { StudentSummary } from '../../../types/hierarchy'; // For student info
+import { Invoice, Payment, FeeItem, InvoiceStatus, PaymentMethod, DiscountApplication, ScholarshipApplication } from '../../../types/billing'; // Updated path
+import { StudentSummary } from '../../../types/hierarchy'; // Updated path
 
 const invoiceStatuses: InvoiceStatus[] = ['Pending', 'Paid', 'Overdue', 'Cancelled', 'Partial Payment', 'Draft'];
 const paymentMethods: PaymentMethod[] = ['Credit Card', 'Bank Transfer', 'Online Wallet', 'Cheque', 'Cash', 'Other'];
