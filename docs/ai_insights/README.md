@@ -6,29 +6,25 @@ This document collection outlines potential Artificial Intelligence (AI) driven 
 
 AI has the potential to transform how educational institutions operate by unlocking deeper understanding from the vast amounts of data collected. By embedding AI capabilities at the top of each relevant page or module, users can gain immediate, context-specific intelligence to support their tasks.
 
-The ideas presented here are categorized into:
-*   **Summaries & Anomaly Detection:** AI-driven ways to quickly understand current situations and flag unusual events.
-*   **Predictions:** Forecasting future trends, needs, or outcomes.
-*   **Recommendations & Optimization:** Suggesting actions to improve results or make processes more efficient.
+The ideas presented within each linked document are now structured into two main phases:
+*   **Phase 1: Foundational AI Insights:** Core AI capabilities focusing on summaries, anomaly detection, initial predictions, and recommendations.
+*   **Phase 2: Advanced AI Insights:** More sophisticated, prescriptive, automated, and deeply integrated AI solutions.
+
+Each document explores these phased insights tailored to the specific data and processes of its respective area.
 
 ## Insight Areas
 
-Below are links to detailed AI insight explorations for specific functional areas of the institution:
+Below are links to detailed AI insight explorations for specific functional areas of the institution. Each document now contains both Phase 1 and Phase 2 ideas.
 
-*   **[Admissions & Enquiry](./admissions_and_enquiry.md):** Insights for optimizing the student recruitment and admission process, from initial enquiry to final enrollment. Focuses on lead scoring, conversion prediction, and personalized engagement.
+*   **[Admissions & Enquiry](./admissions_and_enquiry.md):** Insights for optimizing the student recruitment and admission process, from initial enquiry to final enrollment.
+*   **[Attendance & Engagement](./attendance.md):** Ideas for analyzing student attendance patterns, predicting at-risk students, and recommending interventions.
+*   **[Academic Performance](./academic_performance.md):** Leveraging AI for monitoring student progress, predicting performance, personalizing learning, and supporting OBE.
+*   **[Faculty Activities](./faculty_activities.md):** Insights into faculty workload, research, teaching effectiveness, and professional development.
+*   **[Teaching Plan & Timetable](./teaching_and_timetable.md):** AI-driven approaches for curriculum delivery, resource allocation, and timetable optimization.
+*   **[Capacity Planning](./capacity_planning.md):** Forecasting student enrollment and the subsequent demand for institutional resources.
+*   **[Custom Reports & Dashboards](./custom_reports_and_dashboards.md):** Enhancing reporting and dashboards with NLQ, personalization, and proactive alerting.
+*   **[Transportation Management](./transportation.md):** Optimizing transportation services, including routes, maintenance, and demand forecasting.
 
-*   **[Attendance & Engagement](./attendance.md):** Ideas for analyzing student attendance patterns, predicting at-risk students based on engagement, and recommending interventions to improve student presence and participation.
+*(Note: This README will be updated again once documents for additional Student Information System modules are created.)*
 
-*   **[Academic Performance](./academic_performance.md):** Leveraging AI to monitor student academic progress, predict performance issues, suggest personalized learning paths, and support Outcome-Based Education (OBE) frameworks. Covers aspects of Classwise Examination Performance, OBE Dashboard, and Daily Academic Views.
-
-*   **[Faculty Activities](./faculty_activities.md):** Insights into faculty workload, research output, teaching effectiveness, and professional development. Aims to support faculty and optimize resource allocation.
-
-*   **[Teaching Plan & Timetable](./teaching_and_timetable.md):** AI-driven approaches to optimize curriculum delivery, resource allocation for teaching, and the complex task of timetable generation to minimize conflicts and maximize resource use.
-
-*   **[Capacity Planning](./capacity_planning.md):** Using AI to forecast future student enrollment, and subsequently predict the demand for faculty, classroom space, lab resources, and other institutional capacities.
-
-*   **[Custom Reports & Dashboards](./custom_reports_and_dashboards.md):** Enhancing the custom reporting module and various dashboard pages (Manage Dashboards, My Dashboards, Holistic View, Transcript Dashboard) with AI capabilities like natural language querying, personalized layouts, automated insight generation from reports, and proactive KPI alerting.
-
-*   **[Transportation Management](./transportation.md):** Ideas for optimizing transportation services, including route optimization, predictive maintenance for fleets, demand forecasting, and real-time service monitoring.
-
-This collection serves as a starting point for discussions and development of AI features within the system. Each document provides more granular ideas tailored to the specific data and processes of its respective area.
+This collection serves as a starting point for discussions and development of AI features within the system.
