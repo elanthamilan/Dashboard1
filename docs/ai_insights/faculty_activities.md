@@ -73,3 +73,59 @@ The Department and Faculty module provides a snapshot of departmental structure,
     *   **Description:** Correlate departmental budget (`Department.budgetAllocated`, `Department.budgetSpent`) with outputs like research scores (`Department.researchOutputScore`), student success metrics, and faculty retention to identify departments that are particularly efficient or may need more resources.
     *   **Data Points:** `Department` financial data, research outputs, student academic data.
     *   **Value:** More data-driven departmental budget allocation.
+
+## Phase 2: Advanced AI Insights
+
+Phase 2 for faculty activities aims to provide more granular, predictive, and prescriptive support for faculty development, research strategy, and workload management.
+
+### 1. Advanced Workload & Contribution Modeling
+
+*   **Multi-Dimensional Workload Balancing Simulation:**
+    *   **Description:** Develop AI models that simulate the impact of different workload distribution policies not just on teaching credits, but also considering research commitments (active grants, expected publications), service roles (committee leadership, student advising intensity), and mentorship responsibilities. The model could identify optimal, equitable distributions based on configurable institutional priorities (e.g., prioritizing research output vs. teaching excellence for certain periods or faculty groups).
+    *   **Data Points:** `FacultyMember` data (all aspects), `ResearchProject` details, committee assignments, student advising lists, institutional strategic goals.
+    *   **Value:** More nuanced and fair workload management, aligning individual capacities with institutional objectives.
+*   **Predicting Faculty Burnout Risk with Prescriptive Interventions:**
+    *   **Description:** Beyond simple workload hotspotting, AI can predict individual faculty burnout risk by analyzing trends in workload components, sentiment in student evaluations (if text is analyzed), publication pressure (field-specific norms), and even changes in LMS activity or responsiveness (if ethically tracked). Prescriptive analytics could then suggest specific interventions like temporary load reduction, mentorship, or wellness resources.
+    *   **Data Points:** Longitudinal workload data, sentiment analysis of `FacultyEvaluation.comments`, publication rates, (optional) LMS faculty activity.
+    *   **Value:** Proactive support for faculty well-being and retention by addressing burnout before it becomes critical.
+
+### 2. Enhanced Research Support & Strategy
+
+*   **AI-Powered Research Grant Opportunity Matching & Funder Insights:**
+    *   **Description:** AI systems can scan public and private grant databases, matching opportunities to faculty members based on their `expertiseAreas`, publication history (`ResearchProject.publications`), and current `ResearchProject`s. It can also analyze funder priorities and past awarded grants to provide insights on how to tailor proposals.
+    *   **Data Points:** `FacultyMember` profiles, research data, external grant databases, funder websites.
+    *   **Value:** Increases faculty awareness of relevant funding and improves the quality of grant applications.
+*   **Identifying Potential Research Collaborators (Internal & External):**
+    *   **Description:** Advanced AI can build knowledge graphs of faculty expertise, publications, and co-authorship networks. It can then identify not only internal collaborators but also suggest potential external collaborators from other institutions by analyzing public research databases.
+    *   **Data Points:** `FacultyMember` profiles, `ResearchProject` data, public research databases (e.g., PubMed, Scopus, Google Scholar).
+    *   **Value:** Fosters high-impact research collaborations and expands the institution's research network.
+*   **Predicting Research Impact & Trajectory:**
+    *   **Description:** For individual faculty or research groups, AI can analyze current publication venues, citation trends, collaboration networks, and grant funding to predict future research impact (e.g., h-index trajectory, likelihood of publications in top-tier venues).
+    *   **Data Points:** Publication records, citation data, grant awards, co-authorship networks.
+    *   **Value:** Helps in identifying rising research stars and strategically allocating research support.
+
+### 3. Personalized Professional Development & Performance Enhancement
+
+*   **AI-Curated, Competency-Based Professional Development Pathways:**
+    *   **Description:** Based on a faculty member's career goals (if captured), identified areas for development (from evaluations or self-assessment), and institutional needs, AI can curate a personalized pathway of professional development activities, including specific workshops, online courses, mentorship pairings, or even suggested readings/conferences.
+    *   **Data Points:** `FacultyMember` data, `FacultyEvaluation` feedback, self-assessment data, catalog of PD opportunities, institutional competency frameworks.
+    *   **Value:** Highly tailored and effective professional growth for faculty.
+*   **Automated Analysis of Teaching Practices for Self-Reflection:**
+    *   **Description:** If lecture recordings or detailed LMS interaction data are available (with consent), AI could provide faculty with private, automated feedback on their teaching practices, such as talk time vs. student interaction time, types of questions asked, or clarity of explanations (based on student engagement patterns or sentiment in chat). This is for self-reflection, not evaluation.
+    *   **Data Points:** Lecture recordings (audio/video), LMS interaction logs, student engagement metrics.
+    *   **Value:** Provides objective data points for faculty to reflect on and voluntarily improve their teaching.
+*   **Predicting Eligibility and Success in Promotion/Tenure:**
+    *   **Description:** Based on institutional criteria and historical data of successful (and unsuccessful) promotion/tenure cases, AI can provide faculty with a confidential assessment of their current trajectory towards these milestones, highlighting areas of strength and areas needing more focus.
+    *   **Data Points:** Institutional promotion/tenure criteria, anonymized historical faculty progression data, individual `FacultyMember` achievements.
+    *   **Value:** Helps faculty proactively manage their career progression and understand expectations.
+
+### 4. Departmental & Institutional Strategic Insights
+
+*   **Succession Planning for Key Academic & Leadership Roles:**
+    *   **Description:** AI can analyze the profiles, experiences, and leadership potential indicators (e.g., successful committee chairing, mentorship roles) of existing faculty to identify potential candidates for future departmental or institutional leadership positions.
+    *   **Data Points:** `FacultyMember` comprehensive data, committee records, past leadership roles.
+    *   **Value:** Supports proactive talent development and smooth leadership transitions.
+*   **Benchmarking Departmental Research Output & Teaching Effectiveness:**
+    *   **Description:** AI can help benchmark a department's research output (publications, grants, citations per faculty) and teaching effectiveness (student success rates, aggregated evaluation scores) against similar departments in peer institutions (if public data is available) or against internal historical trends.
+    *   **Data Points:** Departmental faculty data, research outputs, student academic data, (optional) public data from peer institutions.
+    *   **Value:** Provides context for departmental performance and identifies areas for strategic improvement.

@@ -92,3 +92,63 @@ The Academic Performance module offers a comprehensive overview of student achie
     *   **Description:** An AI-powered student dashboard could provide a prioritized list for the day, e.g., "Upcoming quiz in MATH101," "Assignment due for HIST202," "Review feedback on ENG101 paper," "LMS activity low for PHYS301 - catch up on module 3."
     *   **Data Points:** Course schedules, assignment due dates, gradebook, LMS engagement.
     *   **Value:** Helps students manage their workload and stay on track.
+
+## Phase 2: Advanced AI Insights
+
+Phase 2 for academic performance focuses on highly personalized learning support, sophisticated assessment techniques, and deeper integration of AI into the fabric of teaching and learning processes.
+
+### 1. Hyper-Personalized Learning & Support
+
+*   **AI-Generated Personalized Study Schedules & Content Curation:**
+    *   **Description:** Based on a student's learning pace (derived from LMS interaction and assessment speed), upcoming deadlines, predicted difficult topics (from grade predictions), and stated learning goals, AI can generate a dynamic, personalized study schedule. It can also curate and recommend specific learning materials (videos, articles, practice problems) from institutional or external repositories tailored to their immediate needs.
+    *   **Data Points:** `StudentAcademicRecord`, LMS engagement patterns, assessment performance, course content metadata, learning resource library.
+    *   **Value:** Optimizes student study time and provides targeted support exactly when needed.
+*   **Adaptive Learning Systems & Intelligent Tutoring:**
+    *   **Description:** Implement or integrate AI-powered adaptive learning platforms where the difficulty and sequence of content adjust in real-time based on student performance. AI tutors could provide instant feedback, hints, and explanations for practice problems.
+    *   **Data Points:** Student responses to questions/activities, performance on assessments, pre-defined learning pathways and content variations.
+    *   **Value:** Highly individualized learning experience that caters to different learning speeds and styles, improving mastery.
+*   **Automated Feedback on Complex Assignments (e.g., Essays, Code):**
+    *   **Description:** Utilize AI tools (Natural Language Processing for essays, static/dynamic analysis for code) to provide initial formative feedback on complex assignments, highlighting areas for improvement in structure, grammar, style, or common errors before final submission to faculty.
+    *   **Data Points:** Student assignment submissions, pre-defined rubrics, models of good/bad examples.
+    *   **Value:** Provides students with more frequent feedback, allowing for iterative improvement, and can reduce some of the grading load on faculty for formative assessments.
+
+### 2. Advanced Assessment & Integrity
+
+*   **AI-Powered Adaptive Testing:**
+    *   **Description:** Design assessments where the difficulty of subsequent questions is adapted based on the student's performance on previous questions. This can more accurately gauge a student's true ability level with fewer questions.
+    *   **Data Points:** Item response theory models, large question banks calibrated for difficulty and discrimination.
+    *   **Value:** More efficient and precise assessment of student knowledge.
+*   **Sophisticated Plagiarism & Authorship Verification:**
+    *   **Description:** Employ advanced AI tools that go beyond simple text matching for plagiarism detection. This can include stylistic analysis to detect contract cheating or verify authorship consistency across a student's submissions.
+    *   **Data Points:** Student submissions, internet-wide text corpus, historical student submissions.
+    *   **Value:** Upholds academic integrity more effectively.
+*   **AI-Assisted Grading for Subjective Assessments:**
+    *   **Description:** For certain types of subjective assessments (e.g., short answers, specific types of essays), AI can be trained on faculty-graded examples to provide initial grade suggestions or highlight sections of student work that align with specific rubric criteria, assisting faculty in faster and more consistent grading. Faculty would always have the final say.
+    *   **Data Points:** Historical graded submissions with faculty annotations, grading rubrics.
+    *   **Value:** Can speed up grading for large classes and improve inter-rater reliability, while keeping faculty in control.
+
+### 3. Deeper OBE Analytics & Curriculum Intelligence
+
+*   **Competency Development Pathway Visualization (OBE):**
+    *   **Description:** AI can track and visualize a student's development of specific competencies (linked to POs and COs) over their entire program duration, showing not just attainment but also the trajectory and rate of development. This can highlight strengths and areas needing further growth.
+    *   **Data Points:** Longitudinal assessment data mapped to outcomes, course sequences.
+    *   **Value:** Provides a rich, dynamic view of student competency development for personalized advising and OBE reporting.
+*   **AI-Driven Curriculum Gap Analysis against Industry Skills (OBE):**
+    *   **Description:** AI can analyze current job market skill demands (from job boards, industry reports) and map these against the institution's defined program learning outcomes and course content. This identifies gaps where the curriculum may not adequately prepare students for current industry needs.
+    *   **Data Points:** Program/course learning outcomes, course content, external job market data, skill ontologies.
+    *   **Value:** Ensures curriculum relevance and enhances graduate employability, a key aspect of OBE.
+*   **Predictive Modeling of Curriculum Changes on Outcome Attainment:**
+    *   **Description:** If changes are proposed to the curriculum (e.g., adding a new course, modifying content of an existing one), AI can simulate the potential impact of these changes on overall program outcome attainment rates and student progression.
+    *   **Data Points:** Current curriculum structure, outcome mappings, proposed changes, historical student performance.
+    *   **Value:** Allows for data-informed decisions on curriculum evolution.
+
+### 4. Enhanced Faculty Support
+
+*   **AI-Generated Insights for Early Intervention by Faculty:**
+    *   **Description:** Provide faculty with highly specific, AI-generated insights about students in their current classes, e.g., "Student X, who performed well on Quiz 1, has shown a significant drop in LMS engagement this week and is predicted to struggle on the upcoming Midterm. Consider a brief check-in."
+    *   **Data Points:** Real-time LMS data, attendance, recent assessment scores, predictive models.
+    *   **Value:** Empowers faculty with timely and actionable information to support their students directly.
+*   **Automated Creation of Supplementary Learning Materials:**
+    *   **Description:** Based on common points of difficulty identified in student assessments or frequently asked questions in forums, AI could assist faculty by drafting initial versions of supplementary materials like FAQs, glossaries, or simple practice quizzes.
+    *   **Data Points:** Student assessment data, LMS forum data, course content.
+    *   **Value:** Saves faculty time in creating support materials for common student challenges.

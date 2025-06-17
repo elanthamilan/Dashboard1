@@ -110,3 +110,52 @@ Leveraging the rich data in the `AdmissionsModule` and `Applicant` type.
     *   **Description:** AI systems can continuously monitor incoming applicant data for unusual patterns or inconsistencies that might indicate errors or fraudulent applications.
     *   **Data Points:** All `Applicant` data.
     *   **Value:** Improves data integrity and flags potential issues early.
+
+## Phase 2: Advanced AI Insights
+
+Building upon the foundational AI capabilities, Phase 2 focuses on more sophisticated, prescriptive, and automated AI solutions for admissions and enquiry management.
+
+### 1. Prescriptive Analytics & Automated Decision Support
+
+*   **Optimal Scholarship/Aid Allocation Strategy Simulation:**
+    *   **Description:** AI models can simulate different scholarship and financial aid allocation strategies to predict their impact on yield rate, diversity, academic profile of the incoming class, and net tuition revenue. It can then recommend an optimal strategy based on predefined institutional goals.
+    *   **Data Points:** Historical applicant data (including financial need if available), admission likelihood scores, scholarship acceptance likelihood, institutional budget constraints, strategic enrollment goals (e.g., diversity targets, desired academic profile).
+    *   **Value:** Maximizes the impact of financial aid budgets to achieve specific enrollment objectives.
+*   **Automated Prioritization of Application Reviews:**
+    *   **Description:** Develop a dynamic scoring system that not only predicts admission likelihood but also considers strategic importance (e.g., applicants for under-enrolled high-potential programs, diversity candidates). AI can then create a prioritized work queue for admission officers.
+    *   **Data Points:** Applicant profiles, admission likelihood, program enrollment targets, diversity goals, reviewer availability.
+    *   **Value:** Ensures that admission officers' time is focused on applications that are most critical to institutional goals.
+*   **AI-Assisted Interview Scheduling & Matching (Advanced):**
+    *   **Description:** Beyond simple slot suggestions, AI can manage the entire interview scheduling process, considering applicant/interviewer availability (synced with calendars), time zones, interviewer load balancing, and even attempting to match applicants with interviewers who have relevant backgrounds or high success rates with similar candidates.
+    *   **Data Points:** Applicant/interviewer calendar availability, `Applicant.programOfInterest`, `FacultyMember.expertiseAreas`, historical interview outcomes and feedback.
+    *   **Value:** Highly efficient and optimized interview scheduling, potentially improving interview quality.
+
+### 2. Enhanced Predictive Capabilities
+
+*   **Predicting Student Lifetime Value (SLTV) at Enquiry/Admission Stage:**
+    *   **Description:** Based on early applicant characteristics, program interest, and historical data of alumni engagement and success, AI can estimate a proxy for Student Lifetime Value (e.g., likelihood to graduate, potential for alumni engagement/donations, success in placement). This is a long-term and complex prediction.
+    *   **Data Points:** Applicant profile, program of interest, socio-economic factors (if available and ethically used), historical alumni data (graduation, career, engagement).
+    *   **Value:** Provides a longer-term perspective on recruitment, potentially influencing decisions on borderline candidates or resource allocation for nurturing specific applicant segments. (Must be used ethically and carefully to avoid bias).
+*   **Forecasting Application Fraud & Document Authenticity:**
+    *   **Description:** AI can analyze application data, including submitted documents (text analysis of essays, metadata of files), for patterns that might indicate fraudulent applications or doctored documents.
+    *   **Data Points:** `Applicant` data, submitted documents, historical fraud cases.
+    *   **Value:** Enhances integrity of the admissions process.
+*   **Micro-segmentation for Hyper-Personalized Communication:**
+    *   **Description:** AI can identify very specific micro-segments of enquiries or applicants (e.g., "enquirers interested in AI specializations within Computer Science, who attended a specific webinar and have a non-CS background"). This allows for hyper-personalized communication content and timing.
+    *   **Data Points:** All enquiry and applicant data, engagement history (website, events).
+    *   **Value:** Significantly increases the relevance and effectiveness of marketing and nurturing communications.
+
+### 3. Automation & Efficiency
+
+*   **AI-Powered Enquiry Chatbots with Contextual Handoff:**
+    *   **Description:** Implement advanced chatbots that can handle a wide range of common enquiries, access knowledge bases, and provide personalized information. AI determines when to seamlessly hand off the conversation to a human admissions officer with full context.
+    *   **Data Points:** FAQ knowledge base, program information, applicant data (if authenticated).
+    *   **Value:** 24/7 enquiry support, frees up human staff for more complex interactions.
+*   **Automated Summarization of Applicant Profiles for Reviewers:**
+    *   **Description:** For each application, AI can generate a concise summary highlighting key strengths, weaknesses, potential red flags, and how the applicant aligns with program requirements or institutional priorities, making the review process faster.
+    *   **Data Points:** Full `Applicant` profile, `Applicant.documents` (e.g., resume, essays).
+    *   **Value:** Speeds up application review times and ensures consistency.
+*   **Automated Feedback Analysis from Declined Offers:**
+    *   **Description:** If feedback is collected from students who decline admission offers, AI can analyze this textual feedback at scale to identify common reasons, competitor mentions, or concerns about the institution.
+    *   **Data Points:** Textual feedback from declined applicants.
+    *   **Value:** Provides actionable insights to improve yield rates in future cycles.

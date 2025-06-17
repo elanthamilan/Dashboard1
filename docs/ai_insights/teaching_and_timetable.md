@@ -95,3 +95,49 @@ Timetabling involves scheduling `Section`s of `Course`s, considering faculty, st
     *   **Description:** Allow administrators to propose a change to the timetable (e.g., move a class, change an instructor) and have AI predict the ripple effects (new clashes, impact on room utilization, student/faculty schedule changes).
     *   **Data Points:** Current timetable, proposed change, all relevant constraints.
     *   **Value:** Enables informed decision-making before finalizing timetable adjustments.
+
+## Phase 2: Advanced AI Insights
+
+Phase 2 for teaching plans and timetabling focuses on creating dynamic, adaptive, and deeply optimized systems for curriculum management and scheduling, leveraging more complex AI models.
+
+### I. Advanced AI for Teaching Plans & Curriculum Intelligence
+
+*   **AI-Powered Curriculum Knowledge Graph:**
+    *   **Description:** Develop a knowledge graph representing courses, learning outcomes, concepts, prerequisites, faculty expertise, and available learning resources. AI can use this graph to identify complex relationships, suggest learning pathways, find interdisciplinary links, and support automated curriculum mapping against accreditation standards or industry skill demands.
+    *   **Data Points:** `Course` details (including detailed syllabi content if available), `Program` structures, learning outcome definitions, `FacultyMember.expertiseAreas`, learning resource metadata, accreditation standards.
+    *   **Value:** A dynamic and queryable representation of the curriculum that supports advanced analysis, personalized learning, and strategic curriculum development.
+*   **Automated Generation of Course Prerequisite Suggestions:**
+    *   **Description:** By analyzing the content of course syllabi (if digitized) and the skills/knowledge demonstrated by students who succeed or struggle in specific courses, AI can suggest or validate prerequisites for courses, potentially identifying implicit dependencies not formally documented.
+    *   **Data Points:** Course syllabi text, `StudentAcademicRecord` (grades in related courses), learning outcome data.
+    *   **Value:** Improves the accuracy of prerequisite chains, leading to better student preparedness and success in advanced courses.
+*   **Predictive Impact Analysis of Curriculum Changes:**
+    *   **Description:** When significant curriculum changes are proposed (e.g., new core course, removal of an elective, major restructuring of a program), AI can simulate the potential impact on student progression, time-to-graduation, faculty workload, and resource needs (classrooms, labs) based on historical data and defined constraints.
+    *   **Data Points:** Current curriculum structure, proposed changes, student enrollment patterns, faculty data, classroom inventory.
+    *   **Value:** Allows for data-driven evaluation of proposed curriculum changes before implementation.
+*   **AI for Dynamic Syllabus Updates & Resource Recommendations:**
+    *   **Description:** AI can monitor relevant academic journals, industry publications, and open educational resource (OER) repositories to suggest timely updates to course syllabi or recommend new, relevant learning resources to faculty for specific topics.
+    *   **Data Points:** Course syllabi content, external academic/industry feeds, OER databases.
+    *   **Value:** Helps keep course content current and enriches learning resources.
+
+### II. Advanced AI for Intelligent Timetabling
+
+*   **Multi-Objective Timetable Optimization with Reinforcement Learning:**
+    *   **Description:** Employ advanced AI techniques like reinforcement learning to create timetables that optimize for multiple, potentially conflicting objectives simultaneously. These could include minimizing student/faculty travel time between classes, maximizing student course preferences, ensuring equitable distribution of popular/unpopular time slots for faculty, maximizing room utilization, and minimizing energy consumption (e.g., by consolidating classes in fewer buildings).
+    *   **Data Points:** All standard timetabling inputs plus student course preferences, faculty preferences (weighted), campus layout/travel times, energy consumption data per building.
+    *   **Value:** Produces highly optimized and balanced timetables that cater to a wider range of stakeholder needs.
+*   **Real-time Adaptive Timetabling Adjustments:**
+    *   **Description:** In response to unforeseen events (e.g., faculty illness, emergency room closure, sudden change in section enrollment), AI can suggest or even automatically implement minor, localized timetable adjustments in real-time to minimize disruption, reallocating resources as needed.
+    *   **Data Points:** Live timetable, faculty/room availability status, student enrollment data.
+    *   **Value:** Increased resilience and flexibility of the timetable.
+*   **Personalized Student Timetable Generation:**
+    *   **Description:** For students with flexible elective choices, AI can generate a personalized, clash-free draft timetable that considers their course requirements, stated preferences (e.g., no early morning classes, preference for certain instructors), and even attempts to optimize for their individual learning patterns (e.g., spacing out difficult courses).
+    *   **Data Points:** Student academic record/requirements, course catalog, student preferences, faculty schedules, room availability.
+    *   **Value:** Enhances student satisfaction and potentially improves learning by providing a more tailored schedule.
+*   **Predictive "Timetable Stability" Score:**
+    *   **Description:** Before finalizing a timetable, AI can assign a "stability score" predicting its likelihood of requiring significant changes later due to unresolved conflicts, faculty unavailability, or unmet student demand based on patterns from previous years.
+    *   **Data Points:** Draft timetable, historical timetable change requests, faculty availability patterns, student course demand forecasts.
+    *   **Value:** Helps administrators create more robust and reliable timetables from the outset.
+*   **Integration with Smart Campus Systems:**
+    *   **Description:** AI-driven timetabling can integrate with smart campus systems to dynamically adjust lighting, HVAC in classrooms based on real-time schedules and occupancy (detected by sensors), further optimizing energy use and campus environment.
+    *   **Data Points:** Timetable data, real-time room occupancy sensors, building management system controls.
+    *   **Value:** Contributes to a greener campus and operational cost savings.
