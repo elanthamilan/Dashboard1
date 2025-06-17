@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import dayjs from 'dayjs';
-import { Pie, Column, Line, Bar, Gauge, Donut } from '@ant-design/plots'; // Added Donut
+import { Pie, Column, Line, Bar, Gauge } from '@ant-design/plots'; // Added Donut
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -809,7 +809,7 @@ const ComplianceAccreditationModule: React.FC = () => {
               <Col xs={24} md={12} lg={8}>
                 <Card title={t('module.compliance.policyReviewStatusTitle', "Policy Review Status")}>
                   {policyReviewStatusData.length > 0 ? (
-                    <Donut data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}}
+                    <Pie data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}}
                            label={{type:'outer', content: '{name}\n{value} ({percentage})'}}
                            tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} />
                   ) : <Empty />}
@@ -998,7 +998,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                 <Row gutter={[16, 16]} style={{ marginTop: '10px' }}>
                   <Col xs={24} md={12} lg={8}>
                     <Card title={t('module.compliance.policyReviewStatusTitle', "Policy Review Status")}>
-                      {policyReviewStatusData.length > 0 ? ( <Donut data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}} label={{type:'outer', content: '{name}\n{value} ({percentage})'}} tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} /> ) : <Empty />}
+                      {policyReviewStatusData.length > 0 ? ( <Pie data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}} label={{type:'outer', content: '{name}\n{value} ({percentage})'}} tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} /> ) : <Empty />}
                     </Card>
                   </Col>
                   <Col xs={24} md={12} lg={8}>
