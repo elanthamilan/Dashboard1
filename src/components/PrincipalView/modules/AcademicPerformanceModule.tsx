@@ -198,18 +198,18 @@ const AcademicPerformanceModule: React.FC = () => {
   const gpaDistributionDataImpl = useMemo(() => {
     if (!allStudentsInInstitution || allStudentsInInstitution.length === 0) return [];
     const gpaBuckets: Record<string, number> = { [t('common.gpaBuckets.lt2_0', "< 2.0")]: 0, [t('common.gpaBuckets.gte2_0_lt2_5', "2.0-2.49")]: 0, [t('common.gpaBuckets.gte2_5_lt3_0', "2.5-2.99")]: 0, [t('common.gpaBuckets.gte3_0_lt3_5', "3.0-3.49")]: 0, [t('common.gpaBuckets.gte3_5', "3.5-4.0")]: 0, [t('common.unknown', 'Unknown')]: 0, };
-    allStudentsInInstitution.forEach(s => { const gpa = s.cumulativeGPA; if (gpa === undefined || gpa === null) gpaBuckets[t('common.unknown', 'Unknown')]++; else if (gpa < 2.0) gpaBuckets[t('common.gpaBuckets.lt2_0', "< 2.0")]++; else if (gpa < 2.5) gpaBuckets[t('common.gpaBuckets.gte2_0_lt2_5', "2.0-2.49")]++; else if (gpa < 3.0) gpaBuckets[t('common.gpaBuckets.gte2_5_lt3_0', "2.5-2.99")]++; else if (gpa < 3.5) gpaBuckets[t('common.gpaBuckets.gte3_0_lt3_5', "3.0-3.49")]++; else gpaBuckets[t('common.gpaBuckets.gte3_5', "3.5-4.0")]++; });
+    allStudentsInInstitution.forEach((s: StudentSummary) => { const gpa = s.cumulativeGPA; if (gpa === undefined || gpa === null) gpaBuckets[t('common.unknown', 'Unknown')]++; else if (gpa < 2.0) gpaBuckets[t('common.gpaBuckets.lt2_0', "< 2.0")]++; else if (gpa < 2.5) gpaBuckets[t('common.gpaBuckets.gte2_0_lt2_5', "2.0-2.49")]++; else if (gpa < 3.0) gpaBuckets[t('common.gpaBuckets.gte2_5_lt3_0', "2.5-2.99")]++; else if (gpa < 3.5) gpaBuckets[t('common.gpaBuckets.gte3_0_lt3_5', "3.0-3.49")]++; else gpaBuckets[t('common.gpaBuckets.gte3_5', "3.5-4.0")]++; });
     return Object.entries(gpaBuckets).map(([bucket, count]) => ({ bucket, count })).filter(item => item.count > 0);
   }, [allStudentsInInstitution, t]);
   const creditsEarnedDistributionDataImpl = useMemo(() => {
     if (!allStudentsInInstitution || allStudentsInInstitution.length === 0) return [];
     const creditBuckets: Record<string, number> = { '0-30': 0, '31-60': 0, '61-90': 0, '91-120': 0, '121+': 0, [t('common.unknown', 'Unknown')]: 0, };
-    allStudentsInInstitution.forEach(s => { const credits = s.totalCreditsEarned; if (credits === undefined || credits === null) creditBuckets[t('common.unknown', 'Unknown')]++; else if (credits <= 30) creditBuckets['0-30']++; else if (credits <= 60) creditBuckets['31-60']++; else if (credits <= 90) creditBuckets['61-90']++; else if (credits <= 120) creditBuckets['91-120']++; else creditBuckets['121+']++; });
+    allStudentsInInstitution.forEach((s: StudentSummary) => { const credits = s.totalCreditsEarned; if (credits === undefined || credits === null) creditBuckets[t('common.unknown', 'Unknown')]++; else if (credits <= 30) creditBuckets['0-30']++; else if (credits <= 60) creditBuckets['31-60']++; else if (credits <= 90) creditBuckets['61-90']++; else if (credits <= 120) creditBuckets['91-120']++; else creditBuckets['121+']++; });
     return Object.entries(creditBuckets).map(([bucket, count]) => ({ bucket, count })).filter(item => item.count > 0);
   }, [allStudentsInInstitution, t]);
   const academicStandingDistributionDataImpl = useMemo(() => {
     if (!allStudentsInInstitution || allStudentsInInstitution.length === 0) return [];
-    const standingCounts = allStudentsInInstitution.reduce((acc, s) => { const standing = s.academicStanding || t('common.unknown', 'Unknown'); acc[standing] = (acc[standing] || 0) + 1; return acc; }, {} as Record<string, number>);
+    const standingCounts = allStudentsInInstitution.reduce((acc: Record<string, number>, s: StudentSummary) => { const standing = s.academicStanding || t('common.unknown', 'Unknown'); acc[standing] = (acc[standing] || 0) + 1; return acc; }, {} as Record<string, number>);
     return Object.entries(standingCounts).map(([type, value]) => ({ type, value })).filter(item => item.value > 0);
   }, [allStudentsInInstitution, t]);
 
@@ -261,7 +261,7 @@ const AcademicPerformanceModule: React.FC = () => {
         ),
         React.createElement(Col, { xs: 24, md: 12, lg: 8 },
           React.createElement(Card, { title: React.createElement(React.Fragment, null, React.createElement(PieChartOutlined, null), " ", t('module.academics.academicStandingDistTitle', "Academic Standing")) },
-            academicStandingDistributionDataImpl.length > 0 ? React.createElement(Pie, { data: academicStandingDistributionDataImpl, angleField: "value", colorField: "type", radius: 0.8, legend:{position:'bottom'}, label:{type:'inner', offset: '-30%', content:'{percentage}', style:{fill:'#fff'}}, tooltip:{formatter: (datum: any) => ({name: datum.type, value: `${datum.value} (${(datum.percent * 100).toFixed(1)}%)`}) }} as any) : React.createElement(Empty, null)
+            academicStandingDistributionDataImpl.length > 0 ? React.createElement(Pie, { data: academicStandingDistributionDataImpl, angleField: "value", colorField: "type", radius: 0.8, legend:{position:'bottom'}, label:{type:'inner', offset: '-30%', content:'{percentage}', style:{fill:'#fff'}}, tooltip:{formatter: (datum: { type: string; value: number; percent: number; }) => ({name: datum.type, value: `${datum.value} (${(datum.percent * 100).toFixed(1)}%)`}) }} as any) : React.createElement(Empty, null)
           )
         )
       ),
@@ -271,13 +271,13 @@ const AcademicPerformanceModule: React.FC = () => {
         React.createElement(Table, {
             dataSource: coursePerformanceRankingData,
             columns: [
-                { title: t('common.courseName', 'Course Name'), dataIndex: 'courseName', key: 'courseName', width: 250, ellipsis:true, sorter: (a:any,b:any) => a.courseName.localeCompare(b.courseName) },
-                { title: t('common.credits', 'Credits'), dataIndex: 'credits', key: 'credits', align:'right', sorter: (a:any,b:any) => a.credits - b.credits },
-                { title: t('common.enrolled', 'Enrolled'), dataIndex: 'totalEnrolled', key: 'totalEnrolled', align:'right', sorter: (a:any,b:any) => a.totalEnrolled - b.totalEnrolled },
-                { title: t('module.academics.avgGradePoints', 'Avg. Grade (Points)'), dataIndex: 'avgGradePoints', key: 'avgGradePoints', align:'right', render: (val?: number) => val?.toFixed(2) || 'N/A', sorter: (a:any,b:any) => (a.avgGradePoints||0) - (b.avgGradePoints||0) },
-                { title: t('module.academics.passRatePercent', 'Pass Rate (%)'), dataIndex: 'passRate', key: 'passRate', align:'right', render: (val?: number) => `${val?.toFixed(1)}%`, sorter: (a:any,b:any) => (a.passRate||0) - (b.passRate||0) },
-                { title: t('module.academics.failureRatePercent', 'Failure Rate (%)'), dataIndex: 'failureRate', key: 'failureRate', align:'right', render: (val?: number) => `${val?.toFixed(1)}%`, sorter: (a:any,b:any) => (a.failureRate||0) - (b.failureRate||0) },
-                { title: t('common.actions', 'Actions'), key: 'actions', render: (_: any, record: Course) => React.createElement(Button, { type: "link", size:"small", onClick: () => setSelectedCourseForDetails(record) }, t('common.viewDetails', "View Details"))}
+                { title: t('common.courseName', 'Course Name'), dataIndex: 'courseName', key: 'courseName', width: 250, ellipsis:true, sorter: (a: CoursePerformance, b: CoursePerformance) => a.courseName.localeCompare(b.courseName) },
+                { title: t('common.credits', 'Credits'), dataIndex: 'credits', key: 'credits', align:'right', sorter: (a: CoursePerformance, b: CoursePerformance) => (a.credits || 0) - (b.credits || 0) },
+                { title: t('common.enrolled', 'Enrolled'), dataIndex: 'enrolledCount', key: 'enrolledCount', align:'right', sorter: (a: CoursePerformance, b: CoursePerformance) => (a.enrolledCount || 0) - (b.enrolledCount || 0) },
+                { title: t('module.academics.avgGradePoints', 'Avg. Grade (Points)'), dataIndex: 'avgGradePoints', key: 'avgGradePoints', align:'right', render: (val?: number) => val?.toFixed(2) || 'N/A', sorter: (a: CoursePerformance,b: CoursePerformance) => (a.avgGradePoints||0) - (b.avgGradePoints||0) },
+                { title: t('module.academics.passRatePercent', 'Pass Rate (%)'), dataIndex: 'passRate', key: 'passRate', align:'right', render: (val?: number) => val !== undefined ? `${val.toFixed(1)}%` : 'N/A', sorter: (a: CoursePerformance,b: CoursePerformance) => (a.passRate||0) - (b.passRate||0) },
+                { title: t('module.academics.failureRatePercent', 'Failure Rate (%)'), dataIndex: 'failureRate', key: 'failureRate', align:'right', render: (val?: number) => val !== undefined ? `${val.toFixed(1)}%` : 'N/A', sorter: (a: CoursePerformance,b: CoursePerformance) => (a.failureRate||0) - (b.failureRate||0) },
+                { title: t('common.actions', 'Actions'), key: 'actions', render: (_: any, record: CoursePerformance) => React.createElement(Button, { type: "link", size:"small", onClick: () => setSelectedCourseForDetails(mockCourseList.find(c=>c.courseId === record.courseId) || null) }, t('common.viewDetails', "View Details"))}
             ],
             rowKey: "courseId", pagination: { pageSize: 10, showSizeChanger: true, size:'small' }, scroll:{x: 'max-content'}, size:"small"
         } as any)
@@ -306,12 +306,12 @@ const AcademicPerformanceModule: React.FC = () => {
         ),
         React.createElement(Col, { xs:24, lg:8 },
           React.createElement(Card, { title: t('module.academics.avgGradeTrendForCourseTitle', "Avg. Grade Trend for {courseName}", { courseName: selectedCourseForDetails.courseName }) },
-            avgGradeTrendForSelectedCourseData.length > 0 ? React.createElement(Line, { data: avgGradeTrendForSelectedCourseData, xField:"semesterName", yField:"avgGradePoints", xAxis:{title:{text: t('common.term', "Term")}, label:{rotate:25, autoHide:false, autoEllipsis:true}}, yAxis:{title:{text: t('module.academics.avgGradePoints', "Avg. Grade (Points)")}, min:0, max:4.0 }, tooltip:{formatter: (datum:any)=>({name: datum.semesterName, value: `${datum.avgGradePoints} (Enrollments: ${datum.enrollments})`})}, point:{size:4}} as any) : React.createElement(Empty, null)
+            avgGradeTrendForSelectedCourseData.length > 0 ? React.createElement(Line, { data: avgGradeTrendForSelectedCourseData, xField:"semesterName", yField:"avgGradePoints", xAxis:{title:{text: t('common.term', "Term")}, label:{rotate:25, autoHide:false, autoEllipsis:true}}, yAxis:{title:{text: t('module.academics.avgGradePoints', "Avg. Grade (Points)")}, min:0, max:4.0 }, tooltip:{formatter: (datum: { semesterName: string; avgGradePoints: number; enrollments: number; }) => ({name: datum.semesterName, value: `${datum.avgGradePoints} (Enrollments: ${datum.enrollments})`})}, point:{size:4}} as any) : React.createElement(Empty, null)
           )
         ),
         React.createElement(Col, { xs:24, lg:8 },
           React.createElement(Card, { title: t('module.academics.studentPerfCourseVsOverallTitle', "Student Perf: {courseName} vs Overall", { courseName: selectedCourseForDetails.courseName }) },
-            studentCourseVsOverallGpaData.length > 0 ? React.createElement(Scatter, { data: studentCourseVsOverallGpaData, xField:"overallGPA", yField:"courseGradePoints", size:4, xAxis:{title:{text: t('module.academics.overallGPA', "Overall Cumulative GPA")}, min:0, max:4.0}, yAxis:{title:{text: t('module.academics.courseGradePoints', "Course Grade (Points)")}, min:0, max:4.0}, tooltip:{fields:['studentName', 'overallGPA', 'courseGradePoints'], formatter: (d:any)=>({name:d.studentName, value:`Overall: ${d.overallGPA}, Course: ${d.courseGradePoints}`})}} as any) : React.createElement(Empty, null)
+            studentCourseVsOverallGpaData.length > 0 ? React.createElement(Scatter, { data: studentCourseVsOverallGpaData, xField:"overallGPA", yField:"courseGradePoints", size:4, xAxis:{title:{text: t('module.academics.overallGPA', "Overall Cumulative GPA")}, min:0, max:4.0}, yAxis:{title:{text: t('module.academics.courseGradePoints', "Course Grade (Points)")}, min:0, max:4.0}, tooltip:{fields:['studentName', 'overallGPA', 'courseGradePoints'], formatter: (d: { studentName: string; overallGPA: number; courseGradePoints: number; }) => ({name:d.studentName, value:`Overall: ${d.overallGPA}, Course: ${d.courseGradePoints}`})}} as any) : React.createElement(Empty, null)
           )
         )
       ),

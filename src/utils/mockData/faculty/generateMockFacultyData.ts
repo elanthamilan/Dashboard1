@@ -16,15 +16,29 @@ export const generateMockFacultyMembers = (
 
   departments.forEach(dept => {
     for (let i = 0; i < facultyPerDept; i++) {
-      const firstName = faker.person.firstName();
-      const lastName = faker.person.lastName();
+      // const firstName = faker.person.firstName(); // Not needed directly for FacultyMember type
+      // const lastName = faker.person.lastName(); // Not needed directly for FacultyMember type
+      const fullName = faker.person.fullName(); // Use fullName for the 'name' field
       faculty.push({
-        facultyId: `FAC-${String(facultyIdCounter++).padStart(4, '0')}`,
-        firstName,
-        lastName,
-        email: faker.internet.email({firstName, lastName}),
+        memberId: `FAC-${String(facultyIdCounter++).padStart(4, '0')}`, // Changed facultyId to memberId
+        name: fullName, // Used combined name
+        email: faker.internet.email({firstName: fullName.split(' ')[0], lastName: fullName.split(' ')[1] || ''}), // Email can still use parts of name
         departmentId: dept.departmentId,
         departmentName: dept.departmentName, // departmentName is on Department type
+        // Ensure other required fields from FacultyMember are added here if not optional
+        // For example, designation, expertiseAreas are required by FacultyMember type in academics.ts
+        // but the original error was only about facultyId/memberId and firstName/lastName/name.
+        // Adding placeholders or more detailed mock data for these would be a further step.
+        designation: faker.helpers.arrayElement(['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer']),
+        expertiseAreas: [faker.lorem.words(2), faker.lorem.words(2)],
+        // Minimal other fields that might be expected by FacultyMember if they are not optional:
+        // (Assuming these are part of the full FacultyMember type from academics.ts based on previous context)
+        dateOfBirth: dayjs(faker.date.birthdate({ min: 30, max: 65, mode: 'age' })).format('YYYY-MM-DD'),
+        gender: faker.helpers.arrayElement(['Male', 'Female', 'Other']),
+        highestQualification: faker.helpers.arrayElement(['PhD', 'Masters']),
+        dateOfJoining: dayjs(faker.date.past({ years: 10 })).format('YYYY-MM-DD'),
+        // publicationsCount, isAdvisor, adviseeCount, coursesTaughtLastAcademicYear, studentFeedbackAvgRating, totalGrantAmount, awardsAndRecognitions
+        // would be good additions for fuller mock data but are not part of the immediate fix for this subtask's error.
       });
     }
   });
@@ -50,7 +64,7 @@ export const generateMockFacultyEvaluations = (
 
       evaluations.push({
         evaluationId: `EVAL-${String(evalIdCounter++).padStart(5, '0')}`,
-        facultyId: faculty.facultyId,
+        facultyId: faculty.memberId, // Changed from faculty.facultyId
         studentId: student.studentId,
         // courseId: course?.courseId, // Example if course specific
         // termId: course?.termId,    // Example if course specific
@@ -99,11 +113,11 @@ export const generateMockResearchProjects = (
 
         const teamMembers: ResearchProject['teamMembers'] = [];
         // Add PI
-        teamMembers.push({ facultyId: faculty.facultyId, name: `${faculty.firstName} ${faculty.lastName}`, role: 'Principal Investigator'});
+        teamMembers.push({ memberId: faculty.memberId, name: faculty.name, role: 'Principal Investigator'}); // Changed facultyId to memberId, used faculty.name
         // Add other faculty
         if (facultyMembers.length > 1 && faker.datatype.boolean(0.3)) {
-            const otherFaculty = faker.helpers.arrayElement(facultyMembers.filter(fm => fm.facultyId !== faculty.facultyId));
-            if(otherFaculty) teamMembers.push({ facultyId: otherFaculty.facultyId, name: `${otherFaculty.firstName} ${otherFaculty.lastName}`, role: 'Co-Investigator'});
+            const otherFaculty = faker.helpers.arrayElement(facultyMembers.filter(fm => fm.memberId !== faculty.memberId)); // Changed facultyId to memberId in filter
+            if(otherFaculty) teamMembers.push({ memberId: otherFaculty.memberId, name: otherFaculty.name, role: 'Co-Investigator'}); // Changed facultyId to memberId, used otherFaculty.name
         }
         // Add students
         if (students && students.length > 0 && faker.datatype.boolean(0.5)) {
@@ -117,8 +131,8 @@ export const generateMockResearchProjects = (
         projects.push({
           projectId: `PROJ-${String(projectIdCounter++).padStart(4, '0')}`,
           title: faker.lorem.sentence(faker.number.int({min:5, max:12})),
-          principalInvestigatorId: faculty.facultyId,
-          principalInvestigatorName: `${faculty.firstName} ${faculty.lastName}`,
+          principalInvestigatorId: faculty.memberId, // Changed from faculty.facultyId
+          principalInvestigatorName: faculty.name, // Used faculty.name
           departmentId: faculty.departmentId,
           status,
           startDate: startDate.toISOString(),

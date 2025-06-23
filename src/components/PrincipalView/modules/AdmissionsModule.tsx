@@ -15,7 +15,7 @@ import {
 import { fetchData } from '../../../utils/apiUtils';
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData'; // Added import
-import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType, Degree, Department as DepartmentType } from '../../../types/hierarchy'; // Added Degree, DepartmentType
+import { Institution, Program, StudentSummary, AcademicYear as AcademicYearType, Degree, Department as DepartmentType, EnrollmentTrendItem, FeeSummaryChartItem, AttendanceGPAOverviewItem, OpenGrievancesByCategoryItem } from '../../types/hierarchy'; // Corrected path and added missing types
 import { KeyDeadline, Applicant, ApplicationStatus } from '../../../types/admissions';
 import { generateMockKeyDeadlines, generateMockApplicants } from '../../../utils/mockData/admissions/generateMockApplicants';
 import dayjs from 'dayjs';
@@ -123,7 +123,7 @@ const AdmissionsModule: React.FC = () => {
       acc[gender] = (acc[gender] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    return Object.entries(counts).map(([type, value]) => ({ type, value }));
+    return Object.entries(counts).map(([type, value]: [string, number]) => ({ type, value }));
   }, [allApplicants, t]);
 
   // Age Distribution Data (e.g., into buckets)
@@ -292,7 +292,7 @@ const AdmissionsModule: React.FC = () => {
            stageCounts[applicant.funnelStage] = (stageCounts[applicant.funnelStage] || 0) + 1;
        });
        return Object.entries(definedStageOrderAndNames)
-           .map(([stageNum, nameKey]) => ({
+           .map(([stageNum, nameKey]: [string, string]) => ({
                stage: t(`module.admissions.funnel.${nameKey.toLowerCase().replace(/\s+/g, '')}`, nameKey),
                value: stageCounts[Number(stageNum)] || 0,
                stageKey: nameKey
@@ -376,7 +376,7 @@ const AdmissionsModule: React.FC = () => {
 
   // Existing funnelChartConfig can be reused if programSpecificFunnelData matches its expected structure.
   // Let's assume funnelChartConfig is defined and compatible.
-  const funnelChartConfig = { /*data: programSpecificFunnelData,*/ xField: 'stage', yField: 'value', seriesField: 'stage', legend: false as const, conversionTag: { formatter: (data: { prev?: number, next?: number } | undefined) => { if (data && typeof data.prev === 'number' && typeof data.next === 'number' && data.prev > 0) { return `Conv. ${((data.next / data.prev) * 100).toFixed(1)}%`; } return ''; } }, tooltip: { formatter: (datum: any) => ({ name: datum.stage, value: `${datum.value} ${t('module.admissions.funnel.applicantsSuffix', 'Applicants')}` })}, label: { formatter: (datum: any) => String(datum.value), style: { fill: '#fff', fontSize: 12, stroke: '#000', lineWidth: 0.5 }}};
+  const funnelChartConfig = { /*data: programSpecificFunnelData,*/ xField: 'stage', yField: 'value', seriesField: 'stage', legend: false as const, conversionTag: { formatter: (data: { prev?: number, next?: number } | undefined) => { if (data && typeof data.prev === 'number' && typeof data.next === 'number' && data.prev > 0) { return `Conv. ${((data.next / data.prev) * 100).toFixed(1)}%`; } return ''; } }, tooltip: { formatter: (datum: { stage: string; value: number; }) => ({ name: datum.stage, value: `${datum.value} ${t('module.admissions.funnel.applicantsSuffix', 'Applicants')}` })}, label: { formatter: (datum: { value: number; }) => String(datum.value), style: { fill: '#fff', fontSize: 12, stroke: '#000', lineWidth: 0.5 }}};
 
 
   const mapData = useMemo(() => allApplicants.filter(app => app.originCoordinates && typeof app.originCoordinates.lng === 'number' && typeof app.originCoordinates.lat === 'number').map(app => ({ id: app.id, lng: app.originCoordinates!.lng, lat: app.originCoordinates!.lat, city: app.originCity || t('common.unknown'), country: app.originCountry || t('common.unknown') })), [allApplicants, t]);
@@ -587,7 +587,7 @@ const AdmissionsModule: React.FC = () => {
               radius: 0.8,
               legend: { position: 'bottom' },
               label: { type: 'inner', offset: '-30%', content: '{percentage}', style: { fill: '#fff', fontSize: 14 } },
-              tooltip: { formatter: (datum: any) => ({ name: datum.type, value: `${datum.value} (${(datum.percent * 100).toFixed(1)}%)` }) }
+              tooltip: { formatter: (datum: { type: string; value: number; percent: number; }) => ({ name: datum.type, value: `${datum.value} (${(datum.percent * 100).toFixed(1)}%)` }) }
             } as any) : React.createElement(Empty, { description: t('common.noDataAvailableForChart', "No data for chart") })
           )
         ),
@@ -602,7 +602,7 @@ const AdmissionsModule: React.FC = () => {
               label: { position: 'middle', style: { fill: '#FFFFFF', opacity: 0.6 } },
               xAxis: { title: { text: t('common.ageRange', "Age Range") } },
               yAxis: { title: { text: t('common.count', "Number of Applicants") } },
-              tooltip: { formatter: (datum: any) => ({ name: datum.ageRange, value: `${datum.count} ${t('common.applicants', 'Applicants')}` }) }
+              tooltip: { formatter: (datum: { ageRange: string; count: number; }) => ({ name: datum.ageRange, value: `${datum.count} ${t('common.applicants', 'Applicants')}` }) }
             } as any) : React.createElement(Empty, { description: t('common.noDataAvailableForChart', "No data for chart") })
           )
         ),
@@ -617,7 +617,7 @@ const AdmissionsModule: React.FC = () => {
               label: { position: 'middle', style: { fill: '#FFFFFF', opacity: 0.6 } },
               xAxis: { title: { text: t('common.nationality', "Nationality") }, label: { rotate: nationalityBreakdownData.length > 5 ? 45 : 0, autoHide: false, autoEllipsis: nationalityBreakdownData.length > 3 ? true : false } },
               yAxis: { title: { text: t('common.count', "Number of Applicants") } },
-              tooltip: { formatter: (datum: any) => ({ name: datum.nationality, value: `${datum.count} ${t('common.applicants', 'Applicants')}` }) }
+              tooltip: { formatter: (datum: { nationality: string; count: number; }) => ({ name: datum.nationality, value: `${datum.count} ${t('common.applicants', 'Applicants')}` }) }
             } as any) : React.createElement(Empty, { description: t('common.noDataAvailableForChart', "No data for chart") })
           )
         )

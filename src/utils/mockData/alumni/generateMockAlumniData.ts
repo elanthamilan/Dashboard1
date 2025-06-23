@@ -18,7 +18,7 @@ export const generateMockAlumni = (
   }));
 };
 
-const activityTypes: AlumniActivityType[] = ['EventAttended', 'DonationMade', 'MentorshipProvided', 'WebinarJoined', 'StoryShared'];
+const activityTypes: AlumniActivityType[] = ['EventAttended', 'DonationMade', 'MentorshipProvided', 'WebinarHosted', 'JobReferred', 'TalkDelivered', 'OtherContribution'];
 
 export const generateMockAlumniActivities = (
   alumni: Alumnus[],
@@ -37,11 +37,12 @@ export const generateMockAlumniActivities = (
         alumnusId: alum.studentId,
         activityType: activityType,
         date: faker.date.past({ years: 3 }).toISOString(),
-        description: activityType === 'EventAttended' ? `Attended: ${faker.company.catchPhrase()}` :
-                     activityType === 'MentorshipProvided' ? `Mentored on: ${faker.hacker.noun()}` :
-                     activityType === 'StoryShared' ? `Shared story: "${faker.lorem.sentence(5)}"`:
-                     activityType === 'WebinarJoined' ? `Joined webinar: "${faker.lorem.words(3)}"` : faker.lorem.sentence(),
-        value: activityType === 'DonationMade' ? faker.number.int({min:25, max:1000}) : // Adjusted min donation
+        description: activityType === 'DonationMade' ? `Donation of $${faker.number.int({min:25, max:500})}` :
+                     activityType === 'MentorshipProvided' ? `Mentored ${faker.number.int({min:1, max:3})} students in ${faker.person.jobArea()}` :
+                     activityType === 'WebinarHosted' ? `Hosted webinar on "${faker.lorem.words(3)}"` :
+                     activityType === 'TalkDelivered' ? `Delivered a talk on "${faker.lorem.sentence(4)}"` :
+                     faker.lorem.sentence(), // Default for EventAttended, OtherContribution, JobReferred
+        value: activityType === 'DonationMade' ? faker.number.int({min:25, max:1000}) :
                activityType === 'MentorshipProvided' ? faker.number.int({min:1, max:5}) : undefined,
       });
     }

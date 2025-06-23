@@ -33,7 +33,7 @@ export const generateMockPlacementData = (
         programId: 'PROG_MOCK_PLACEHOLDER', // Placeholder Program ID
         companyName: faker.company.name(),
         jobTitle: `Intern - ${faker.person.jobTitle()}`,
-        packageAmount: parseFloat(faker.finance.amount({ min: 15000, max: 60000, dec: 0 })),
+        packageDetails: parseFloat(faker.finance.amount({ min: 15000, max: 60000, dec: 0 })), // Renamed packageAmount to packageDetails
         placementDate: dayjs(faker.date.past({ years: 1, refDate: student.expectedGraduationDate })).toISOString(),
         placementType: 'Internship',
         campusDrive: faker.datatype.boolean(0.7),
@@ -46,7 +46,7 @@ export const generateMockPlacementData = (
       programId: 'PROG_MOCK_PLACEHOLDER', // Placeholder Program ID
       companyName: faker.company.name(),
       jobTitle: faker.person.jobTitle(),
-      packageAmount: parseFloat(faker.finance.amount({ min: avgPackageBase * 0.5, max: avgPackageBase * 2.2, dec: 0 })),
+      packageDetails: parseFloat(faker.finance.amount({ min: avgPackageBase * 0.5, max: avgPackageBase * 2.2, dec: 0 })), // Renamed packageAmount to packageDetails
       placementDate: dayjs(faker.date.between({
         from: dayjs(student.expectedGraduationDate!).subtract(1, 'month').toDate(),
         to: dayjs(student.expectedGraduationDate!).add(6, 'months').toDate()
