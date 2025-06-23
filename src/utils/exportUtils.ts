@@ -85,7 +85,7 @@ export const downloadProgramSummaryPDF = (program: Program, degreeName?: string,
   const programKpis = [
     { label: "Total Students:", value: program.totalStudents?.toString() ?? 'N/A' },
     { label: "Average GPA:", value: program.averageProgramGPA?.toFixed(2) ?? 'N/A' },
-    { label: "Required Credits:", value: program.requiredCredits?.toString() ?? 'N/A' },
+    { label: "Required Credits:", value: program.creditsRequired?.toString() ?? 'N/A' },
     { label: "Graduation Rate:", value: program.graduationRate !== undefined ? program.graduationRate.toFixed(1) + '%' : 'N/A' },
     { label: "Avg. Attendance:", value: program.avgAttendancePercentage !== undefined ? program.avgAttendancePercentage.toFixed(1) + '%' : 'N/A' },
     { label: "Total Absences:", value: program.totalProgramAbsences?.toString() ?? 'N/A' },
@@ -110,47 +110,13 @@ export const downloadProgramSummaryPDF = (program: Program, degreeName?: string,
 
   currentYPosition += 10; // Add some space before Semesters section title
 
-  // Semesters Table
-  if (currentYPosition > 260) { // Check if new section title and table need a new page
-      doc.addPage();
-      currentYPosition = 20;
-  }
-  doc.setFontSize(14); // Section title font size
-  doc.text("Semesters", 14, currentYPosition);
-  currentYPosition += 8; // Space after section title
-
-  const semesterTableHeaders = [
-    "Semester Name", "Students", "Avg. GPA", "Pass Rate (%)",
-    "Attendance (%)", "Absences", "Fees Paid (%)", "Overdue (Std.)"
-  ];
-
-  const semesterTableBody = program.semesters.map(s => [
-    s.semesterName, // Changed from s.termName
-    s.students?.length.toString() ?? 'N/A',
-    s.averageGPA?.toFixed(2) ?? 'N/A',
-    s.passRate !== undefined ? s.passRate.toFixed(1) : 'N/A', // Corrected percentage handling
-    s.attendancePercentage !== undefined ? s.attendancePercentage.toFixed(1) : 'N/A', // Corrected percentage handling
-    s.totalAbsences?.toString() ?? 'N/A',
-    s.feesPaidPercentage !== undefined ? s.feesPaidPercentage.toFixed(1) : 'N/A', // Corrected percentage handling
-    s.studentsWithOverdueFees?.toString() ?? 'N/A',
-  ]);
-
-  autoTable(doc, {
-    head: [semesterTableHeaders],
-    body: semesterTableBody,
-    startY: currentYPosition,
-    theme: 'striped',
-    headStyles: { fillColor: [22, 160, 133] }, // Example teal color
-    didDrawPage: (data) => {
-      // This function is called after a page is drawn by autoTable (including the first one)
-      // currentYPosition = data.cursor.y; // This would be where the table *ended* if it fit on one page
-                                       // or where the current part of the table ended on this page.
-    }
-  });
-
-  currentYPosition = (doc as any).lastAutoTable.finalY + 10; // Update Y pos to after the table
+  // Semester Table section removed as program.semesters is not a valid property
+  // If course data needs to be displayed, it should iterate program.courses (which is Course[])
+  // and display relevant information. For this fix, the section is removed.
 
   // Filename
+  // Ensure currentYPosition is updated if any other content is added before saving.
+  // For now, it retains its value from after the KPIs.
   const fileName = `Program_Summary_${sanitizeFilename(program.programName)}.pdf`;
 
   doc.save(fileName);

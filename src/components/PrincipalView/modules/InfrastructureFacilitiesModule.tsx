@@ -15,7 +15,8 @@ const MODULE_KEY = 'infrastructure';
 
 // Interfaces (already confirmed to be up-to-date in previous steps)
 type AssetStatus = 'Operational' | 'Under Maintenance' | 'Needs Repair' | 'Decommissioned';
-type ResourceType = 'Classroom' | 'Lab' | 'Auditorium' | 'Meeting Room' | 'Equipment' | 'IT Server' | 'Network Gear';
+// Updated ResourceType definition
+type ResourceType = 'Classroom' | 'Lab' | 'Auditorium' | 'Meeting Room' | 'Equipment' | 'IT Server' | 'Network Gear' | 'Furniture' | 'Classroom AV' | 'Lab Equipment' | 'Office Space' | 'Vehicle' | 'Other';
 type MaintenanceStatus = 'Open' | 'In Progress' | 'Resolved' | 'Closed' | 'On Hold';
 type MaintenancePriority = 'High' | 'Medium' | 'Low';
 type BuildingCondition = 'Good' | 'Fair' | 'Poor' | 'Under Renovation';
@@ -154,7 +155,7 @@ const InfrastructureFacilitiesModule: React.FC = () => {
             const expectedLifespanYears = faker.number.int({min:3, max:10});
             return {
                 id: `A${String(i).padStart(4,'0')}`, name: `${faker.commerce.productAdjective()} ${faker.commerce.productMaterial()} ${faker.commerce.product()}`,
-                type: faker.helpers.arrayElement<ResourceType>(['Equipment', 'Furniture', 'IT Server', 'Network Gear', 'Classroom AV', 'Lab Equipment']), // Corrected ResourceType usage
+                type: faker.helpers.arrayElement<ResourceType>(['Equipment', 'Furniture', 'IT Server', 'Network Gear', 'Classroom AV', 'Lab Equipment', 'Classroom', 'Lab', 'Auditorium']), // Ensured these are valid ResourceType values
                 location: `Building ${faker.helpers.arrayElement(mockBuildings).id} - Room ${faker.number.int({min:101,max:505})}`,
                 purchaseDate: purchaseDate.format('YYYY-MM-DD'),
                 status: faker.helpers.arrayElement<AssetStatus>(['Operational', 'Operational', 'Operational', 'Under Maintenance', 'Needs Repair', 'Decommissioned']),
@@ -492,7 +493,7 @@ const InfrastructureFacilitiesModule: React.FC = () => {
                       data={Object.entries(infraData.stats.overallAssetCondition).map(([k,v])=>({type:t(`assetStatus.${k}`,k), value: v as number})).filter(d=>d.value > 0)}
                       angleField="value" colorField="type" radius={0.8} legend={{position:'top'}}
                       label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}}
-                      tooltip={{formatter:(d)=>({name:d.type, value: `${d.value} ${t('common.assets', 'Assets')}`})}}
+                      tooltip={{formatter:(d: { type: string; value: number })=>({name:d.type, value: `${d.value} ${t('common.assets', 'Assets')}`})}}
                     />
                   </Card>
                 </Col>
@@ -541,7 +542,7 @@ const InfrastructureFacilitiesModule: React.FC = () => {
                   {overallRoomTypesData.length > 0 ? (
                     <Pie data={overallRoomTypesData} angleField="count" colorField="type" radius={0.8} legend={{position:'right', offsetY:0}}
                          label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.rooms','rooms')}`})}}/>
+                         tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:`${d.count} ${t('common.rooms','rooms')}`})}}/>
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -566,7 +567,7 @@ const InfrastructureFacilitiesModule: React.FC = () => {
                   {assetCountByTypeData.length > 0 ? (
                     <Bar data={assetCountByTypeData.slice(0,15)} xField="count" yField="type" seriesField="type" legend={false} barWidthRatio={0.7}
                          yAxis={{label:{autoEllipsis:true}}} xAxis={{title:{text:t('common.numberOfAssets',"No. of Assets")}}}
-                         tooltip={{formatter:(d)=>({name:d.type, value:d.count})}} />
+                         tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:d.count})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -585,8 +586,8 @@ const InfrastructureFacilitiesModule: React.FC = () => {
                 <Card title={t('module.infrastructure.assetValueByDeptTitle', "Total Asset Value by Department")}>
                   {assetValueByDeptData.length > 0 ? (
                     <Bar data={assetValueByDeptData} xField="totalValue" yField="departmentName" seriesField="departmentName" legend={false}
-                         xAxis={{title:{text:t('common.totalValueUSD', "Total Value ($)")}, label:{formatter:(v)=>`$${Number(v/1000).toFixed(0)}k`}}}
-                         yAxis={{label:{autoEllipsis:true}}} tooltip={{formatter:(d)=>({name:d.departmentName, value:`$${Number(d.totalValue).toLocaleString()}`})}}/>
+                         xAxis={{title:{text:t('common.totalValueUSD', "Total Value ($)")}, label:{formatter:(v: number | string)=>`$${Number(Number(v)/1000).toFixed(0)}k`}}}
+                         yAxis={{label:{autoEllipsis:true}}} tooltip={{formatter:(d: { departmentName: string; totalValue: number })=>({name:d.departmentName, value:`$${Number(d.totalValue).toLocaleString()}`})}}/>
                   ) : <Empty />}
                 </Card>
               </Col>

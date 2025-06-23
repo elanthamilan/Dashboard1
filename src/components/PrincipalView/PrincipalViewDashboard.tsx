@@ -8,7 +8,7 @@ import {
   BarChartOutlined, PieChartOutlined, LineChartOutlined, HomeOutlined, WarningOutlined, CheckCircleOutlined, IssuesCloseOutlined, PercentageOutlined, FileProtectOutlined, FieldTimeOutlined, GiftOutlined
 } from '@ant-design/icons'; // Added GiftOutlined
 import Scorecard from '../../common/Scorecard';
-import type { Institution, DashboardSummary, DashboardKpiData, DashboardKpiDataItem, EnrollmentTrendItem, FeeSummaryChartItem, AttendanceGPAOverviewItem, OpenGrievancesByCategoryItem } from '../../../types/hierarchy'; // Added DashboardKpiDataItem
+import type { Institution, DashboardSummary, DashboardKpiData, DashboardKpiDataItem, EnrollmentTrendItem, FeeSummaryChartItem, AttendanceGPAOverviewItem, OpenGrievancesByCategoryItem } from '../../types/hierarchy'; // Corrected path
 import dayjs from 'dayjs';
 
 // Import chart components from Ant Design Plots
@@ -64,7 +64,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
 
    const enrollmentTrendChartData = useMemo(() => {
     if (!dashboardSummary?.enrollmentTrend) return [];
-    const baseTrend = dashboardSummary.enrollmentTrend;
+    const baseTrend: EnrollmentTrendItem[] = dashboardSummary.enrollmentTrend;
 
     let currentPeriodData: Array<EnrollmentTrendItem & { category?: string }> = [];
     let previousPeriodData: Array<EnrollmentTrendItem & { category?: string }> = [];
@@ -73,10 +73,10 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
         const currentStartDate = dateRange[0].startOf('month');
         const currentEndDate = dateRange[1].endOf('month');
 
-        currentPeriodData = baseTrend.filter(item => {
+        currentPeriodData = baseTrend.filter((item: EnrollmentTrendItem) => {
             const itemDate = dayjs(item.monthYear + "-01");
             return itemDate.isSameOrAfter(currentStartDate) && itemDate.isSameOrBefore(currentEndDate);
-        }).map(item => ({ ...item, category: t('dashboard.trends.currentPeriod', "Current Period") }));
+        }).map((item: EnrollmentTrendItem) => ({ ...item, category: t('dashboard.trends.currentPeriod', "Current Period") }));
 
         if (comparePeriod) {
             const periodDurationDays = currentEndDate.diff(currentStartDate, 'day') + 1;
@@ -84,10 +84,10 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
             const previousEndDate = currentStartDate.subtract(1, 'day').endOf('month');
             const previousStartDate = previousEndDate.clone().subtract(periodDurationDays -1, 'day').startOf('month');
 
-            previousPeriodData = baseTrend.filter(item => {
+            previousPeriodData = baseTrend.filter((item: EnrollmentTrendItem) => {
                 const itemDate = dayjs(item.monthYear + "-01");
                 return itemDate.isSameOrAfter(previousStartDate) && itemDate.isSameOrBefore(previousEndDate);
-            }).map(item => ({
+            }).map((item: EnrollmentTrendItem) => ({
                 ...item,
                 // For simpler X-axis display, keep original monthYear. Tooltip/legend will differentiate.
                 category: t('dashboard.trends.previousPeriod', "Previous Period")
@@ -97,7 +97,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
         return currentPeriodData;
     }
     // If no dateRange, return all base data, categorized. Comparison makes less sense without a primary range.
-    return baseTrend.map(item => ({ ...item, category: t('dashboard.trends.currentPeriod', "Current Period") }));
+    return baseTrend.map((item: EnrollmentTrendItem) => ({ ...item, category: t('dashboard.trends.currentPeriod', "Current Period") }));
 }, [dashboardSummary, dateRange, comparePeriod, t]);
 
    const feeSummaryChartData = useMemo((): FeeSummaryChartItem[] => dashboardSummary?.feeSummaryCurrentPeriod || [], [dashboardSummary]);
@@ -215,7 +215,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
         <Col xs={24} lg={8}>
           <Card title={t('dashboard.charts.feeSummary', "Fee Collection Summary")}>
             {feeSummaryChartData.length > 0 ?
-                <Column data={feeSummaryChartData} xField="category" yField="amount" seriesField="category" isGroup={false} legend={{position:'bottom'}} height={300} label={{position:'top', formatter:(d)=>`${t('common.currencySymbol','$')}${(d.amount/1000).toFixed(0)}k`}} yAxis={{label:{formatter:(v)=>`${t('common.currencySymbol','$')}${(Number(v)/1000).toFixed(0)}k`}}}/> : <Empty />}
+                <Column data={feeSummaryChartData} xField="category" yField="amount" seriesField="category" isGroup={false} legend={{position:'bottom'}} height={300} label={{position:'top', formatter:(d: { category: string; amount: number })=>`${t('common.currencySymbol','$')}${(d.amount/1000).toFixed(0)}k`}} yAxis={{label:{formatter:(v: number | string)=>`${t('common.currencySymbol','$')}${(Number(v)/1000).toFixed(0)}k`}}}/> : <Empty />}
           </Card>
         </Col>
       </Row>
@@ -236,7 +236,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
                     legend={attendanceGPAChartData.length < 8 ? {position:'right', offsetY:0} : false}
                     xAxis={{
                         title: { text: t('dashboard.charts.avgAttendancePercent', "Avg. Attendance (%)") },
-                        min: 0, max: 100, label: {formatter: (v) => `${v}%`}
+                        min: 0, max: 100, label: {formatter: (v: number | string) => `${v}%`}
                     }}
                     yAxis={{
                         title: { text: t('dashboard.charts.avgGPA', "Avg. GPA") },
@@ -245,7 +245,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
                     }}
                     tooltip={{
                         fields: ['entityName', 'avgAttendance', 'avgGPA', 'studentCount'],
-                        formatter: (datum) => ({
+                        formatter: (datum: AttendanceGPAOverviewItem) => ({
                             name: datum.entityName,
                             value: `${t('dashboard.charts.attendanceShort', "Att")}: ${datum.avgAttendance}%, ${t('dashboard.charts.gpaShort', "GPA")}: ${datum.avgGPA}` +
                                    (datum.studentCount ? ` (${datum.studentCount} ${t('common.students','students')})` : '')
@@ -259,7 +259,7 @@ const PrincipalViewDashboard: React.FC<PrincipalViewDashboardProps> = ({
         <Col xs={24} lg={12}>
           <Card title={t('dashboard.charts.openGrievances', "Open Grievances by Category")}>
             {openGrievancesChartData.length > 0 ?
-                <Pie data={openGrievancesChartData} angleField="count" colorField="category" radius={0.8} legend={{position:'right', offsetY:0}} height={300} label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}} tooltip={{formatter:(d)=>({name:d.category, value:`${d.count} ${t('common.grievances','grievances')}`})}} /> : <Empty />}
+                <Pie data={openGrievancesChartData} angleField="count" colorField="category" radius={0.8} legend={{position:'right', offsetY:0}} height={300} label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}} tooltip={{formatter:(d: { category: string; count: number })=>({name:d.category, value:`${d.count} ${t('common.grievances','grievances')}`})}} /> : <Empty />}
           </Card>
         </Col>
       </Row>

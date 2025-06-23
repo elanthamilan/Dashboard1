@@ -162,7 +162,7 @@ const ProgramList: React.FC<ProgramListProps> = ({ programs, onSelectProgram, on
                 </Row>
                 <Row gutter={16} style={{marginTop: '10px'}}>
                   <Col span={12}>
-                    <Statistic title="Required Credits" value={program.requiredCredits ?? 'N/A'} />
+                    <Statistic title="Required Credits" value={program.creditsRequired ?? 'N/A'} />
                   </Col>
                   <Col span={12}>
                     <Statistic

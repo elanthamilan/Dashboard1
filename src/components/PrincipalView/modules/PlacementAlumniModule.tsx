@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 import {
     HomeOutlined, UsergroupAddOutlined, AuditOutlined, DollarCircleOutlined, RiseOutlined,
     BarChartOutlined, TeamOutlined, ArrowLeftOutlined, GlobalOutlined, CalendarOutlined, LineChartOutlined,
-    TrophyOutlined, BankOutlined, CheckSquareOutlined, PieChartOutlined
+    TrophyOutlined, BankOutlined, CheckSquareOutlined, PieChartOutlined, DollarOutlined // Added DollarOutlined
 } from '@ant-design/icons';
 import { Bar, Line, Column, Pie, Box } from '@ant-design/plots';
+import { DescriptionsProps } from 'antd'; // Ensure DescriptionsProps is imported
 import { DotMap } from '@ant-design/maps';
 import { Institution, Program as ProgramType, StudentSummary } from '../../../types/hierarchy';
 import { PlacementRecord } from '../../../types/placement';
@@ -117,7 +118,10 @@ const PlacementAlumniModule: React.FC = () => {
     const records = institutionData.allPlacementRecords.filter(r => r.offerType === 'Full-time');
     const internships = institutionData.allPlacementRecords.filter(r => r.offerType === 'Internship');
     const placedStudentIds = new Set(records.map(r => r.studentId)); const totalPlaced = placedStudentIds.size;
-    const latestGradYear = Math.max(...allStudentsSummaryList.map(s => s.graduationYear || 0).filter(y => y > 0), dayjs().year() -1);
+
+    const gradYears = allStudentsSummaryList.map(s => s.graduationYear).filter(year => year !== undefined) as number[];
+    const latestGradYear = gradYears.length > 0 ? Math.max(...gradYears) : dayjs().year();
+
     const eligibleStudentsForRate = allStudentsSummaryList.filter(s => s.graduationYear === latestGradYear && s.enrollmentStatus === 'Graduated').length;
     const overallRate = eligibleStudentsForRate > 0 ? (totalPlaced / eligibleStudentsForRate) * 100 : (allStudentsSummaryList.filter(s=>s.enrollmentStatus === 'Graduated').length > 0 ? (totalPlaced / allStudentsSummaryList.filter(s=>s.enrollmentStatus === 'Graduated').length) * 100 : 0) ;
     const packages = records.map(r => r.packageDetails).sort((a, b) => a - b);
@@ -134,9 +138,23 @@ const PlacementAlumniModule: React.FC = () => {
     records.forEach(r => { const year = dayjs(r.placementDate).format('YYYY'); if (!trendDataMap[year]) { const studentsInYear = allStudentsSummaryList.filter(s => s.graduationYear?.toString() === year && s.enrollmentStatus === 'Graduated').length; trendDataMap[year] = { year, placedCount: 0, totalEligibleInYear: Math.max(1, studentsInYear || 20) }; } });
     records.forEach(r => { const year = dayjs(r.placementDate).format('YYYY'); if (trendDataMap[year]) trendDataMap[year].placedCount +=1; });
     const placementTrend = Object.values(trendDataMap).map(d => ({ year: d.year, rate: parseFloat(((d.placedCount / d.totalEligibleInYear) * 100).toFixed(1)), count: d.placedCount, })).sort((a,b) => a.year.localeCompare(b.year));
+
+    const allPrograms = institutionData.academicYears.flatMap(ay => ay.degrees.flatMap(deg => deg.programs)) || [];
     const programStats: Record<string, { programName: string, placedStudentIds: Set<string>, packages: number[], totalEligible: number}> = {};
     allStudentsSummaryList.forEach(s => { if (s.programName && s.graduationYear === latestGradYear && s.enrollmentStatus === 'Graduated') { if(!programStats[s.programName]) programStats[s.programName] = {programName: s.programName, placedStudentIds: new Set(), packages:[], totalEligible: 0}; programStats[s.programName].totalEligible++; } });
-    records.forEach(r => { if (r.programName && programStats[r.programName]) { const studentSummary = allStudentsSummaryList.find(s => s.studentId === r.studentId); if(studentSummary && studentSummary.graduationYear === latestGradYear && studentSummary.enrollmentStatus === 'Graduated') { programStats[r.programName].placedStudentIds.add(r.studentId); programStats[r.programName].packages.push(r.packageDetails); } } });
+
+    records.forEach((r: PlacementRecord) => {
+        const programDetails = allPrograms.find(p => p.programId === r.programId);
+        const programName = programDetails ? programDetails.programName : "Unknown Program";
+
+        if (programName && programStats[programName]) {
+            const studentSummary = allStudentsSummaryList.find(s => s.studentId === r.studentId);
+            if (studentSummary && studentSummary.graduationYear === latestGradYear && studentSummary.enrollmentStatus === 'Graduated') {
+                programStats[programName].placedStudentIds.add(r.studentId);
+                programStats[programName].packages.push(r.packageDetails);
+            }
+        }
+    });
     const placementRateByProg = Object.values(programStats).map(data => ({ programName: data.programName, placementRate: data.totalEligible > 0 ? parseFloat(((data.placedStudentIds.size / data.totalEligible) * 100).toFixed(1)) : 0, placedCount: data.placedStudentIds.size, totalEligible: data.totalEligible, })).sort((a,b)=> b.placementRate - a.placementRate);
     const avgMedianPackageByProg = Object.values(programStats).map(data => { const sortedPackages = [...data.packages].sort((a,b)=>a-b); const avg = sortedPackages.length > 0 ? sortedPackages.reduce((s,p)=>s+p,0) / sortedPackages.length : 0; const med = sortedPackages.length > 0 ? (sortedPackages.length % 2 === 0 ? (sortedPackages[Math.floor(sortedPackages.length/2) -1] + sortedPackages[Math.floor(sortedPackages.length/2)])/2 : sortedPackages[Math.floor(sortedPackages.length/2)]) : 0; return { programName: data.programName, averagePackage: parseFloat((avg / 100000).toFixed(2)), medianPackage: parseFloat((med / 100000).toFixed(2)), }; }).sort((a,b)=>b.averagePackage - a.averagePackage);
     return { overallPlacementRate: parseFloat(overallRate.toFixed(1)), averagePackage: parseFloat((avgPackage / 100000).toFixed(2)), medianPackage: parseFloat((medianPkg / 100000).toFixed(2)), highestPackage: parseFloat((highestPkg / 100000).toFixed(2)), totalPlacedStudents: totalPlaced, totalInternships: internships.length, numberOfCompanies: distinctCompanies, offerAcceptanceRate: parseFloat(offerAcceptRate.toFixed(1)), topRecruitersData: topRecruiters, placementTrendData: placementTrend, placementRateByProgram: placementRateByProg, avgMedianPackageByProgram: avgMedianPackageByProg, };
@@ -220,7 +238,15 @@ const PlacementAlumniModule: React.FC = () => {
   const handleViewAlumniNetwork = () => { setSelectedProgramForPlacements(null); setSelectedEmployer(null); setViewingAlumniNetwork(true); };
   const handleBackToOverview = () => { setSelectedProgramForPlacements(null); setSelectedEmployer(null); setViewingAlumniNetwork(false); };
   const breadcrumbItems = useMemo(() => { /* ... */ return []; }, [selectedProgramForPlacements, selectedEmployer, viewingAlumniNetwork, t]);
-  const filterDescriptionItems: DescriptionsProps['items'] = useMemo(() => Object.entries(filters) /* ... */, [filters, t]);
+  const filterDescriptionItems: DescriptionsProps['items'] = useMemo(() => {
+    return Object.entries(filters)
+      .filter(([key, value]) => value !== undefined && value !== null && value !== '' && key !== 'institutionId') // Filter out empty and institutionId
+      .map(([key, value]) => ({
+        key: key,
+        label: t(`filters.${key}`, key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')), // Basic camelCase to Title Case
+        children: Array.isArray(value) ? value.join(' - ') : String(value),
+      }));
+  }, [filters, t]);
   const topRecruitersBarConfig = { data: placementModuleData.topRecruitersData, xField: 'hires', yField: 'companyName', seriesField: 'companyName', legend: { position: 'top-right' as const, offsetY: 20 }, barWidthRatio: 0.7, yAxis: { label: { autoHide: false, autoRotate: false, formatter:(v:string) => v.length > 15 ? v.substring(0,15)+'...' : v } }, xAxis: { title: { text: t('module.placements.hires', "Number of Hires") } }, onEvent: (chart: any, event: any) => { if (event.type === 'element:click') { const companyName = event.data?.data?.companyName; if (companyName) handleEmployerSelect(companyName); } } };
   const programSelectorSection = React.createElement(Card, { /* ... */ }); // Assume correctly defined
   const dotMapConfig: any = { /* ... */ }; // Assume correctly defined

@@ -102,7 +102,10 @@ export const generateMockApplicant = (id: number, programs: Array<{ programId: s
     profilePictureUrl: faker.image.avatar(),
     originCity: faker.location.city(),
     originCountry: nationality,
-    originCoordinates: { lat: parseFloat(faker.location.latitude()), lng: parseFloat(faker.location.longitude()) },
+    originCoordinates: {
+        lat: parseFloat(faker.location.latitude().toString()),
+        lng: parseFloat(faker.location.longitude().toString())
+    },
     reservationCategory: faker.helpers.arrayElement(reservationCategories),
 
     documents: Math.random() > 0.3 ? Array.from({length: faker.number.int({min:1, max:3})}, () => ({

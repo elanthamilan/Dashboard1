@@ -22,7 +22,7 @@ const mockPrograms: Program[] = [
     totalStudents: 75,
     averageProgramGPA: 3.8,
     avgAttendancePercentage: 95.2,
-    requiredCredits: 120,
+    creditsRequired: 120,
     graduationRate: 85.5, // Ensure it has a decimal for toFixed(1) test
     totalProgramAbsences: 10,
     avgFeesPaidPercentage: 90,
@@ -41,7 +41,7 @@ const mockPrograms: Program[] = [
     totalStudents: 15,
     averageProgramGPA: 3.9,
     avgAttendancePercentage: 98.1,
-    requiredCredits: 60,
+    creditsRequired: 60,
     graduationRate: 92.0,
     totalProgramAbsences: 2,
     avgFeesPaidPercentage: 99,

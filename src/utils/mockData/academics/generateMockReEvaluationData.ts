@@ -26,9 +26,9 @@ export const generateMockReEvaluationData = (
         courseTemplate = {
             ...courseTemplate, // spread existing properties
             grade: { // add or overwrite grade
-                letterGrade: faker.helpers.arrayElement(gradeLetters) as 'A'|'B+'|'B'|'C+'|'C'|'D'|'F', // Type assertion
+                letterGrade: faker.helpers.arrayElement(gradeLetters as ('A'|'B+'|'B'|'C+'|'C'|'D'|'F')[]) as 'A'|'B+'|'B'|'C+'|'C'|'D'|'F', // Type assertion
                 numericalScore: faker.number.int({min: 40, max: 100}), // Example score
-                points: 0 // Points calculation would be complex here, set to 0 or look up
+                // gradePoints: 0 // Removed 'points'. If gradePoints is needed, it should be calculated or mocked.
             }
         };
     }
