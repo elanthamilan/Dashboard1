@@ -116,6 +116,14 @@ export interface Section {
   classroom?: string;
 }
 
+export interface Student {
+  id: string;
+  firstName: string;
+  lastName: string;
+  programId?: string;
+  // Potentially other fields like email, dateOfBirth, etc.
+}
+
 export interface StudentSummary {
   studentId: string;
   firstName: string;

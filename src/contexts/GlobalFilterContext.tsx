@@ -8,6 +8,7 @@ interface GlobalFilterState {
   department: string | null;
   dateRange: [string, string] | null;
   programId: string | null; // Added programId
+  institutionId: string | null;
 }
 
 interface GlobalFilterContextType extends GlobalFilterState {
@@ -17,6 +18,7 @@ interface GlobalFilterContextType extends GlobalFilterState {
   setDepartment: (dept: string | null) => void;
   setProgramId: (programId: string | null) => void; // Added setProgramId
   setDateRange: (range: [string, string] | null) => void;
+  setInstitutionId: (id: string | null) => void;
   clearFilters: () => void;
 }
 
@@ -28,6 +30,7 @@ export const GlobalFilterProvider: React.FC<{ children: ReactNode }> = ({ childr
   const [degreeType, setDegreeType] = useState<string | null>(null);
   const [department, setDepartment] = useState<string | null>(null); // Mocked
   const [programId, setProgramId] = useState<string | null>(null); // Added programId state
+  const [institutionId, setInstitutionId] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
 
   const clearFilters = () => {
@@ -36,6 +39,7 @@ export const GlobalFilterProvider: React.FC<{ children: ReactNode }> = ({ childr
     setDegreeType(null);
     setDepartment(null);
     setProgramId(null); // Clear programId
+    setInstitutionId(null);
     setDateRange(null);
   };
 
@@ -47,12 +51,14 @@ export const GlobalFilterProvider: React.FC<{ children: ReactNode }> = ({ childr
         degreeType,
         department,
         programId, // Provide programId
+        institutionId,
         dateRange,
         setAcademicYear,
         setCampus,
         setDegreeType,
         setDepartment,
         setProgramId, // Provide setProgramId
+        setInstitutionId,
         setDateRange,
         clearFilters,
       }}

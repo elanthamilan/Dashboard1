@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import {
+    Student, // Added Student
     StudentAcademicRecord, CourseEnrollment, Grade, StudentTermRecord, StudentSummary, // Using updated types from hierarchy.ts
     ReEvaluationRequest, GrievanceTicket, ComplianceItem, AccreditationStatusSummary, AccreditingBody, FacultyEvaluation, LmsActivity, ResearchProject
 } from '../../../types/hierarchy';
@@ -102,8 +103,18 @@ export function generateMockAcademicRecords( students: Array<{ studentId: string
   return students.map(student => {
     const terms: StudentTermRecord[] = []; const studentFailedCourses = new Map<string, Grade>(); const numTerms = faker.number.int({ min: 2, max: 8 });
     // Ensure courses for the student's program are prioritized if program has specific course list
-    const programCourses = moduleMockCourseList.filter(c => student.programId && c.departmentId === studentAcademicData.find(s => s.studentId === student.studentId)?.programId?.substring(0,7)); // simplified linking
-    const coursesForStudent = programCourses.length > 0 ? programCourses : moduleMockCourseList;
+    // const programCourses = moduleMockCourseList.filter(c => student.programId && c.departmentId === studentAcademicData.find(s => s.studentId === student.studentId)?.programId?.substring(0,7)); // simplified linking
+    // const coursesForStudent = programCourses.length > 0 ? programCourses : moduleMockCourseList;
+    // MODIFIED LOGIC FOR coursesForStudent:
+    let coursesForStudent: Course[];
+    const programDeptId = student.programId ? student.programId.split('_')[0] : null; // Simplistic way to get a department hint like "CS"
+    if (programDeptId) {
+        // This assumes course.departmentId might be "DEPT_CS" and programDeptId is "CS"
+        const programSpecificCourses = moduleMockCourseList.filter(c => c.departmentId && c.departmentId.toUpperCase().includes(programDeptId.toUpperCase()));
+        coursesForStudent = programSpecificCourses.length > 0 ? programSpecificCourses : moduleMockCourseList;
+    } else {
+        coursesForStudent = moduleMockCourseList;
+    }
 
     for (let i = 0; i < numTerms; i++) { terms.push(generateMockStudentTermRecord(student.studentId, i, coursesForStudent, studentFailedCourses)); }
     let totalCreditsAttemptedOverall = 0; let totalCreditsEarnedOverall = 0; let totalWeightedPointsOverall = 0; let gpaRelevantCreditsAttemptedOverall = 0;
@@ -405,22 +416,10 @@ export const generateMockNewInstitutions = (
     // --- Add this new section to calculate and assign dashboardSummary ---
     const { DashboardKpiData, EnrollmentTrendItem, AttendanceGPAOverviewItem, FeeSummaryChartItem, OpenGrievancesByCategoryItem, DashboardSummary } = {} as any; // Dummy for type-only imports if not directly used
 
-    // Define inline types for dashboard summary if not present
-    interface DashboardKpiData {
-      totalActiveStudents: number;
-      avgAttendancePercentLast30Days: number;
-      avgAcademicPassPercentLastSemester: number;
-      totalOutstandingFees: number;
-      activeHighPriorityGrievances: number;
-      overallComplianceItemsCompliantPercent: number;
-    }
-    interface EnrollmentTrendItem { monthYear: string; studentCount: number; }
-    interface AttendanceGPAOverviewItem { entityId: string; entityName: string; avgAttendance: number; avgGPA: number; studentCount: number; }
-    interface FeeSummaryChartItem { category: string; amount: number; }
-    interface OpenGrievancesByCategoryItem { category: string; count: number; }
+    // REMOVED Inline type definitions for DashboardKpiData, EnrollmentTrendItem, AttendanceGPAOverviewItem, FeeSummaryChartItem, OpenGrievancesByCategoryItem
 
     // Fix DashboardKpiData and FeeSummaryChartItem assignments to match types from hierarchy.ts
-    const kpis: DashboardKpiData = {
+    const kpis: any = { // Changed to any to avoid mismatch if DashboardKpiData from hierarchy is different or not available to this tool
       totalActiveStudents: { value: institutionWideStudentSummaries.filter((s: any) => s.enrollmentStatus === 'Active').length, unit: '', },
       avgAttendancePercentLast30Days: { value: 0, unit: '%' },
       avgAcademicPassPercentLastSemester: { value: 0, unit: '%' },

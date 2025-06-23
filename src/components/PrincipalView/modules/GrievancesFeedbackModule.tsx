@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { HomeOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import dayjs from 'dayjs';
+import { GrievancePriority } from '../../../types/academics'; // Import GrievancePriority
 import { Pie, Column, Bar, Line } from '@ant-design/plots'; // Removed Donut
 import { Empty } from 'antd';
 
@@ -189,7 +190,11 @@ const GrievancesFeedbackModule: React.FC = () => {
             avgResolutionTimeDays: 0, // Calculated below
             avgFeedbackRating: 0, // Calculated below
             avgResolutionTimeByCategory: {},
-            avgResolutionTimeByPriority: {},
+            avgResolutionTimeByPriority: {
+              High: 0,
+              Medium: 0,
+              Low: 0,
+            } as Record<GrievancePriority, number>,
             grievancesMetSLAMount: 0,
             grievancesMissedSLAMount: 0,
         };
@@ -546,7 +551,7 @@ const GrievancesFeedbackModule: React.FC = () => {
                         style: { fill: '#fff', fontSize: 14 },
                       }}
                       tooltip={{
-                          formatter: (datum) => ({ name: datum.type, value: datum.value + ' ' + t('common.grievances', 'grievances') }),
+                          formatter: (datum: { type: string; value: number }) => ({ name: datum.type, value: datum.value + ' ' + t('common.grievances', 'grievances') }),
                       }}
                     />
                   </Card>
@@ -579,7 +584,7 @@ const GrievancesFeedbackModule: React.FC = () => {
                       xAxis={{ title: { text: t('common.rating', "Rating") } }}
                       yAxis={{ title: { text: t('common.count', "Count") } }}
                       tooltip={{
-                        formatter: (datum) => ({ name: `${t('common.rating', "Rating")} ${datum.rating}`, value: datum.count + ' ' + t('common.feedbackItems', 'feedback items') }),
+                        formatter: (datum: { rating: string | number; count: number }) => ({ name: `${t('common.rating', "Rating")} ${datum.rating}`, value: datum.count + ' ' + t('common.feedbackItems', 'feedback items') }),
                       }}
                     />
                   </Card>
@@ -603,7 +608,7 @@ const GrievancesFeedbackModule: React.FC = () => {
                   {feedbackSentimentChartData.length > 0 ? (
                     <Pie data={feedbackSentimentChartData} angleField="count" colorField="sentiment" radius={0.8} legend={{position:'bottom'}}
                          label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.sentiment, value:`${d.count} (${(d.percent * 100).toFixed(1)}%)`})}} />
+                         tooltip={{formatter:(d: { sentiment: string; count: number; percent: number })=>({name:d.sentiment, value:`${d.count} (${(d.percent * 100).toFixed(1)}%)`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -649,7 +654,7 @@ const GrievancesFeedbackModule: React.FC = () => {
                      {grievanceSlaPerformance.dataForChart.reduce((sum,item)=>sum+item.count,0) > 0 ? (
                          <Pie data={grievanceSlaPerformance.dataForChart} angleField="count" colorField="type"
                              innerRadius={0.6} legend={{position:'bottom'}}
-                             tooltip={{formatter:(d)=>({name:d.type, value:d.count})}}
+                             tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:d.count})}}
                              label={{type:'inner', offset:'-50%', content:'{value}', style:{fill:'#fff'}}} />
                      ) : <Empty description={t('common.noSlaData', 'No SLA data for resolved grievances.')} />}
                  </Card>

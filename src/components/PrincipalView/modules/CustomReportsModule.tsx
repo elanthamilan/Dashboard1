@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Breadcrumb, Card, Descriptions, Spin, List, Button, Form, Input, InputNumber, DatePicker, Select, Empty, Table, Row, Col } from 'antd';
+import { Typography, Breadcrumb, Card, Descriptions, Spin, List, Button, Form, Input, InputNumber, DatePicker, Select, Empty, Table, Row, Col, Alert } from 'antd'; // Added Alert
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
 import { useTranslation } from 'react-i18next';
 import { HomeOutlined } from '@ant-design/icons';
 import { fetchData } from '../../../utils/apiUtils';
 import dayjs from 'dayjs';
-import { Pie, Column, Line } from '@ant-design/plots'; // Added Pie, Column, Line
+import { Pie, Column, Line, Bar } from '@ant-design/plots'; // Added Bar
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -29,7 +29,7 @@ interface ReportDefinition {
 }
 
 interface TabularReportData {
-  columns: Array<{ title: string; dataIndex: string; key: string; sorter?: boolean | object; render?: (text: any, record: any, index: number) => React.ReactNode; }>;
+  columns: Array<{ title: string; dataIndex: string; key: string; sorter?: boolean | object; render?: (text: any, record: any, index: number) => React.ReactNode; align?: 'left' | 'right' | 'center'; }>;
   rows: Array<Record<string, any>>;
 }
 
@@ -155,7 +155,7 @@ const CustomReportsModule: React.FC = () => {
             columns: [
               { title: t('common.program', 'Program'), dataIndex: 'programName', key: 'programName' },
               { title: t('common.status', 'Status'), dataIndex: 'status', key: 'status' },
-              { title: t('common.count', 'Count'), dataIndex: 'count', key: 'count', sorter: (a,b) => a.count - b.count },
+              { title: t('common.count', 'Count'), dataIndex: 'count', key: 'count', sorter: (a: { count: number }, b: { count: number }) => a.count - b.count },
             ],
             rows: [
               { key: '1', programName: 'B.S. Computer Science', status: params.status === 'ENR' ? 'Enrolled' : 'Dropped', count: params.status === 'ENR' ? Math.floor(Math.random() * 100) + 50 : Math.floor(Math.random() * 20) },
@@ -168,7 +168,7 @@ const CustomReportsModule: React.FC = () => {
           data: {
             type: 'Column',
             config: {
-              data: generatedContent[0].data.rows.map(r => ({ type: r.programName, value: r.count })),
+              data: generatedContent[0].type === 'table' ? generatedContent[0].data.rows.map((r: Record<string, any>) => ({ type: r.programName, value: r.count })) : [],
               xField: 'type',
               yField: 'value',
               seriesField: 'type',
@@ -198,13 +198,13 @@ const CustomReportsModule: React.FC = () => {
           data: {
               type: 'Pie',
               config: {
-                  data: generatedContent[0].data.rows.filter(r => r.category !== 'Outstanding Fees').map(r => ({ type: r.category, value: r.amount })),
+                  data: generatedContent[0].type === 'table' ? generatedContent[0].data.rows.filter((r: Record<string, any>) => r.category !== 'Outstanding Fees').map((r: Record<string, any>) => ({ type: r.category, value: r.amount })) : [],
                   angleField: 'value',
                   colorField: 'type',
                   radius: 0.75,
                   label: { type: 'inner', offset: '-50%', content: '{value:$.2s}', style:{textAlign:'center', fontSize:12, fill:'#fff'}},
                   legend: {position: 'bottom'},
-                  tooltip: { formatter: (datum) => ({ name: datum.type, value: `$${Number(datum.value).toLocaleString()}` }) }
+                  tooltip: { formatter: (datum: { type: string; value: number }) => ({ name: datum.type, value: `$${Number(datum.value).toLocaleString()}` }) }
               }
           },
           title: t('reportTitles.feeCollectionBreakdown', "Fee Collection Breakdown")
@@ -247,7 +247,7 @@ const CustomReportsModule: React.FC = () => {
                 type: 'Pie',
                 config: {
                     data: facultyForDept.reduce((acc, fac) => {
-                        const des = acc.find(d => d.type === fac.designation);
+                        const des = acc.find((d: {type:string, value:number}) => d.type === fac.designation);
                         if(des) des.value++; else acc.push({type: fac.designation, value: 1});
                         return acc;
                     }, [] as {type:string, value:number}[]),
@@ -268,7 +268,7 @@ const CustomReportsModule: React.FC = () => {
                         if(fac.teachingLoadCredits < 5) bucket = teachingLoadBuckets[0];
                         else if (fac.teachingLoadCredits <= 8) bucket = teachingLoadBuckets[1];
                         else if (fac.teachingLoadCredits <= 12) bucket = teachingLoadBuckets[2];
-                        const b = acc.find(d => d.type === bucket);
+                        const b = acc.find((d: {type:string, value:number}) => d.type === bucket);
                         if(b) b.value++; else acc.push({type: bucket, value: 1});
                         return acc;
                     }, [] as {type:string, value:number}[]),

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StudentAcademicRecord } from '../../../types/academics'; // Adjusted path
+import { StudentAcademicRecord } from '../../../types/hierarchy'; // Adjusted path
 import { Row, Col, Card, Typography, Spin, Statistic } from 'antd';
 // import GpaTrendChart from '../../components/StudentPerformanceDashboard/GpaTrendChart';
 // import SkillProficiencyChart from '../../components/StudentPerformanceDashboard/SkillProficiencyChart';

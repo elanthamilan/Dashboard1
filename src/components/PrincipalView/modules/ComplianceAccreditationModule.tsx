@@ -2,8 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { Typography, Breadcrumb, Card, Descriptions, Spin, Row, Col, Table, Tag, Statistic, Empty, Tabs } from 'antd'; // Added Tabs
 import type { TabsProps } from 'antd'; // Added TabsProps for potential type hints
 import { Link } from 'react-router-dom';
-import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
+import { GlobalFilterContextType, useGlobalFilters } from '../../../contexts/GlobalFilterContext'; // Ensured GlobalFilterContextType is available
 import { useTranslation } from 'react-i18next';
+import { RiskStatus, ComplianceTraining, Risk } from '../../../types/compliance'; // Added imports
 import {
     HomeOutlined, PieChartOutlined, CheckCircleOutlined, WarningOutlined,
     ScheduleOutlined, FieldTimeOutlined, FileProtectOutlined
@@ -35,7 +36,7 @@ interface ComplianceStatusItem {
   nonComplianceDetails?: {
     issueId: string;
     description: string;
-    severity: 'Critical' | 'Major' | 'Minor';
+    severity: 'Critical' | 'Major' | 'Minor'; // This is AuditFindingSeverity type
     actionPlan?: string;
     actionDueDate?: string;
     responsiblePerson?: string;
@@ -43,7 +44,7 @@ interface ComplianceStatusItem {
 }
 
 type AuditStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Pending Closure' | 'Cancelled';
-type AuditFindingSeverity = 'Critical' | 'Major' | 'Minor' | 'Observation';
+type AuditFindingSeverity = 'Critical' | 'Major' | 'Minor' | 'Observation'; // Keep this for AuditFinding
 interface AuditFinding {
   findingId: string;
   description: string;
@@ -99,11 +100,15 @@ interface ComplianceStats {
     policiesDueForReviewCount?: number;
     nonComplianceBySeverity?: Record<AuditFindingSeverity | 'N/A', number>;
     auditFindingsByStatus?: Record<AuditFinding['status'], number>;
+    riskCountByStatus?: Record<RiskStatus, number>; // Added
+    overallTrainingCompletionRate?: number; // Added
 }
 interface ComplianceData { // Main state for the module
-  complianceItems?: ComplianceStatusItem[];
+  complianceStatus?: ComplianceStatusItem[]; // Changed from complianceItems and made optional
   allAudits?: AuditRecord[];
   policies?: PolicyDocument[];
+  trainings?: ComplianceTraining[]; // Added
+  risks?: Risk[]; // Added
   message?: string;
   stats?: ComplianceStats;
 }
@@ -325,35 +330,35 @@ const ComplianceAccreditationModule: React.FC = () => {
     const trend: Array<{monthYear: string, count: number}> = [];
     if(data?.stats?.activeNonComplianceIssues !== undefined){
         // For mock purposes, create a simple trend for the last 6 months around the current active issues
-        const F = faker; // Assuming faker might be available if mock data was generated
+        // const F = faker; // Removed direct faker usage here
         for (let i = 5; i >= 0; i--) {
             trend.push({
                 monthYear: dayjs().subtract(i,'month').format('YYYY-MM'),
                 // Fluctuate around the current number of active issues for mock trend
-                count: Math.max(0, (data.stats.activeNonComplianceIssues || 0) + (F?.number.int({min:-3, max:3}) ?? 0) )
+                count: Math.max(0, (data.stats.activeNonComplianceIssues || 0) + (Math.floor(Math.random() * 7) - 3) ) // Replace faker usage
             });
         }
-    } else if (data?.complianceItems) { // Fallback if stats.activeNonComplianceIssues is not there
+    } else if (data?.complianceStatus) { // Fallback if stats.activeNonComplianceIssues is not there (changed complianceItems to complianceStatus)
         // This would be a very simplified view, just plotting current non-compliant items over time if they had a 'resolvedDate'
         // For now, relying on the mock stats approach or an empty array.
         // A proper historical trend requires more data than usually available in current state snapshots.
     }
     return trend;
-  }, [data?.complianceItems, data?.stats?.activeNonComplianceIssues, t]);
+  }, [data?.complianceStatus, data?.stats?.activeNonComplianceIssues, t]);
 
 
   // Data for Non-Compliance Issues by Department
   const nonComplianceByDeptData = useMemo(() => {
-    if (!data?.complianceItems) return [];
+    if (!data?.complianceStatus) return []; // Changed from complianceItems
     const deptCounts: Record<string, number> = {};
-    data.complianceItems.forEach(item => {
+    data.complianceStatus.forEach(item => { // Changed from complianceItems
       if (item.status === 'Non-Compliant' || item.status === 'Action Required') {
         const dept = item.ownerDepartmentName || t('common.unknownDepartment', 'Unknown Dept.');
         deptCounts[dept] = (deptCounts[dept] || 0) + 1;
       }
     });
     return Object.entries(deptCounts).map(([departmentName, count]) => ({ departmentName, count })).filter(item => item.count > 0).sort((a,b) => b.count - a.count);
-  }, [data?.complianceItems, t]);
+  }, [data?.complianceStatus, t]);
 
   // Data for Non-Compliance by Severity (from stats or calculated)
   const nonComplianceBySeverityChartData = useMemo(() => {
@@ -362,15 +367,15 @@ const ComplianceAccreditationModule: React.FC = () => {
                .map(([severity, count]) => ({ severity: severity as AuditFindingSeverity | 'N/A', count: count as number }))
                .filter(item => item.count > 0 && item.severity !== 'N/A');
        }
-       if (!data?.complianceItems) return [];
+       if (!data?.complianceStatus) return []; // Changed from complianceItems
        const severityCounts: Record<string, number> = {};
-       data.complianceItems.forEach(item => {
+       data.complianceStatus.forEach(item => { // Changed from complianceItems
            if (item.nonComplianceDetails?.severity) {
                severityCounts[item.nonComplianceDetails.severity] = (severityCounts[item.nonComplianceDetails.severity] || 0) + 1;
            }
        });
        return Object.entries(severityCounts).map(([severity, count]) => ({ severity, count })).filter(item => item.count > 0);
-   }, [data?.stats?.nonComplianceBySeverity, data?.complianceItems]);
+   }, [data?.stats?.nonComplianceBySeverity, data?.complianceStatus]);
 
   // --- Audit Management & Tracking ---
   const auditsByStatusData = useMemo(() => {
@@ -516,11 +521,11 @@ const ComplianceAccreditationModule: React.FC = () => {
     if (!data?.trainings || !data.trainings.length) return [];
     const deptCompletion: Record<string, { totalRate: number; count: number; departmentName: string }> = {};
 
-    data.trainings.forEach(training => {
+    data.trainings.forEach((training: ComplianceTraining) => {
       if (training.departmentNames && training.completionRate !== undefined) {
-        training.departmentNames.forEach(deptName => {
+        training.departmentNames.forEach((deptName: string) => {
           if (!deptCompletion[deptName]) {
-            deptCompletion[deptName] = { totalRate: 0, count: 0, departmentName };
+            deptCompletion[deptName] = { totalRate: 0, count: 0, departmentName: deptName };
           }
           deptCompletion[deptName].totalRate += training.completionRate!;
           deptCompletion[deptName].count++;
@@ -538,7 +543,7 @@ const ComplianceAccreditationModule: React.FC = () => {
   const topRisksByScoreData = useMemo(() => {
     if (!data?.risks) return [];
     return [...data.risks]
-      .sort((a, b) => (b.riskScore || 0) - (a.riskScore || 0))
+      .sort((a: Risk, b: Risk) => (b.riskScore || 0) - (a.riskScore || 0))
       .slice(0, TOP_N_RISKS)
       .map(r => ({
           description: r.description.length > 50 ? r.description.substring(0,47) + '...' : r.description,
@@ -550,12 +555,12 @@ const ComplianceAccreditationModule: React.FC = () => {
 
   const risksByStatusChartData = useMemo(() => {
     if (data?.stats?.riskCountByStatus) {
-      return Object.entries(data.stats.riskCountByStatus)
+      return Object.entries(data.stats.riskCountByStatus as Record<RiskStatus, number>)
         .map(([status, count]) => ({ status: status as RiskStatus, count: count as number }))
         .filter(item => item.count > 0);
     }
     if (!data?.risks) return [];
-    const statusCounts = data.risks.reduce((acc, r) => {
+    const statusCounts = data.risks.reduce((acc: Record<RiskStatus, number>, r: Risk) => {
       acc[r.status] = (acc[r.status] || 0) + 1;
       return acc;
     }, {} as Record<RiskStatus, number>);
@@ -645,13 +650,13 @@ const ComplianceAccreditationModule: React.FC = () => {
             */}
 
             {/* Existing Compliance Status Overview Pie Chart - can be kept or removed if new charts are better */}
-            {data.complianceItems && data.complianceItems.length > 0 && (
+            {data.complianceStatus && data.complianceStatus.length > 0 && (
               <Row gutter={[16,16]} style={{ marginTop: 20 }}>
                  <Col xs={24} md={12} lg={8}>
                   <Card title={<><PieChartOutlined /> {t(`module.${MODULE_KEY}.complianceStatusChartTitle`, "Compliance Items by Status")}</>}>
                     <Pie
-                      data={data.complianceStatus.reduce((acc, item) => {
-                        const existing = acc.find(i => i.type === item.status);
+                      data={data.complianceStatus.reduce((acc: Array<{type: string, value: number}>, item: ComplianceStatusItem) => {
+                        const existing = acc.find((i: {type: string, value: number}) => i.type === item.status);
                         if (existing) {
                           existing.value += 1;
                         } else {
@@ -670,7 +675,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                         style: { fill: '#fff', fontSize: 14 },
                       }}
                       tooltip={{
-                          formatter: (datum) => {
+                          formatter: (datum: { type: string; value: number }) => {
                             return { name: datum.type, value: datum.value + ' ' + t('common.items', 'items') };
                           },
                       }}
@@ -685,24 +690,25 @@ const ComplianceAccreditationModule: React.FC = () => {
                 <Table
                   dataSource={data.complianceStatus}
                   columns={[
-                    { title: t('common.area', 'Area'), dataIndex: 'area', key: 'area', sorter: (a,b) => a.area.localeCompare(b.area) },
+                    { title: t('common.area', 'Area'), dataIndex: 'area', key: 'area', sorter: (a: ComplianceStatusItem, b: ComplianceStatusItem) => a.area.localeCompare(b.area) },
                     {
                       title: t('common.status', 'Status'),
                       dataIndex: 'status',
                       key: 'status',
-                      render: (status: 'Compliant' | 'Non-Compliant' | 'Pending') => {
+                      render: (status: 'Compliant' | 'Non-Compliant' | 'Pending') => { // Assuming ComplianceCurrentStatus might be broader
                         let color;
                         if (status === 'Compliant') color = 'success';
                         else if (status === 'Non-Compliant') color = 'error';
                         else if (status === 'Pending') color = 'warning';
                         return <Tag color={color}>{status}</Tag>;
                       },
-                      filters: [
+                      filters: [ // These should ideally use ComplianceCurrentStatus values
                         { text: 'Compliant', value: 'Compliant' },
                         { text: 'Non-Compliant', value: 'Non-Compliant' },
-                        { text: 'Pending', value: 'Pending' },
+                        { text: 'Pending Review', value: 'Pending Review' },
+                        { text: 'Action Required', value: 'Action Required' },
                       ],
-                      onFilter: (value, record) => record.status === value,
+                      onFilter: (value: string | number | boolean, record: ComplianceStatusItem) => record.status === value,
                     },
                     { title: t('common.details', 'Details'), dataIndex: 'details', key: 'details', ellipsis: true },
                   ]}
@@ -729,7 +735,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   {nonComplianceBySeverityChartData.length > 0 ? (
                     <Pie data={nonComplianceBySeverityChartData} angleField="count" colorField="severity" radius={0.8} legend={{position:'bottom'}}
                          label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.severity, value:`${d.count} ${t('common.issues','issues')}`})}} />
+                         tooltip={{formatter:(d: { severity: string; count: number })=>({name:d.severity, value:`${d.count} ${t('common.issues','issues')}`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -761,7 +767,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   {auditsByStatusData.length > 0 ? (
                     <Pie data={auditsByStatusData} angleField="count" colorField="type" radius={0.8} legend={{position:'bottom'}}
                          label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.audits','audits')}`})}} />
+                         tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:`${d.count} ${t('common.audits','audits')}`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -770,7 +776,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   {auditFindingsBySeverityData.length > 0 ? (
                     <Pie data={auditFindingsBySeverityData} angleField="count" colorField="severity" radius={0.8} legend={{position:'bottom'}}
                          label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.severity, value:`${d.count} ${t('common.findings','findings')}`})}} />
+                         tooltip={{formatter:(d: { severity: string; count: number })=>({name:d.severity, value:`${d.count} ${t('common.findings','findings')}`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -811,7 +817,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   {policyReviewStatusData.length > 0 ? (
                     <Pie data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}}
                            label={{type:'outer', content: '{name}\n{value} ({percentage})'}}
-                           tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} />
+                           tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -848,7 +854,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                              <Gauge
                                  percent={(data.stats.overallTrainingCompletionRate || 0) / 100}
                                  range={{ color: 'l(0) 0:#B8E1FF 1:#3D76DD' }}
-                                 axis={{ label: { formatter: (v) => String(Number(v) * 100) } }}
+                                 axis={{ label: { formatter: (v: string | number) => String(Number(v) * 100) } }}
                                  indicator={{
                                      pointer: { style: { stroke: '#3D76DD'} },
                                      pin: { style: { stroke: '#3D76DD'} }
@@ -863,8 +869,8 @@ const ComplianceAccreditationModule: React.FC = () => {
                 <Card title={t('module.compliance.trainingCompletionByDeptTitle', "Avg. Mandatory Training Completion Rate by Department")}>
                   {trainingCompletionByDeptData.length > 0 ? (
                     <Column data={trainingCompletionByDeptData} xField="departmentName" yField="avgCompletionRate" seriesField="departmentName" legend={false}
-                            label={{position:'top', formatter:(d)=>`${d.avgCompletionRate}%`}}
-                            yAxis={{title:{text:t('common.completionRatePercent',"Completion Rate (%)")}, min:0, max:100, label:{formatter:(v)=>`${v}%`}}}
+                            label={{position:'top', formatter:(d: { departmentName: string; avgCompletionRate: number })=>`${d.avgCompletionRate}%`}}
+                            yAxis={{title:{text:t('common.completionRatePercent',"Completion Rate (%)")}, min:0, max:100, label:{formatter:(v: string | number)=>`${v}%`}}}
                             xAxis={{label:{rotate:trainingCompletionByDeptData.length > 3 ? 30:0, autoEllipsis:true}}}/>
                   ) : <Empty />}
                 </Card>
@@ -879,7 +885,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   {topRisksByScoreData.length > 0 ? (
                     <Bar data={topRisksByScoreData} xField="riskScore" yField="description" seriesField="category" isStack={false} legend={{position:'top-right'}}
                          barWidthRatio={0.7} yAxis={{label:{autoEllipsis:true}}} xAxis={{title:{text:t('common.riskScore',"Risk Score")}, min:0, max:25}} // Max 25 for Likelihood (5) * Impact (5)
-                         tooltip={{ fields:['description', 'riskScore', 'category', 'status'], title: (d) => d.description.substring(0,100) }}/>
+                         tooltip={{ fields:['description', 'riskScore', 'category', 'status'], title: (d: any) => d.description.substring(0,100) }}/>
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -888,7 +894,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   {risksByStatusChartData.length > 0 ? (
                     <Pie data={risksByStatusChartData} angleField="count" colorField="status" radius={0.8} legend={{position:'bottom'}}
                          label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.status, value:`${d.count} ${t('common.risks','risks')}`})}} />
+                         tooltip={{formatter:(d: { status: string; count: number })=>({name:d.status, value:`${d.count} ${t('common.risks','risks')}`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -897,39 +903,40 @@ const ComplianceAccreditationModule: React.FC = () => {
             {/* Upcoming Audits Table - This was part of the original file, check if still needed or if covered by new audit charts */}
             {/* This table is moved to the Audit Management Tab */}
             {/*
+            */}
             {/* Closing the Overview & KPIs TabPane */}
               </Tabs.TabPane>
 
               <Tabs.TabPane tab={t('module.compliance.tabs.complianceDetails', "Compliance Details")} key="complianceItems">
-                {data.complianceItems && data.complianceItems.length > 0 && ( // Note: data.complianceStatus was used before, changed to data.complianceItems
+                {data.complianceStatus && data.complianceStatus.length > 0 && (
                   <Card title={t(`module.${MODULE_KEY}.complianceStatusTableTitle`, "Detailed Compliance Status")} style={{ marginTop: 20 }}>
                     <Table
-                      dataSource={data.complianceItems} // Changed from data.complianceStatus
+                      dataSource={data.complianceStatus}
                       columns={[
-                        { title: t('common.area', 'Area'), dataIndex: 'area', key: 'area', sorter: (a,b) => a.area.localeCompare(b.area) },
+                        { title: t('common.area', 'Area'), dataIndex: 'area', key: 'area', sorter: (a: ComplianceStatusItem, b: ComplianceStatusItem) => a.area.localeCompare(b.area) },
                         {
                           title: t('common.status', 'Status'),
                           dataIndex: 'status',
                           key: 'status',
-                          render: (status: ComplianceCurrentStatus) => { // Using new type
+                          render: (status: ComplianceCurrentStatus) => {
                             let color;
                             if (status === 'Compliant') color = 'success';
                             else if (status === 'Non-Compliant' || status === 'Action Required') color = 'error';
                             else if (status === 'Pending Review' || status === 'Under Observation') color = 'warning';
                             return <Tag color={color}>{status}</Tag>;
                           },
-                          filters: Object.values(t('complianceCurrentStatus', {returnObjects: true}) as Record<string,string>).map(s => ({text:s, value:s})), // Example for dynamic filters
-                          onFilter: (value, record) => record.status === value,
+                          filters: Object.values(t('complianceCurrentStatus', {returnObjects: true}) as Record<string,string>).map(s => ({text:s, value:s})),
+                          onFilter: (value: string | number | boolean, record: ComplianceStatusItem) => record.status === value,
                         },
                         { title: t('common.regulationStandard', 'Regulation/Standard'), dataIndex: 'regulationStandard', key: 'regulationStandard', ellipsis: true },
                         { title: t('common.details', 'Details'), dataIndex: 'details', key: 'details', ellipsis: true },
                          { title: t('common.ownerDepartment','Owner Dept'), dataIndex:'ownerDepartmentName', key:'owner', ellipsis:true},
-                         { title: t('common.lastAssessedDate','Last Assessed'), dataIndex:'lastAssessedDate', key:'lad', render:(d)=>dayjs(d).format('YYYY-MM-DD')},
-                         { title: t('common.nextReviewDate','Next Review'), dataIndex:'nextReviewDate', key:'nrd', render:(d)=>d ? dayjs(d).format('YYYY-MM-DD') : 'N/A'},
+                         { title: t('common.lastAssessedDate','Last Assessed'), dataIndex:'lastAssessedDate', key:'lad', render:(d: string)=>dayjs(d).format('YYYY-MM-DD')},
+                         { title: t('common.nextReviewDate','Next Review'), dataIndex:'nextReviewDate', key:'nrd', render:(d: string | undefined)=>d ? dayjs(d).format('YYYY-MM-DD') : 'N/A'},
 
                       ]}
                       rowKey="id"
-                      pagination={{ pageSize: 10 }} // Increased page size
+                      pagination={{ pageSize: 10 }}
                       scroll={{ x: 'max-content' }}
                     />
                   </Card>
@@ -966,12 +973,12 @@ const ComplianceAccreditationModule: React.FC = () => {
                 <Row gutter={[16,16]}>
                     <Col xs={24} md={12} lg={8}>
                         <Card title={t('module.compliance.auditsByStatusTitle', "Audits by Status")}>
-                        {auditsByStatusData.length > 0 ? ( <Pie data={auditsByStatusData} angleField="count" colorField="type" radius={0.8} legend={{position:'bottom'}} label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}} tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.audits','audits')}`})}} /> ) : <Empty />}
+                        {auditsByStatusData.length > 0 ? ( <Pie data={auditsByStatusData} angleField="count" colorField="type" radius={0.8} legend={{position:'bottom'}} label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}} tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:`${d.count} ${t('common.audits','audits')}`})}} /> ) : <Empty />}
                         </Card>
                     </Col>
                     <Col xs={24} md={12} lg={8}>
                         <Card title={t('module.compliance.auditFindingsSeverityTitle', "Overall Audit Findings by Severity")}>
-                        {auditFindingsBySeverityData.length > 0 ? ( <Pie data={auditFindingsBySeverityData} angleField="count" colorField="severity" radius={0.8} legend={{position:'bottom'}} label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}} tooltip={{formatter:(d)=>({name:d.severity, value:`${d.count} ${t('common.findings','findings')}`})}} /> ) : <Empty />}
+                        {auditFindingsBySeverityData.length > 0 ? ( <Pie data={auditFindingsBySeverityData} angleField="count" colorField="severity" radius={0.8} legend={{position:'bottom'}} label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}} tooltip={{formatter:(d: { severity: string; count: number })=>({name:d.severity, value:`${d.count} ${t('common.findings','findings')}`})}} /> ) : <Empty />}
                         </Card>
                     </Col>
                     <Col xs={24} md={24} lg={8}>
@@ -998,7 +1005,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                 <Row gutter={[16, 16]} style={{ marginTop: '10px' }}>
                   <Col xs={24} md={12} lg={8}>
                     <Card title={t('module.compliance.policyReviewStatusTitle', "Policy Review Status")}>
-                      {policyReviewStatusData.length > 0 ? ( <Pie data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}} label={{type:'outer', content: '{name}\n{value} ({percentage})'}} tooltip={{formatter:(d)=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} /> ) : <Empty />}
+                      {policyReviewStatusData.length > 0 ? ( <Pie data={policyReviewStatusData} angleField="count" colorField="type" innerRadius={0.6} radius={0.85} legend={{position:'bottom'}} label={{type:'outer', content: '{name}\n{value} ({percentage})'}} tooltip={{formatter:(d: { type: string; count: number })=>({name:d.type, value:`${d.count} ${t('common.policies','policies')}`})}} /> ) : <Empty />}
                     </Card>
                   </Col>
                   <Col xs={24} md={12} lg={8}>
@@ -1008,7 +1015,7 @@ const ComplianceAccreditationModule: React.FC = () => {
                   </Col>
                   <Col xs={24} md={24} lg={8}>
                     <Card title={t('module.compliance.policiesDueReviewTitle', "Policies Due for Review (Next 3 Months)")}>
-                      {policiesDueForReviewTableData.length > 0 ? ( <Table dataSource={policiesDueForReviewTableData} scroll={{x:'max-content'}} size="small" pagination={{pageSize:5}} columns={[ {title:t('common.title','Title'), dataIndex:'title', key:'title', ellipsis:true, sorter:(a,b)=>a.title.localeCompare(b.title)}, {title:t('common.category','Category'), dataIndex:'category', key:'cat'}, {title:t('common.nextReviewDate','Next Review'), dataIndex:'nextReviewDate', key:'nrd', render:(d)=>dayjs(d).format('YYYY-MM-DD'), sorter:(a,b)=>dayjs(a.nextReviewDate).diff(dayjs(b.nextReviewDate))}, {title:t('common.ownerDepartment','Owner Dept'), dataIndex:'ownerDepartmentName', key:'owner', ellipsis:true}, ]} rowKey="id" /> ) : <Empty description={t('common.noPoliciesDueSoon', "No policies due for review soon.")} />}
+                      {policiesDueForReviewTableData.length > 0 ? ( <Table dataSource={policiesDueForReviewTableData} scroll={{x:'max-content'}} size="small" pagination={{pageSize:5}} columns={[ {title:t('common.title','Title'), dataIndex:'title', key:'title', ellipsis:true, sorter:(a:PolicyDocument,b:PolicyDocument)=>a.title.localeCompare(b.title)}, {title:t('common.category','Category'), dataIndex:'category', key:'cat'}, {title:t('common.nextReviewDate','Next Review'), dataIndex:'nextReviewDate', key:'nrd', render:(d:string)=>dayjs(d).format('YYYY-MM-DD'), sorter:(a:PolicyDocument,b:PolicyDocument)=>dayjs(a.nextReviewDate).diff(dayjs(b.nextReviewDate))}, {title:t('common.ownerDepartment','Owner Dept'), dataIndex:'ownerDepartmentName', key:'owner', ellipsis:true}, ]} rowKey="id" /> ) : <Empty description={t('common.noPoliciesDueSoon', "No policies due for review soon.")} />}
                     </Card>
                   </Col>
                 </Row>
@@ -1021,14 +1028,14 @@ const ComplianceAccreditationModule: React.FC = () => {
                       <Card title={t('module.compliance.overallTrainingCompletionRateTitle', "Overall Training Completion Rate (Mandatory)")}>
                           {data?.stats?.overallTrainingCompletionRate !== undefined ? (
                               <div style={{textAlign:'center', height: 180}}>
-                                  <Gauge percent={(data.stats.overallTrainingCompletionRate || 0) / 100} range={{ color: 'l(0) 0:#B8E1FF 1:#3D76DD' }} axis={{ label: { formatter: (v) => String(Number(v) * 100) } }} indicator={{ pointer: { style: { stroke: '#3D76DD'} }, pin: { style: { stroke: '#3D76DD'} } }} statistic={{title: {formatter: ()=> `${(data.stats!.overallTrainingCompletionRate || 0).toFixed(1)}%`, style:{fontSize:'20px', color:'rgba(0,0,0,0.85)'}}, content:{style:{fontSize:'14px', color:'rgba(0,0,0,0.45)'}}}} />
+                                  <Gauge percent={(data.stats.overallTrainingCompletionRate || 0) / 100} range={{ color: 'l(0) 0:#B8E1FF 1:#3D76DD' }} axis={{ label: { formatter: (v: string | number) => String(Number(v) * 100) } }} indicator={{ pointer: { style: { stroke: '#3D76DD'} }, pin: { style: { stroke: '#3D76DD'} } }} statistic={{title: {formatter: ()=> `${(data.stats!.overallTrainingCompletionRate || 0).toFixed(1)}%`, style:{fontSize:'20px', color:'rgba(0,0,0,0.85)'}}, content:{style:{fontSize:'14px', color:'rgba(0,0,0,0.45)'}}}} />
                               </div>
                           ) : <Statistic title={t('module.compliance.overallTrainingCompletionRateTitle', "Overall Training Completion Rate (Mandatory)")} value={t('common.notAvailable','N/A')} />}
                       </Card>
                    </Col>
                    <Col xs={24} sm={12} md={16} lg={18}>
                      <Card title={t('module.compliance.trainingCompletionByDeptTitle', "Avg. Mandatory Training Completion Rate by Department")}>
-                       {trainingCompletionByDeptData.length > 0 ? ( <Column data={trainingCompletionByDeptData} xField="departmentName" yField="avgCompletionRate" seriesField="departmentName" legend={false} label={{position:'top', formatter:(d)=>`${d.avgCompletionRate}%`}} yAxis={{title:{text:t('common.completionRatePercent',"Completion Rate (%)")}, min:0, max:100, label:{formatter:(v)=>`${v}%`}}} xAxis={{label:{rotate:trainingCompletionByDeptData.length > 3 ? 30:0, autoEllipsis:true}}}/> ) : <Empty />}
+                       {trainingCompletionByDeptData.length > 0 ? ( <Column data={trainingCompletionByDeptData} xField="departmentName" yField="avgCompletionRate" seriesField="departmentName" legend={false} label={{position:'top', formatter:(d: { departmentName: string; avgCompletionRate: number })=>`${d.avgCompletionRate}%`}} yAxis={{title:{text:t('common.completionRatePercent',"Completion Rate (%)")}, min:0, max:100, label:{formatter:(v: string | number)=>`${v}%`}}} xAxis={{label:{rotate:trainingCompletionByDeptData.length > 3 ? 30:0, autoEllipsis:true}}}/> ) : <Empty />}
                      </Card>
                    </Col>
                  </Row>
@@ -1036,12 +1043,12 @@ const ComplianceAccreditationModule: React.FC = () => {
                  <Row gutter={[16, 16]} style={{ marginTop: '10px' }}>
                    <Col xs={24} lg={16}>
                      <Card title={t('module.compliance.topRisksByScoreTitle', "Top {n} Compliance Risks by Score", {n: TOP_N_RISKS})}>
-                       {topRisksByScoreData.length > 0 ? ( <Bar data={topRisksByScoreData} xField="riskScore" yField="description" seriesField="category" isStack={false} legend={{position:'top-right'}} barWidthRatio={0.7} yAxis={{label:{autoEllipsis:true}}} xAxis={{title:{text:t('common.riskScore',"Risk Score")}, min:0, max:25}} tooltip={{ fields:['description', 'riskScore', 'category', 'status'], title: (d) => d.description.substring(0,100) }}/> ) : <Empty />}
+                       {topRisksByScoreData.length > 0 ? ( <Bar data={topRisksByScoreData} xField="riskScore" yField="description" seriesField="category" isStack={false} legend={{position:'top-right'}} barWidthRatio={0.7} yAxis={{label:{autoEllipsis:true}}} xAxis={{title:{text:t('common.riskScore',"Risk Score")}, min:0, max:25}} tooltip={{ fields:['description', 'riskScore', 'category', 'status'], title: (d: any) => d.description.substring(0,100) }}/> ) : <Empty />}
                      </Card>
                    </Col>
                    <Col xs={24} lg={8}>
                      <Card title={t('module.compliance.risksByStatusTitle', "Compliance Risks by Status")}>
-                       {risksByStatusChartData.length > 0 ? ( <Pie data={risksByStatusChartData} angleField="count" colorField="status" radius={0.8} legend={{position:'bottom'}} label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}} tooltip={{formatter:(d)=>({name:d.status, value:`${d.count} ${t('common.risks','risks')}`})}} /> ) : <Empty />}
+                       {risksByStatusChartData.length > 0 ? ( <Pie data={risksByStatusChartData} angleField="count" colorField="status" radius={0.8} legend={{position:'bottom'}} label={{type:'inner', offset:'-30%', content:'{value}', style:{fill:'#fff'}}} tooltip={{formatter:(d: { status: string; count: number })=>({name:d.status, value:`${d.count} ${t('common.risks','risks')}`})}} /> ) : <Empty />}
                      </Card>
                    </Col>
                  </Row>

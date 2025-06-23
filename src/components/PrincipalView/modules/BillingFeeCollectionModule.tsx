@@ -6,6 +6,8 @@ import { Typography, Breadcrumb, Card, Descriptions, Row, Col, Statistic, Spin, 
 import type { ColumnsType } from 'antd/es/table';
 import { Link } from 'react-router-dom';
 import { useGlobalFilters } from '../../../contexts/GlobalFilterContext';
+import { DescriptionsProps } from 'antd'; // Added DescriptionsProps
+import { Invoice, FeeItem, ScholarshipApplication, DiscountApplication } from '../../../types/billing'; // Added missing types
 import { useTranslation } from 'react-i18next';
 import { fetchData } from '../../../utils/apiUtils';
 import {
@@ -15,7 +17,8 @@ import {
 } from '@ant-design/icons';
 import { Line, Pie, Donut, Column, Bar, Area } from '@ant-design/plots'; // Added Donut, Column, Bar, Area
 import { Institution, StudentSummary, Department, Program, Semester, AcademicYear, Degree } from '../../../types/hierarchy';
-import { Invoice, Payment, PaymentMethod, FeeItem, InvoiceStatus } from '../../../types/billing';
+// Invoice, FeeItem already imported above, Payment, PaymentMethod, InvoiceStatus are used from existing imports.
+import { Payment, PaymentMethod, InvoiceStatus } from '../../../types/billing';
 import { generateMockNewInstitutions } from '../../../utils/mockData/academics/generateMockAcademicData';
 import { generateMockStudents } from '../../../utils/mockData/attendance/generateMockAttendanceData';
 import { generateMockInvoices, generateMockPayments } from '../../../utils/mockData/billing/generateMockBillingData';
@@ -192,12 +195,12 @@ const BillingFeeCollectionModule: React.FC = () => {
 
     const totalInvoicedPerProgramDataImpl = useMemo(() => {
         if (!filteredInvoices) return [];
-        const programTotals = filteredInvoices.reduce((acc, inv) => {
+        const programTotals = filteredInvoices.reduce((acc: Record<string, number>, inv: Invoice) => {
             const program = inv.programName || t('common.unknownProgram', 'Unknown Program');
             acc[program] = (acc[program] || 0) + inv.totalAmount;
             return acc;
         }, {} as Record<string, number>);
-        return Object.entries(programTotals).map(([programName, totalInvoiced]) => ({ programName, totalInvoiced })).sort((a,b)=>b.totalInvoiced-a.totalInvoiced);
+        return Object.entries(programTotals).map(([programName, totalInvoiced]) => ({ programName, totalInvoiced: totalInvoiced as number })).sort((a,b)=>b.totalInvoiced-a.totalInvoiced);
     }, [filteredInvoices, t]);
 
     const collectionRatePerProgramDataImpl = useMemo(() => {
@@ -225,19 +228,19 @@ const BillingFeeCollectionModule: React.FC = () => {
 
     const outstandingPerProgramDataImpl = useMemo(() => {
         if (!filteredInvoices) return [];
-        const programTotals = filteredInvoices.reduce((acc, inv) => {
+        const programTotals = filteredInvoices.reduce((acc: Record<string, number>, inv: Invoice) => {
             const program = inv.programName || t('common.unknownProgram', 'Unknown Program');
             acc[program] = (acc[program] || 0) + inv.outstandingAmount;
             return acc;
         }, {} as Record<string, number>);
-        return Object.entries(programTotals).map(([programName, totalOutstanding]) => ({ programName, totalOutstanding })).sort((a,b)=>b.totalOutstanding-a.totalOutstanding);
+        return Object.entries(programTotals).map(([programName, totalOutstanding]) => ({ programName, totalOutstanding: totalOutstanding as number })).sort((a,b)=> (b.totalOutstanding as number) - (a.totalOutstanding as number));
     }, [filteredInvoices, t]);
 
    const studentOutstandingBalanceDistDataImpl = useMemo(() => {
         if (!allStudentsSummaryList || !filteredInvoices) return [];
         const studentBalances: Record<string, number> = {};
         allStudentsSummaryList.forEach(s => studentBalances[s.studentId] = 0);
-        filteredInvoices.forEach(inv => {
+        filteredInvoices.forEach((inv: Invoice) => {
             if(inv.outstandingAmount > 0) {
                  studentBalances[inv.studentId] = (studentBalances[inv.studentId] || 0) + inv.outstandingAmount;
             }
@@ -256,7 +259,7 @@ const BillingFeeCollectionModule: React.FC = () => {
    const topStudentsWithOutstandingDataImpl = useMemo(() => {
         if (!filteredInvoices || !allStudentsSummaryList) return [];
         const studentBalances: Record<string, { studentName: string; programName?: string; totalOutstanding: number }> = {};
-        filteredInvoices.forEach(inv => {
+        filteredInvoices.forEach((inv: Invoice) => {
             if (inv.outstandingAmount > 0) {
                 if (!studentBalances[inv.studentId]) {
                     const student = allStudentsSummaryList.find(s => s.studentId === inv.studentId);
@@ -274,9 +277,9 @@ const BillingFeeCollectionModule: React.FC = () => {
    const revenueByFeeCategoryDataImpl = useMemo(() => {
      if (!filteredInvoices) return [];
      const categoryTotals: Record<string, number> = {};
-     filteredInvoices.forEach(inv => {
+     filteredInvoices.forEach((inv: Invoice) => {
        if (inv.status === 'Paid' || inv.status === 'Partial Payment') {
-         inv.items.forEach(item => {
+         inv.items.forEach((item: FeeItem) => {
            const category = item.category || t('common.unknownCategory', 'Uncategorized');
            categoryTotals[category] = (categoryTotals[category] || 0) + item.totalAmount;
          });
@@ -288,9 +291,9 @@ const BillingFeeCollectionModule: React.FC = () => {
    const feeCategoryTrendDataImpl = useMemo(() => {
      if (!selectedFeeCategoryForTrend || !filteredInvoices) return [];
      const monthlyCategoryRevenue: Record<string, number> = {};
-     filteredInvoices.forEach(inv => {
+     filteredInvoices.forEach((inv: Invoice) => {
        if (inv.status === 'Paid' || inv.status === 'Partial Payment') {
-         inv.items.forEach(item => {
+         inv.items.forEach((item: FeeItem) => {
            if ((item.category || t('common.unknownCategory', 'Uncategorized')) === selectedFeeCategoryForTrend) {
              const monthYear = dayjs(inv.issueDate).format('YYYY-MM');
              monthlyCategoryRevenue[monthYear] = (monthlyCategoryRevenue[monthYear] || 0) + item.totalAmount;
@@ -306,15 +309,15 @@ const BillingFeeCollectionModule: React.FC = () => {
     const uniqueFeeCategoriesForSelectImpl = useMemo(() => {
         if (!filteredInvoices) return [];
         const categories = new Set<string>();
-        filteredInvoices.forEach(inv => inv.items.forEach(item => categories.add(item.category || t('common.unknownCategory', 'Uncategorized'))));
+        filteredInvoices.forEach((inv: Invoice) => inv.items.forEach((item: FeeItem) => categories.add(item.category || t('common.unknownCategory', 'Uncategorized'))));
         return Array.from(categories).map(cat => ({label: cat, value: cat})).sort((a,b)=>a.label.localeCompare(b.label));
     }, [filteredInvoices, t]);
 
    const topInvoicedFeeItemsDataImpl = useMemo(() => {
      if (!filteredInvoices) return [];
      const itemCounts: Record<string, { name: string; count: number; totalAmount: number }> = {};
-     filteredInvoices.forEach(inv => {
-       inv.items.forEach(item => {
+     filteredInvoices.forEach((inv: Invoice) => {
+       inv.items.forEach((item: FeeItem) => {
          if (!itemCounts[item.feeItemName]) itemCounts[item.feeItemName] = { name: item.feeItemName, count: 0, totalAmount: 0 };
          itemCounts[item.feeItemName].count++;
          itemCounts[item.feeItemName].totalAmount += item.totalAmount;
@@ -328,11 +331,11 @@ const BillingFeeCollectionModule: React.FC = () => {
         let totalScholarship = 0; let totalDiscount = 0;
         const scholarshipStudents = new Set<string>(); const discountStudents = new Set<string>();
         const byProgram: Record<string, { progName: string, scholarshipAmt: number, discountAmt: number, scholCount: Set<string>, discCount: Set<string>}> = {};
-        filteredInvoices.forEach(inv => {
+        filteredInvoices.forEach((inv: Invoice) => {
             const prog = inv.programName || t('common.unknownProgram', 'Unknown Program');
             if(!byProgram[prog]) byProgram[prog] = {progName: prog, scholarshipAmt:0, discountAmt:0, scholCount: new Set(), discCount: new Set()};
-            if (inv.scholarshipsApplied) { inv.scholarshipsApplied.forEach(s => { totalScholarship += s.amount; scholarshipStudents.add(inv.studentId); byProgram[prog].scholarshipAmt += s.amount; byProgram[prog].scholCount.add(inv.studentId); });}
-            if (inv.discountsApplied) { inv.discountsApplied.forEach(d => { totalDiscount += d.amount; discountStudents.add(inv.studentId); byProgram[prog].discountAmt += d.amount; byProgram[prog].discCount.add(inv.studentId); });}
+            if (inv.scholarshipsApplied) { inv.scholarshipsApplied.forEach((s: ScholarshipApplication) => { totalScholarship += s.amount; scholarshipStudents.add(inv.studentId); byProgram[prog].scholarshipAmt += s.amount; byProgram[prog].scholCount.add(inv.studentId); });}
+            if (inv.discountsApplied) { inv.discountsApplied.forEach((d: DiscountApplication) => { totalDiscount += d.amount; discountStudents.add(inv.studentId); byProgram[prog].discountAmt += d.amount; byProgram[prog].discCount.add(inv.studentId); });}
         });
         const byProgramArray = Object.values(byProgram).map(p=> ({ programName: p.progName, scholarshipAmount: p.scholarshipAmt, discountAmount: p.discountAmt, scholarshipStudentCount: p.scholCount.size, discountStudentCount: p.discCount.size })).sort((a,b)=> (b.scholarshipAmount + b.discountAmount) - (a.scholarshipAmount + a.discountAmount));
         return { totalScholarship: parseFloat(totalScholarship.toFixed(2)), totalDiscount: parseFloat(totalDiscount.toFixed(2)), scholarshipStudentCount: scholarshipStudents.size, discountStudentCount: discountStudents.size, byProgram: byProgramArray };
@@ -349,7 +352,16 @@ const BillingFeeCollectionModule: React.FC = () => {
   const handleInvoiceSelect = (invoice: Invoice | null) => { setSelectedInvoiceForDetail(invoice); setIsInvoiceDetailModalVisible(!!invoice); };
   const handleCloseInvoiceModal = () => { setIsInvoiceDetailModalVisible(false); setSelectedInvoiceForDetail(null); };
   const breadcrumbItems = useMemo(() => { /* ... */ return [];}, [selectedDepartmentForBilling, selectedSemesterForInvoices, t]);
-  const filterDescriptionItems: DescriptionsProps['items'] = useMemo(() => Object.entries(filters) /* ... */, [filters, t]);
+  // Updated filterDescriptionItems
+  const filterDescriptionItems: DescriptionsProps['items'] = useMemo(() => {
+    return Object.entries(filters)
+      .filter(([key, value]) => value !== undefined && value !== null && value !== '' && (Array.isArray(value) ? value.length > 0 : true))
+      .map(([key, value]) => ({
+        key: key,
+        label: t(`filters.${key}`, key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')), // Basic camelCase to Title Case
+        children: Array.isArray(value) ? value.join(' - ') : String(value),
+      }));
+  }, [filters, t]);
   const departmentSelectorSection = React.createElement(Card, { /* ... */ }); // Actual definition
   const invoiceDetailModal = React.createElement(Modal, { /* ... */ }); // Actual definition
 
@@ -377,17 +389,17 @@ const BillingFeeCollectionModule: React.FC = () => {
       React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
         React.createElement(Col, { xs: 24, lg: 12, xl: 8 }, // Adjusted Col span
           React.createElement(Card, { title: t('module.billing.paymentMethodValueTitle', "Value Collected by Payment Method") },
-            paymentMethodValueDataImpl.length > 0 ? React.createElement(Bar, { data: paymentMethodValueDataImpl, xField: "totalValue", yField: "method", seriesField: "method", legend: false, xAxis:{title:{text:t('common.totalValueCollected', "Total Value Collected ($)")}, label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, yAxis:{label:{autoEllipsis:true}}, tooltip:{formatter:(d:any)=>({name:d.method, value:`$${Number(d.totalValue).toLocaleString()}`})}} as any) : React.createElement(Empty, null)
+            paymentMethodValueDataImpl.length > 0 ? React.createElement(Bar, { data: paymentMethodValueDataImpl, xField: "totalValue", yField: "method", seriesField: "method", legend: false, xAxis:{title:{text:t('common.totalValueCollected', "Total Value Collected ($)")}, label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, yAxis:{label:{autoEllipsis:true}}, tooltip:{formatter:(d: any)=>({name:d.method, value:`$${Number(d.totalValue).toLocaleString()}`})}} as any) : React.createElement(Empty, null)
           )
         ),
         React.createElement(Col, { xs: 24, lg: 12, xl: 8 }, // NEW Col for Avg Txn Value
           React.createElement(Card, { title: t('module.billing.avgTxValuePerMethodTitle', "Avg. Transaction Value by Method") },
-            avgTxValuePerMethodDataImpl.length > 0 ? React.createElement(Column, { data: avgTxValuePerMethodDataImpl, xField: "method", yField: "avgValue", seriesField: "method", legend: false, label:{position:'top', formatter:(d:any)=>`$${d.avgValue.toLocaleString()}`}, yAxis:{title:{text:t('common.averageAmountUSD', "Avg. Amount ($)")}, label:{formatter:(v:any)=>`$${Number(v).toLocaleString()}`}}, xAxis:{label:{rotate:avgTxValuePerMethodDataImpl.length > 3 ? 30:0, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
+            avgTxValuePerMethodDataImpl.length > 0 ? React.createElement(Column, { data: avgTxValuePerMethodDataImpl, xField: "method", yField: "avgValue", seriesField: "method", legend: false, label:{position:'top', formatter:(d: any)=>`$${d.avgValue.toLocaleString()}`}, yAxis:{title:{text:t('common.averageAmountUSD', "Avg. Amount ($)")}, label:{formatter:(v: any)=>`$${Number(v).toLocaleString()}`}}, xAxis:{label:{rotate:avgTxValuePerMethodDataImpl.length > 3 ? 30:0, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
           )
         ),
         React.createElement(Col, { xs: 24, lg: 24, xl: 8 }, // Adjusted Col span for trend
           React.createElement(Card, { title: t('module.billing.collectionsByMethodTrendTitle', "Monthly Collections by Payment Method") },
-            collectionsByMethodTrendDataImpl.length > 0 ? React.createElement(Area, { data: collectionsByMethodTrendDataImpl, xField: "monthYear", yField: "amount", seriesField: "method", isStack: true, legend:{position:'top'}, xAxis:{title:{text: t('common.monthYear', "Month-Year")}}, yAxis:{title:{text: t('common.amountCollected', "Amount Collected ($)")}, label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, tooltip:{shared:true, showCrosshairs:true}} as any) : React.createElement(Empty, null)
+            collectionsByMethodTrendDataImpl.length > 0 ? React.createElement(Area, { data: collectionsByMethodTrendDataImpl, xField: "monthYear", yField: "amount", seriesField: "method", isStack: true, legend:{position:'top'}, xAxis:{title:{text: t('common.monthYear', "Month-Year")}}, yAxis:{title:{text: t('common.amountCollected', "Amount Collected ($)")}, label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, tooltip:{shared:true, showCrosshairs:true}} as any) : React.createElement(Empty, null)
           )
         )
       ),
@@ -395,13 +407,13 @@ const BillingFeeCollectionModule: React.FC = () => {
       React.createElement(Title, { level: 4, style: { marginTop: '30px' } }, t('module.billing.programLevelBillingTitle', "Program-Level Billing")),
       React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
         React.createElement(Col, { xs: 24, md: 8 },
-          React.createElement(Card, { title: t('module.billing.invoicedPerProgramTitle', "Total Invoiced per Program") }, totalInvoicedPerProgramDataImpl.length > 0 ? React.createElement(Column, { data: totalInvoicedPerProgramDataImpl, xField: "programName", yField: "totalInvoiced", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate:totalInvoicedPerProgramDataImpl.length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null))
+          React.createElement(Card, { title: t('module.billing.invoicedPerProgramTitle', "Total Invoiced per Program") }, totalInvoicedPerProgramDataImpl.length > 0 ? React.createElement(Column, { data: totalInvoicedPerProgramDataImpl, xField: "programName", yField: "totalInvoiced", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate:totalInvoicedPerProgramDataImpl.length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null))
         ),
         React.createElement(Col, { xs: 24, md: 8 },
-          React.createElement(Card, { title: t('module.billing.collectionRatePerProgramTitle', "Collection Rate per Program") }, collectionRatePerProgramDataImpl.length > 0 ? React.createElement(Column, { data: collectionRatePerProgramDataImpl, xField: "programName", yField: "collectionRate", seriesField: "programName", legend: false, label:{position:'top', formatter: (d:any)=>`${d.collectionRate}%`}, yAxis:{min:0, max:100, label:{formatter:(v:any)=>`${v}%`}}, xAxis:{label:{rotate:collectionRatePerProgramDataImpl.length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null))
+          React.createElement(Card, { title: t('module.billing.collectionRatePerProgramTitle', "Collection Rate per Program") }, collectionRatePerProgramDataImpl.length > 0 ? React.createElement(Column, { data: collectionRatePerProgramDataImpl, xField: "programName", yField: "collectionRate", seriesField: "programName", legend: false, label:{position:'top', formatter: (d: any)=>`${d.collectionRate}%`}, yAxis:{min:0, max:100, label:{formatter:(v: any)=>`${v}%`}}, xAxis:{label:{rotate:collectionRatePerProgramDataImpl.length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null))
         ),
         React.createElement(Col, { xs: 24, md: 8 },
-          React.createElement(Card, { title: t('module.billing.outstandingPerProgramTitle', "Outstanding Balance per Program") }, outstandingPerProgramDataImpl.length > 0 ? React.createElement(Column, { data: outstandingPerProgramDataImpl, xField: "programName", yField: "totalOutstanding", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate:outstandingPerProgramDataImpl.length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null))
+          React.createElement(Card, { title: t('module.billing.outstandingPerProgramTitle', "Outstanding Balance per Program") }, outstandingPerProgramDataImpl.length > 0 ? React.createElement(Column, { data: outstandingPerProgramDataImpl, xField: "programName", yField: "totalOutstanding", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate:outstandingPerProgramDataImpl.length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null))
         )
       ),
 
@@ -414,7 +426,7 @@ const BillingFeeCollectionModule: React.FC = () => {
         ),
         React.createElement(Col, { xs: 24, lg: 12 },
           React.createElement(Card, { title: t('module.billing.topStudentsOutstandingTitle', "Top 10 Students with Highest Outstanding Balances") },
-            topStudentsWithOutstandingDataImpl.length > 0 ? React.createElement(Table, { dataSource: topStudentsWithOutstandingDataImpl, columns: [ { title: t('common.studentName', 'Student Name'), dataIndex: 'studentName', key: 'studentName', ellipsis:true }, { title: t('common.program', 'Program'), dataIndex: 'programName', key: 'programName', ellipsis:true }, { title: t('common.outstandingAmount', 'Outstanding ($)'), dataIndex: 'totalOutstanding', key: 'totalOutstanding', align:'right', render:(v:any)=>Number(v).toLocaleString(), sorter:(a:any,b:any)=>a.totalOutstanding-b.totalOutstanding }, ], rowKey:"studentId", pagination:{ pageSize: 5, size:'small' }, size:"small", scroll:{x:'max-content'}} as any) : React.createElement(Empty, null)
+            topStudentsWithOutstandingDataImpl.length > 0 ? React.createElement(Table, { dataSource: topStudentsWithOutstandingDataImpl, columns: [ { title: t('common.studentName', 'Student Name'), dataIndex: 'studentName', key: 'studentName', ellipsis:true }, { title: t('common.program', 'Program'), dataIndex: 'programName', key: 'programName', ellipsis:true }, { title: t('common.outstandingAmount', 'Outstanding ($)'), dataIndex: 'totalOutstanding', key: 'totalOutstanding', align:'right', render:(v: any)=>Number(v).toLocaleString(), sorter:(a: { totalOutstanding: number },b: { totalOutstanding: number })=>a.totalOutstanding-b.totalOutstanding }, ], rowKey:"studentId", pagination:{ pageSize: 5, size:'small' }, size:"small", scroll:{x:'max-content'}} as any) : React.createElement(Empty, null)
           )
         )
       ),
@@ -423,20 +435,20 @@ const BillingFeeCollectionModule: React.FC = () => {
       React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
         React.createElement(Col, { xs: 24, lg: 8 },
           React.createElement(Card, { title: t('module.billing.revenueByFeeCatTitle', "Revenue by Fee Category") },
-            revenueByFeeCategoryDataImpl.length > 0 ? React.createElement(Pie, { data: revenueByFeeCategoryDataImpl, angleField: "totalValue", colorField: "category", radius: 0.8, legend:{position:'bottom'}, label:{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}, tooltip:{formatter:(d:any)=>({name:d.category, value:`$${Number(d.totalValue).toLocaleString()}`})}} as any) : React.createElement(Empty, null)
+            revenueByFeeCategoryDataImpl.length > 0 ? React.createElement(Pie, { data: revenueByFeeCategoryDataImpl, angleField: "totalValue", colorField: "category", radius: 0.8, legend:{position:'bottom'}, label:{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}, tooltip:{formatter:(d: any)=>({name:d.category, value:`$${Number(d.totalValue).toLocaleString()}`})}} as any) : React.createElement(Empty, null)
           )
         ),
         React.createElement(Col, { xs: 24, lg: 16 },
           React.createElement(Card, { title: t('module.billing.feeCatTrendTitle', "Revenue Trend by Fee Category") },
-            React.createElement(Select, { style: { width: '100%', marginBottom: '10px' }, placeholder: t('common.selectFeeCategory', "Select Fee Category"), onChange: (value) => setSelectedFeeCategoryForTrend(value), allowClear: true, showSearch:true, optionFilterProp:"label", value:selectedFeeCategoryForTrend, options:uniqueFeeCategoriesForSelectImpl }),
-            selectedFeeCategoryForTrend && feeCategoryTrendDataImpl.length > 0 ? React.createElement(Line, { data: feeCategoryTrendDataImpl, xField: "monthYear", yField: "amount", seriesField:"monthYear", legend:false, yAxis:{title:{text:t('common.revenue', "Revenue ($)")}, label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{title:{text:t('common.monthYear', "Month-Year")}}} as any) : React.createElement(Empty, {description: selectedFeeCategoryForTrend ? t('common.noDataAvailableForChart', 'No data for this category') : t('common.pleaseSelectCategory', 'Please select a category.')})
+            React.createElement(Select, { style: { width: '100%', marginBottom: '10px' }, placeholder: t('common.selectFeeCategory', "Select Fee Category"), onChange: (value: string | null) => setSelectedFeeCategoryForTrend(value as string | null), allowClear: true, showSearch:true, optionFilterProp:"label", value:selectedFeeCategoryForTrend, options:uniqueFeeCategoriesForSelectImpl }),
+            selectedFeeCategoryForTrend && feeCategoryTrendDataImpl.length > 0 ? React.createElement(Line, { data: feeCategoryTrendDataImpl, xField: "monthYear", yField: "amount", seriesField:"monthYear", legend:false, yAxis:{title:{text:t('common.revenue', "Revenue ($)")}, label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{title:{text:t('common.monthYear', "Month-Year")}}} as any) : React.createElement(Empty, {description: selectedFeeCategoryForTrend ? t('common.noDataAvailableForChart', 'No data for this category') : t('common.pleaseSelectCategory', 'Please select a category.')})
           )
         )
       ),
       React.createElement(Row, { style: { marginTop: '20px' } },
            React.createElement(Col, { span: 24 },
                React.createElement(Card, { title: t('module.billing.topInvoicedFeeItemsTitle', "Top 10 Most Invoiced Fee Items (by Total Amount)") },
-                   topInvoicedFeeItemsDataImpl.length > 0 ? React.createElement(Bar, { data: topInvoicedFeeItemsDataImpl, xField: "totalAmount", yField: "name", seriesField: "name", legend: false, barWidthRatio:0.7, yAxis:{label:{autoEllipsis:true}}, xAxis:{title:{text: t('common.totalAmountInvoiced', "Total Amount Invoiced ($)")}}, tooltip:{formatter:(d:any)=>({name:d.name, value:`$${Number(d.totalAmount).toLocaleString()} (Count: ${d.count})`})}} as any) : React.createElement(Empty, null)
+                   topInvoicedFeeItemsDataImpl.length > 0 ? React.createElement(Bar, { data: topInvoicedFeeItemsDataImpl, xField: "totalAmount", yField: "name", seriesField: "name", legend: false, barWidthRatio:0.7, yAxis:{label:{autoEllipsis:true}}, xAxis:{title:{text: t('common.totalAmountInvoiced', "Total Amount Invoiced ($)")}}, tooltip:{formatter:(d: any)=>({name:d.name, value:`$${Number(d.totalAmount).toLocaleString()} (Count: ${d.count})`})}} as any) : React.createElement(Empty, null)
                )
            )
       ),
@@ -451,12 +463,12 @@ const BillingFeeCollectionModule: React.FC = () => {
       React.createElement(Row, { gutter: [16, 16], style: { marginTop: '10px' } },
         React.createElement(Col, { xs: 24, lg: 12 },
           React.createElement(Card, { title: t('module.billing.scholByProgTitle', "Scholarship Amounts by Program") },
-            scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.scholarshipAmount > 0).length > 0 ? React.createElement(Column, { data: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.scholarshipAmount > 0), xField: "programName", yField: "scholarshipAmount", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.scholarshipAmount > 0).length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
+            scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.scholarshipAmount > 0).length > 0 ? React.createElement(Column, { data: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.scholarshipAmount > 0), xField: "programName", yField: "scholarshipAmount", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.scholarshipAmount > 0).length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
           )
         ),
         React.createElement(Col, { xs: 24, lg: 12 },
           React.createElement(Card, { title: t('module.billing.discByProgTitle', "Discount Amounts by Program") },
-            scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.discountAmount > 0).length > 0 ? React.createElement(Column, { data: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.discountAmount > 0), xField: "programName", yField: "discountAmount", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v:any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.discountAmount > 0).length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
+            scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.discountAmount > 0).length > 0 ? React.createElement(Column, { data: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.discountAmount > 0), xField: "programName", yField: "discountAmount", seriesField: "programName", legend: false, label:{position:'top'}, yAxis:{label:{formatter:(v: any)=>`$${Number(v/1000).toFixed(0)}k`}}, xAxis:{label:{rotate: scholarshipDiscountSummaryImpl.byProgram.filter(p=>p.discountAmount > 0).length > 3 ? 45:0, autoHide:false, autoEllipsis:true}}} as any) : React.createElement(Empty, null)
           )
         )
       ),

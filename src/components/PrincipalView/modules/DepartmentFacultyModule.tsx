@@ -446,7 +446,7 @@ const DepartmentFacultyModule: React.FC = () => {
                         style: { fill: '#fff', fontSize: 14 },
                       }}
                       tooltip={{
-                          formatter: (datum) => ({ name: datum.type, value: datum.value + ' ' + t('common.members', 'members') }),
+                          formatter: (datum: { type: string; value: number }) => ({ name: datum.type, value: datum.value + ' ' + t('common.members', 'members') }),
                       }}
                     />
                   </Card>
@@ -473,7 +473,7 @@ const DepartmentFacultyModule: React.FC = () => {
                       xAxis={{ title: { text: t('module.academics.departmentName', "Department") } }}
                       yAxis={{ title: { text: t('module.academics.facultyCount', "Faculty Count") } }}
                       tooltip={{
-                        formatter: (datum) => ({ name: datum.departmentName, value: datum.facultyCount + ' ' + t('common.facultyMembers', 'faculty members') }),
+                        formatter: (datum: { departmentName: string; facultyCount: number }) => ({ name: datum.departmentName, value: datum.facultyCount + ' ' + t('common.facultyMembers', 'faculty members') }),
                       }}
                     />
                   </Card>
@@ -521,7 +521,7 @@ const DepartmentFacultyModule: React.FC = () => {
                   {facultyByGenderData.length > 0 ? (
                     <Pie data={facultyByGenderData} angleField="value" colorField="type" radius={0.8} legend={{position:'bottom'}}
                          label={{type:'inner', offset:'-30%', content:'{percentage}', style:{fill:'#fff'}}}
-                         tooltip={{formatter:(d)=>({name:d.type, value:`${d.value} (${(d.percent * 100).toFixed(1)}%)`})}} />
+                         tooltip={{formatter:(d: { type: string; value: number; percent: number })=>({name:d.type, value:`${d.value} (${(d.percent * 100).toFixed(1)}%)`})}} />
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -595,7 +595,7 @@ const DepartmentFacultyModule: React.FC = () => {
                   {topFacultyByFeedbackData.length > 0 ? (
                     <Bar data={topFacultyByFeedbackData} xField="rating" yField="name" seriesField="name" legend={false}
                          barWidthRatio={0.6} xAxis={{title:{text:t('common.avgRating',"Avg. Rating (1-5)")}, min:0, max:5}}
-                         yAxis={{label:{autoEllipsis:true}}} tooltip={{formatter:(d)=>({name:d.name, value:`${d.rating}/5 (${d.departmentName || ''})`})}}/>
+                         yAxis={{label:{autoEllipsis:true}}} tooltip={{formatter:(d: { name: string; rating: number; departmentName?: string })=>({name:d.name, value:`${d.rating}/5 (${d.departmentName || ''})`})}}/>
                   ) : <Empty />}
                 </Card>
               </Col>
@@ -603,8 +603,8 @@ const DepartmentFacultyModule: React.FC = () => {
                 <Card title={t('module.departmentFaculty.researchGrantsDeptTitle', "Research Grants per Department")}>
                   {researchGrantsPerDeptData.length > 0 ? (
                     <Column data={researchGrantsPerDeptData} xField="departmentName" yField="totalGrants" seriesField="departmentName" legend={false}
-                            label={{position:'top', formatter:(d)=>`$${(d.totalGrants/1000).toFixed(0)}k`}}
-                            yAxis={{title:{text:t('common.totalGrantAmount',"Total Grant Amount ($)")}, label:{formatter:(v)=>`$${Number(v/1000000).toFixed(1)}M`}}}
+                            label={{position:'top', formatter:(d: { totalGrants: number })=>`$${(d.totalGrants/1000).toFixed(0)}k`}}
+                            yAxis={{title:{text:t('common.totalGrantAmount',"Total Grant Amount ($)")}, label:{formatter:(v: number | string)=>`$${Number(Number(v)/1000000).toFixed(1)}M`}}}
                             xAxis={{label:{rotate:researchGrantsPerDeptData.length > 2 ? 30:0, autoEllipsis:true}}}/>
                   ) : <Empty />}
                 </Card>
