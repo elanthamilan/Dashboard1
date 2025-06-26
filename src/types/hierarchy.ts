@@ -64,6 +64,8 @@ export interface StudentAcademicRecord {
   expectedGraduationDate?: string; // ISO Date
   major?: string;
   minor?: string;
+  enrollmentDate?: string; // Added for PrincipalStudentDetailView.test.tsx
+  requiredCreditsForDegree?: number; // Added for PrincipalStudentDetailView
 }
 
 // This is the course definition/template
@@ -75,6 +77,12 @@ export interface Course {
   departmentId?: string; // Crucial for linking to department
   facultyIds?: string[]; // Optional: faculty capable of teaching it
   courseCode?: string; // Existing from file
+
+  // Properties expected by CourseList.tsx and potentially other components
+  sections?: Section[];
+  totalStudentsEnrolled?: number;
+  averageGrade?: number;
+  passRate?: number;
 }
 
 
@@ -139,6 +147,7 @@ export interface StudentSummary {
   avgAttendanceRate?: number;
   consecutiveAbsences?: number;
   graduationYear?: number; // Added for placement trend calculation
+  academicStanding?: StudentAcademicRecord['academicStanding']; // Added from StudentAcademicRecord
 }
 
 export interface SchoolClass {

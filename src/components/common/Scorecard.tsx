@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 //   lowerIsBetter?: boolean;
 // }
 
-import { DashboardKpiDataItem } from '../../../types/hierarchy'; // Adjust path if necessary
+import { DashboardKpiDataItem } from '../../types/hierarchy'; // Adjust path if necessary
 
 interface ScorecardProps {
   title: string;

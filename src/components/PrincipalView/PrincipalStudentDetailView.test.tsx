@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 import PrincipalStudentDetailView from './PrincipalStudentDetailView'; // Adjust path if necessary
-import { StudentAcademicRecord } from '../../../types/hierarchy'; // Adjusted path
+import { StudentAcademicRecord } from '../../types/hierarchy'; // Adjusted path
 import '@testing-library/jest-dom';
 
 // Mock child components
@@ -22,14 +22,14 @@ const mockStudentRecord: StudentAcademicRecord = {
   cumulativeGPA: 3.75,
   totalCreditsEarned: 90,
   requiredCreditsForDegree: 120,
-  terms: [
-    { termId: 'T1', termName: 'Fall 2023', startDate: '', endDate: '', courses: [] }, // Added startDate/endDate for Term type
-    { termId: 'T2', termName: 'Spring 2024', startDate: '', endDate: '', courses: [] },
+  semesters: [ // Changed from terms to semesters
+    { termId: 'T1', semesterName: 'Fall 2023', courses: [] }, // Adjusted to match StudentTermRecord
+    { termId: 'T2', semesterName: 'Spring 2024', courses: [] },
   ],
-  skillProficiencies: [{ skillName: 'Programming', proficiencyLevel: 80, lastAssessed: new Date().toISOString() }], // Added lastAssessed
+  // skillProficiencies: [{ skillName: 'Programming', proficiencyLevel: 80, lastAssessed: new Date().toISOString() }], // Commented out as it's not in StudentAcademicRecord
   // Other fields can be minimal or undefined if not directly rendered by PrincipalStudentDetailView's own logic
-  k12StandardsMastery: [],
-  onlineLearningProgress: [],
+  // k12StandardsMastery: [], // Removed, not in type
+  // onlineLearningProgress: [], // Removed, not in type
 };
 
 describe('PrincipalStudentDetailView', () => {

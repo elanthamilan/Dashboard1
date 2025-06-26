@@ -2,13 +2,13 @@ import React, { useMemo } from 'react';
 import { Scatter } from '@ant-design/plots';
 import { Card, Spin, Typography, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { StudentAcademicRecord } from '../../../types/hierarchy';
-import { AttendanceRecord, Student } from '../../../types/attendance';
+import { StudentAcademicRecord, StudentSummary } from '../../../types/hierarchy';
+import { AttendanceRecord } from '../../../types/attendance';
 
 interface AttendanceGradeScatterPlotProps {
   academicRecords: StudentAcademicRecord[];
   attendanceRecords: AttendanceRecord[];
-  students: Student[]; // For student names
+  students: StudentSummary[]; // For student names, changed from Student
   title: string;
   loading: boolean;
 }
@@ -32,7 +32,7 @@ const AttendanceGradeScatterPlot: React.FC<AttendanceGradeScatterPlotProps> = ({
   const studentNameMap = useMemo(() => {
     const map = new Map<string, string>();
     students.forEach(student => {
-      map.set(student.id, `${student.firstName} ${student.lastName}`);
+      map.set(student.studentId, `${student.firstName} ${student.lastName}`); // Changed student.id to student.studentId
     });
     return map;
   }, [students]);

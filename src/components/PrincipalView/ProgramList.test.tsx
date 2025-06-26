@@ -32,12 +32,15 @@ const mockPrograms: Program[] = [
     enrolledCount: 120,
     atRiskStudents: 5,
     gradeDistribution: { 'A': 30, 'B': 40, 'C': 5 },
-    semesters: [],
+    departmentId: 'dept01', // Added departmentId
+    courses: [], // Added courses
+    // semesters: [], // Removed as it's not part of Program type, courses are directly under Program
   },
   {
     programId: 'prog102',
     programName: 'Ph.D. Theoretical Mycology',
     degreeId: 'deg02',
+    departmentId: 'dept02', // Added departmentId
     totalStudents: 15,
     averageProgramGPA: 3.9,
     avgAttendancePercentage: 98.1,
@@ -51,7 +54,8 @@ const mockPrograms: Program[] = [
     enrolledCount: 10,
     atRiskStudents: 1,
     gradeDistribution: { 'A': 10, 'B': 5 },
-    semesters: [],
+    courses: [], // Added courses
+    // semesters: [], // Removed as it's not part of Program type, courses are directly under Program
   },
 ];
 

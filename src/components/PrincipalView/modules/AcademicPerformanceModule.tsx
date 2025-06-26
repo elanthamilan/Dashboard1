@@ -14,9 +14,10 @@ import {
     BarChartOutlined, PieChartOutlined // Added chart icons
 } from '@ant-design/icons';
 import { generateMockNewInstitutions, generateMockAcademicRecords, generateMockStudentSummary, mockCourseList as importedMockCourseList } from '../../../utils/mockData/academics/generateMockAcademicData';
-import { generateMockStudents, generateMockAttendanceRecords } from '../../../utils/mockData/attendance/generateMockAttendanceData';
+// Removed Student import from types/attendance, imported StudentForMock from its definition
+import { StudentForMock, generateMockStudents, generateMockAttendanceRecords } from '../../../utils/mockData/attendance/generateMockAttendanceData';
+import { AttendanceRecord } from '../../../types/attendance';
 import { Institution, StudentSummary, AcademicYear as AcademicYearType, StudentAcademicRecord, Department, CourseEnrollment, Program, FacultyMember, Course, Grade } from '../../../types/hierarchy'; // Added Course, Grade
-import { Student, AttendanceRecord } from '../../../types/attendance';
 import PrincipalStudentDetailView from '../../PrincipalView/PrincipalStudentDetailView';
 import AverageGpaBarChart from '../charts/AverageGpaBarChart';
 import AttendanceGradeScatterPlot from '../charts/AttendanceGradeScatterPlot';
@@ -27,6 +28,7 @@ import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 dayjs.extend(isSameOrAfter);
 dayjs.extend(isSameOrBefore);
+import { faker } from '@faker-js/faker';
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
@@ -40,7 +42,7 @@ const mockCourseList: Course[] = importedMockCourseList || [];
 interface AcademicPerformanceData {
   institutionData: Institution | null;
   academicRecords: StudentAcademicRecord[];
-  students: Student[];
+  students: StudentForMock[]; // Changed from Student to StudentForMock
   attendanceRecords: AttendanceRecord[];
 }
 
@@ -56,7 +58,7 @@ const AcademicPerformanceModule: React.FC = () => {
   const filters = useGlobalFilters();
   const [institutionData, setInstitutionData] = useState<Institution | null>(null);
   const [allAcademicRecords, setAllAcademicRecords] = useState<StudentAcademicRecord[]>([]);
-  const [allStudentsForSummaries, setAllStudentsForSummaries] = useState<Student[]>([]);
+  const [allStudentsForSummaries, setAllStudentsForSummaries] = useState<StudentForMock[]>([]); // Changed from Student[] to StudentForMock[]
   const [allAttendanceRecords, setAllAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +91,7 @@ const AcademicPerformanceModule: React.FC = () => {
           setInstitutionData(instDataArray[0]);
            if (instDataArray[0] && baseStudents.length > 0) {
              const mockStudentIdsAndPrograms = baseStudents.map(s => ({ studentId: s.id, programId: 'MOCK_PROG_1', programName: 'Mock Program' }));
-             const currentMockCourseList = instDataArray[0].faculties?.flatMap(f => f.departments.flatMap(d => d.degrees.flatMap(deg => deg.programs.flatMap(p => p.semesters.flatMap(s => s.courses))))) || mockCourseList || [];
+             const currentMockCourseList = instDataArray[0].academicYears?.flatMap(ay => ay.degrees.flatMap(deg => deg.programs.flatMap(p => p.courses))) || mockCourseList || [];
              const currentMockFacultyList = instDataArray[0].facultyMembers || [];
              const academicRecords = generateMockAcademicRecords(mockStudentIdsAndPrograms, currentMockCourseList, currentMockFacultyList);
              setAllAcademicRecords(academicRecords);
